@@ -6,13 +6,17 @@ Author: Christian Breiderhoff
 """
 
 import os
+from datetime import datetime
+import src.configuration as config
+import logging
 
 
 class DataPaths(object):
 
-    def __init__(self, data_path = "default"):
+    def __init__(self, data_path="default"):
         self.is_loaded = False
-        self.arr_ext = ".nrrd"
+        self.nrrd_ext = ".nrrd"
+        self.png_ext = ".png"
         self.high_grade_gliomas_folder = 'HGG'
         self.low_grade_gliomas_folder = 'LGG'
         self.test_gg_path = "{}_{}".format(self.high_grade_gliomas_folder, self.low_grade_gliomas_folder)
@@ -24,6 +28,8 @@ class DataPaths(object):
         self.project_dir = None
         self.data_dir = data_path
         self.slice_dir = "2d_slices"
+        self.png_dir = "png"
+        self.nrrd_dir = "nrrd"
         self.raw_train_dir = "train"
         self.raw_test_dir = "test"
         self.tv_flow_out_dir = "tvflow"
@@ -31,25 +37,34 @@ class DataPaths(object):
         self.brats_train_dir = "BRATS2015_Training"
         self.brats_test_dir = "BRATS2015_Testing"
         self.split_path = "splits"
-        self.checkpoint_path = "tf_checkpoints"
-        self.summary_path = "tf_summaries"
+        self.tf_out_path = "tf_model_output"
 
-    def _load_data_paths(self):
-        self.project_dir = os.path.dirname(os.path.realpath(__file__))
-        self.checkpoint_path = os.path.join(self.project_dir, self.checkpoint_path)
-        self.summary_path = os.path.join(self.project_dir, self.summary_path)
+    def load_data_paths(self):
+        self.project_dir = os.getcwd()  # os.path.dirname(os.path.realpath(__file__))
+        self.tf_out_path = os.path.join(self.project_dir, self.tf_out_path)
         if not self.data_dir == "default":
             self.data_dir = os.path.join(self.data_dir, self.data_dir)
         else:
-            self.data_dir = os.path.join("../dataset", self.data_dir)
+            self.data_dir = os.path.join(self.project_dir, "../dataset")
         self.split_path = os.path.join(self.data_dir, self.split_path)
         self.brats_train_dir = os.path.join(self.data_dir, self.brats_train_dir)
         self.brats_test_dir = os.path.join(self.data_dir, self.brats_test_dir)
         self.slice_dir = os.path.join(self.data_dir, self.slice_dir)
-        self.raw_dir = os.path.join(self.slice_dir, self.raw_dir)
-        self.tv_flow_out_dir = os.path.join(self.slice_dir, self.tv_flow_out_dir)
+        self.png_dir = os.path.join(self.slice_dir, self.png_dir)
+        self.raw_dir = os.path.join(self.png_dir, self.raw_dir)
+        self.tv_flow_out_dir = os.path.join(self.png_dir, self.tv_flow_out_dir)
         self.raw_train_dir = os.path.join(self.raw_dir, self.raw_train_dir)
         self.raw_test_dir = os.path.join(self.raw_dir, self.raw_test_dir)
+
+        self.tf_out_path = os.path.join(self.project_dir, self.tf_out_path)
+        tf_out_path_tmp = "{0:%Y-%m-%d_%H:%M:%S}".format(datetime.now())
+        tf_out_path_tmp = "{}_O_{}_B_{}".format(
+            tf_out_path_tmp,
+            config.TrainingParams.optimizer.name,
+            config.TrainingParams.buffer_size_train)
+
+        self.tf_out_path = os.path.join(self.tf_out_path, tf_out_path_tmp)
+
         if not os.path.exists(self.data_dir):
             raise FileNotFoundError()
         if not os.path.exists(self.brats_train_dir):
@@ -57,13 +72,13 @@ class DataPaths(object):
         if not os.path.exists(self.brats_test_dir):
             raise FileNotFoundError()
         if not os.path.exists(self.slice_dir):
-            os.makedirs(self.slice_dir)
+            raise FileNotFoundError()
+        if not os.path.exists(self.png_dir):
+            raise FileNotFoundError()
         if not os.path.exists(self.split_path):
             os.makedirs(self.split_path)
-        if not os.path.exists(self.checkpoint_path):
-            os.makedirs(self.checkpoint_path)
-        if not os.path.exists(self.summary_path):
-            os.makedirs(self.summary_path)
+        if not os.path.exists(self.tf_out_path):
+            os.makedirs(self.tf_out_path)
         if not os.path.exists(self.tv_flow_out_dir):
             os.makedirs(self.tv_flow_out_dir)
         if not os.path.exists(self.raw_dir):
@@ -76,4 +91,7 @@ class DataPaths(object):
             os.makedirs(self.raw_test_dir)
         if not os.path.exists(self.raw_train_dir):
             os.makedirs(self.raw_train_dir)
+        if not os.path.exists(self.tf_out_path):
+            os.makedirs(self.tf_out_path)
+            logging.info("Allocating '{:}'".format(self.tf_out_path))
         self.is_loaded = True

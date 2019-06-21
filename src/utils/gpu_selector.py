@@ -1,4 +1,7 @@
 """
+Lab Visualisation & Medical Image Analysis SS2019
+Institute of Computer Science II
+
 Author: Christian Breiderhoff
 """
 
@@ -7,6 +10,7 @@ import os
 from tensorflow.python.client import device_lib
 
 cuda_device = ''
+
 
 def set_cuda_gpu(cuda_gpu):
 
