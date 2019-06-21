@@ -16,3 +16,8 @@ Necessary packages
   - tensorflow 1.12.0
   - sipy
   - PIL
+  
+The Brats dataset should be provided as follows:
+
+  - tf_unet_tvflow_brats2015/../Dataset/BRATS2015_Training/ ...
+  - tf_unet_tvflow_brats2015/../Dataset/BRATS2015_Testing/ ...
