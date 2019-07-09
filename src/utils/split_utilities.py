@@ -224,13 +224,17 @@ class TrainingDataset(object):
         patient_names = os.listdir(gg_path)
         patient_paths = [os.path.join(gg_path, patient) for patient in patient_names]
         for patient_path in patient_paths:
-            file_paths = [os.path.join(patient_path, path) for path in os.listdir(patient_path)]
+            file_paths = os.listdir(patient_path)
+            file_paths = sorted(file_paths, reverse=True)
             for file_path in file_paths:
                 if self._paths.ground_truth_path_identifier in file_path.lower():
+                    file_path_gt = file_path
                     continue
-                for file in os.listdir(file_path):
+                file_path_in = file_path
+                file_path_full = os.path.join(patient_path, file_path)
+                for file in os.listdir(file_path_full):
                     if file.endswith(ext_key):
-                        file_path_key = os.path.join(file_path, file)
+                        file_path_key = os.path.join(file_path_full, file)
                         modality = ""
                         if self._paths.t1_identifier in file_path_key.lower():
                             modality = self._paths.t1_identifier
@@ -240,7 +244,8 @@ class TrainingDataset(object):
                             modality = self._paths.t2_identifier
                         if self._paths.flair_identifier in file_path_key.lower():
                             modality = self._paths.flair_identifier
-                        file_path_val = file_path_key.replace(modality, self._paths.ground_truth_path_identifier)
+                        file_path_val = file_path_key.replace(file_path_in,
+                                                              file_path_gt)
                         if not os.path.exists(file_path_val):
                             continue
                         file_dict[file_path_key] = file_path_val
