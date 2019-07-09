@@ -76,7 +76,7 @@ class ConvNetParams:
     keep_prob_dopout = 0.5
     cost_function = Cost.CROSS_ENTROPY
     class_weights = None  # TODO
-    regularizer = None  # TODO
+    regularizer = 0.001  # TODO
 
 
 class TrainingParams:
