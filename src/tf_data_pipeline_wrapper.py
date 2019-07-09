@@ -19,7 +19,7 @@ class ImageData(object):
     """
 
     def __init__(self, file_paths, batch_size=128, buffer_size=800, shuffle=False, do_pre_processing=False,
-                 mode=config.DataModes.TRAINING):
+                 mode=config.DataModes.TRAINING, train_mode=config.TrainingModes.TVFLOW):
         """
         Inits a Tensorflow data pipeline
 
@@ -39,6 +39,7 @@ class ImageData(object):
         self.data_generator = None
         self.init_op = None
         self.next_batch = None
+        self.train_mode = train_mode
         if not (mode == config.DataModes.TRAINING or
                 mode == config.DataModes.VALIDATION or
                 mode == config.DataModes.TESTING):
@@ -63,13 +64,15 @@ class ImageData(object):
                                                                      batch_size=self._batch_size,
                                                                      buffer_size=self._buffer_size,
                                                                      shuffle=self._shuffle,
-                                                                     do_pre_processing=self._do_pre_processing)
+                                                                     do_pre_processing=self._do_pre_processing,
+                                                                     mode=self.train_mode)
                 elif self._mode == config.DataModes.VALIDATION:
                     self.data_generator = ValidationImageDataGenerator(file_paths=self._data_paths,
                                                                        batch_size=self._batch_size,
                                                                        buffer_size=self._buffer_size,
                                                                        shuffle=self._shuffle,
-                                                                       do_pre_processing=self._do_pre_processing)
+                                                                       do_pre_processing=self._do_pre_processing,
+                                                                       mode=self.train_mode)
                 elif self._mode == config.DataModes.TESTING:
                     self.data_generator = TestImageDataGenerator(file_paths=self._data_paths,
                                                                  batch_size=self._batch_size,

@@ -8,6 +8,7 @@ created on June 2019
 
 
 from enum import Enum
+import tensorflow as tf
 
 
 class Cost(Enum):
@@ -58,20 +59,21 @@ class DataParams:
     data_width = 240  # width of training images
     image_size = [data_height, data_width]
     nr_of_channels = 1  # grayscale
-    nr_of_classes_seg_mode = len(brats_label_values)
-    nr_of_classes_tv_flow_mode = 5  # one class for each channel of 8bit image
-    shuffle = False  # dict.items() is allready random
+    nr_of_classes_seg_mode = 4
+    nr_of_classes_tv_flow_mode = 4 # one class for each channel of 8bit image
+    shuffle = True  # dict.items() is allready random
     do_image_pre_processing = False  # only for training
     split_train_val_ratio = 0.7
+    data_type = tf.float16
 
 
 class ConvNetParams:
     """ ConvNetParams parameters"""
-    num_layers = 5
-    feat_root = 64
+    num_layers = 4
+    feat_root = 32
     filter_size = 3
     pool_size = 2
-    keep_prob_dopout = 0.75
+    keep_prob_dopout = 0.5
     cost_function = Cost.CROSS_ENTROPY
     class_weights = None  # TODO
     regularizer = None  # TODO
@@ -82,8 +84,8 @@ class TrainingParams:
     num_epochs = 100  # number of training epochs
     label_smothing = 0
     optimizer = Optimizer.MOMENTUM
-    batch_size_train = 128
-    batch_size_val = 128
+    batch_size_train = 32
+    batch_size_val = 32
     buffer_size_train = 500
     buffer_size_val = 500
     norm_grads = False

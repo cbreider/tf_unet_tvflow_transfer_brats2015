@@ -21,7 +21,7 @@ class DataPaths(object):
         self.high_grade_gliomas_folder = 'HGG'
         self.low_grade_gliomas_folder = 'LGG'
         self.test_gg_path = "{}_{}".format(self.high_grade_gliomas_folder, self.low_grade_gliomas_folder)
-        self.ground_truth_path_identifier = ".xx.o.ot."
+        self.ground_truth_path_identifier = "xx.o.ot"
         self.t1_identifier = "mr_t1"
         self.t1c_identifier = "mr_t1c"
         self.t2_identifier = "mr_t2"

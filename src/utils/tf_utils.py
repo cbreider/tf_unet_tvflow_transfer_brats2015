@@ -45,11 +45,14 @@ def load_png_image(filename, data_type=tf.float32):
 	:param data_type: data type in which the image is casted
 	:returns: image of dtype = data_type
 	"""
-	img_string = tf.read_file(filename)
-	img_decoded = tf.image.decode_png(img_string, channels=conf.DataParams.nr_of_channels)
-	img_resized = tf.image.resize_images(img_decoded, size=conf.DataParams.image_size)
-	img = tf.cast(img_resized, data_type)
-	return img
+	try:
+		img_string = tf.read_file(filename)
+		img_decoded = tf.image.decode_png(img_string, channels=conf.DataParams.nr_of_channels)
+		img_resized = tf.image.resize_images(img_decoded, size=conf.DataParams.image_size)
+		img = tf.cast(img_resized, data_type)
+		return img
+	except Exception as e:
+		print("type error: " + str(e) + str(filename))
 
 
 def convert_8bit_image_to_one_hot(image, depth=255):
@@ -69,6 +72,22 @@ def convert_8bit_image_to_one_hot(image, depth=255):
 		image = tf.scalar_mul(depth, image)
 		if not image.dtype == tf.uint8:
 			image = tf.cast(image, tf.uint8)
+	one_hot = tf.one_hot(image, depth)
+	return one_hot
+
+
+def to_one_hot(image, depth=4):
+	"""
+	Creates a one hot tensor of a given image
+
+
+	:param image: input image
+	:param depth: depth of the one hot tensor default =255 (8bit image)
+	:returns: One hot Tensor of depth = depth:
+	"""
+	image = tf.reshape(image, [tf.shape(image)[0], tf.shape(image)[1]])
+	if not image.dtype == tf.uint8:
+		image = tf.cast(image, tf.uint8)
 	one_hot = tf.one_hot(image, depth)
 	return one_hot
 

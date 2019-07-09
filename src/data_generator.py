@@ -11,7 +11,9 @@ from tensorflow.python.framework import dtypes
 from tensorflow.python.framework.ops import convert_to_tensor
 from abc import ABC, abstractmethod
 import src.utils.tf_utils as tf_utils
+import src.configuration as config
 import logging
+
 
 class ImageDataGenerator:
     """Wrapper class around the  TensorFlow dataset pipeline.
@@ -40,7 +42,8 @@ class ImageDataGenerator:
 
 class TrainingImageDataGenerator(ImageDataGenerator):
 
-    def __init__(self, file_paths, batch_size=32, buffer_size=800, shuffle=False, do_pre_processing=False):
+    def __init__(self, file_paths, batch_size=32, buffer_size=800, shuffle=False, do_pre_processing=False,
+                 mode=config.TrainingModes.TVFLOW):
         self._file_paths = file_paths
         self.batch_size = batch_size
         self.buffer_size = buffer_size
@@ -50,6 +53,7 @@ class TrainingImageDataGenerator(ImageDataGenerator):
         self._input_data_paths = None
         self._gt_data_paths = None
         self._do_pre_processing = do_pre_processing
+        self.mode = mode
 
     def initialize(self):
         logging.info("Train buffer size {}, batch size {}".format(self.buffer_size, self.batch_size))
@@ -76,13 +80,19 @@ class TrainingImageDataGenerator(ImageDataGenerator):
         gt_img = tf_utils.load_png_image(filename_gt)
         if self._do_pre_processing:
             in_img, gt_img = tf_utils.preprocess_images(in_img, gt_img)
-        gt_one_hot = tf_utils.convert_8bit_image_to_one_hot(gt_img, depth=5)
+        if self.mode == config.TrainingModes.TVFLOW:
+            gt_one_hot = tf_utils.convert_8bit_image_to_one_hot(gt_img, depth=config.DataParams.nr_of_classes_tv_flow_mode)
+        elif self.mode == config.TrainingModes.SEGMENTATION:
+            gt_one_hot = tf_utils.convert_8bit_image_to_one_hot(gt_img, depth=config.DataParams.nr_of_classes_seg_mode)
+        else:
+            raise ValueError()
         return in_img, gt_one_hot
 
 
 class ValidationImageDataGenerator(ImageDataGenerator):
 
-    def __init__(self, file_paths, batch_size=32, buffer_size=800, shuffle=False, do_pre_processing=False):
+    def __init__(self, file_paths, batch_size=32, buffer_size=800, shuffle=False, do_pre_processing=False,
+                 mode=config.TrainingModes.TVFLOW):
         self._file_paths = file_paths
         self.batch_size = batch_size
         self.buffer_size = buffer_size
@@ -92,6 +102,7 @@ class ValidationImageDataGenerator(ImageDataGenerator):
         self._input_data_paths = None
         self._gt_data_paths = None
         self._do_pre_processing = do_pre_processing
+        self.mode = mode
 
     def initialize(self):
         logging.info("Validation buffer size {}, batch size {}".format(self.buffer_size, self.batch_size))
@@ -115,13 +126,19 @@ class ValidationImageDataGenerator(ImageDataGenerator):
         # load and preprocess the image
         in_img = tf_utils.load_png_image(filename_input)
         gt_img = tf_utils.load_png_image(filename_gt)
-        gt_one_hot = tf_utils.convert_8bit_image_to_one_hot(gt_img, depth=5)
+        if self.mode == config.TrainingModes.TVFLOW:
+            gt_one_hot = tf_utils.convert_8bit_image_to_one_hot(gt_img, depth=config.DataParams.nr_of_classes_tv_flow_mode)
+        elif self.mode == config.TrainingModes.SEGMENTATION:
+            gt_one_hot = tf_utils.convert_8bit_image_to_one_hot(gt_img, depth=config.DataParams.nr_of_classes_seg_mode)
+        else:
+            raise ValueError()
         return in_img, gt_one_hot
 
 
 class TestImageDataGenerator(ImageDataGenerator):
 
-    def __init__(self, file_paths, batch_size=128, buffer_size=8000, shuffle=False, do_pre_processing=False):
+    def __init__(self, file_paths, batch_size=128, buffer_size=8000, shuffle=False, do_pre_processing=False,
+                 mode=config.TrainingModes.TVFLOW):
         self._file_paths = file_paths
         self.batch_size = batch_size
         self.buffer_size = buffer_size
@@ -131,6 +148,7 @@ class TestImageDataGenerator(ImageDataGenerator):
         self._input_data_paths = None
         self._gt_data_paths = None
         self._do_pre_processing = do_pre_processing
+        self.mode = mode
 
     def initialize(self):
         # convert lists to TF tensor

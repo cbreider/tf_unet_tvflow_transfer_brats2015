@@ -1,12 +1,3 @@
-"""
-Lab Visualisation & Medical Image Analysis SS2019
-Institute of Computer Science II
-
-Author: Christian Breiderhoff
-created on June 2019
-"""
-
-
 from src.utils.path_utils import DataPaths
 from src.utils.split_utilities import TrainingDataset
 from src.tf_data_pipeline_wrapper import ImageData
@@ -57,7 +48,7 @@ if __name__ == "__main__":
     data_paths.load_data_paths()
 
     file_paths = TrainingDataset(paths=data_paths,
-                                 mode=config.TrainingModes.TVFLOW,
+                                 mode=config.TrainingModes.SEGMENTATION,
                                  new_split=create_new_training_split,
                                  split_ratio=config.DataParams.split_train_val_ratio)
 
@@ -67,7 +58,7 @@ if __name__ == "__main__":
                               shuffle=config.DataParams.shuffle,
                               do_pre_processing=config.DataParams.do_image_pre_processing,
                               mode=config.DataModes.TRAINING,
-                              train_mode=config.TrainingModes.TVFLOW)
+                              train_mode=config.TrainingModes.SEGMENTATION)
     training_data.create()
 
     validation_data = ImageData(file_paths=file_paths.validation_paths,
@@ -76,11 +67,11 @@ if __name__ == "__main__":
                                 shuffle=config.DataParams.shuffle,
                                 do_pre_processing=False,
                                 mode=config.DataModes.VALIDATION,
-                                train_mode=config.TrainingModes.TVFLOW)
+                                train_mode=config.TrainingModes.SEGMENTATION)
     validation_data.create()
 
     net = unet.Unet(n_channels=config.DataParams.nr_of_channels,
-                    n_class=config.DataParams.nr_of_classes_tv_flow_mode,
+                    n_class=config.DataParams.nr_of_classes_seg_mode,
                     cost_function=config.ConvNetParams.cost_function,
                     summaries=create_summaries,
                     class_weights=config.ConvNetParams.class_weights,
@@ -112,5 +103,3 @@ if __name__ == "__main__":
                          dropout=config.ConvNetParams.keep_prob_dopout,  # probability to keep units
                          display_step=config.TrainingParams.display_step,
                          write_graph=config.TrainingParams.write_graph)
-
-
