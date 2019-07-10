@@ -37,6 +37,41 @@ def preprocess_images(scan, ground_truth):
 	return combined_flip[:, :, :last_image_dim], combined_flip[:, :, last_image_dim:]
 
 
+def crop_images_to_to_non_zero(scan, ground_truth):
+	"""
+	crops input and gt images to bounding box of non zero area of gt image
+
+
+	:param scan: input image
+	:param ground_truth: ground_truth image
+	:returns:cobmbined padded,cropped and flipped images
+	"""
+	# HACK check if gt is complettely zero tahn return orginal images
+	total = tf.reduce_sum(tf.abs(ground_truth))
+	is_all_zero = tf.equal(total, 0)
+	return tf.cond(is_all_zero, lambda: (scan, ground_truth), lambda: crop_non_zero_internal(scan, ground_truth))
+
+
+def crop_non_zero_internal(scan, ground_truth):
+	gt_int = tf.cast(ground_truth, tf.int32)
+	zero = tf.constant(0, dtype=tf.int32)
+	where = tf.not_equal(gt_int, zero)
+	indices = tf.where(where)
+	min_y = tf.reduce_min(indices[:, 0])
+	min_x = tf.reduce_min(indices[:, 1])
+	max_y = tf.reduce_max(indices[:, 0])
+	max_x = tf.reduce_max(indices[:, 1])
+	height = tf.math.add(tf.math.subtract(max_y, min_y), tf.convert_to_tensor(1, dtype=tf.int64))
+	width = tf.math.add(tf.math.subtract(max_x, min_x), tf.convert_to_tensor(1, dtype=tf.int64))
+	crop_in = tf.image.crop_to_bounding_box(scan, min_y, min_x, height, width)
+	crop_gt = tf.image.crop_to_bounding_box(ground_truth, min_y, min_x, height, width)
+	resize_in = tf.image.resize_images(crop_in, [conf.DataParams.image_size[0], conf.DataParams.image_size[1]],
+									   method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+	resize_gt = tf.image.resize_images(crop_gt, [conf.DataParams.image_size[0], conf.DataParams.image_size[1]],
+									   method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+	return resize_in, resize_gt
+
+
 def load_png_image(filename, data_type=tf.float32):
 	"""
 	Loads a png imges within a TF pipeline

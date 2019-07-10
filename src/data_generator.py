@@ -80,6 +80,7 @@ class TrainingImageDataGenerator(ImageDataGenerator):
         gt_img = tf_utils.load_png_image(filename_gt)
         if self._do_pre_processing:
             in_img, gt_img = tf_utils.preprocess_images(in_img, gt_img)
+        in_img, gt_img = tf_utils.crop_images_to_to_non_zero(in_img, gt_img)
         if self.mode == config.TrainingModes.TVFLOW:
             gt_one_hot = tf_utils.convert_8bit_image_to_one_hot(gt_img, depth=config.DataParams.nr_of_classes_tv_flow_mode)
         elif self.mode == config.TrainingModes.SEGMENTATION:
@@ -126,6 +127,7 @@ class ValidationImageDataGenerator(ImageDataGenerator):
         # load and preprocess the image
         in_img = tf_utils.load_png_image(filename_input)
         gt_img = tf_utils.load_png_image(filename_gt)
+        in_img, gt_img = tf_utils.crop_images_to_to_non_zero(in_img, gt_img)
         if self.mode == config.TrainingModes.TVFLOW:
             gt_one_hot = tf_utils.convert_8bit_image_to_one_hot(gt_img, depth=config.DataParams.nr_of_classes_tv_flow_mode)
         elif self.mode == config.TrainingModes.SEGMENTATION:
