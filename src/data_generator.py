@@ -84,7 +84,7 @@ class TrainingImageDataGenerator(ImageDataGenerator):
         if self.mode == config.TrainingModes.TVFLOW:
             gt_one_hot = tf_utils.convert_8bit_image_to_one_hot(gt_img, depth=config.DataParams.nr_of_classes_tv_flow_mode)
         elif self.mode == config.TrainingModes.SEGMENTATION:
-            gt_one_hot = tf_utils.convert_8bit_image_to_one_hot(gt_img, depth=config.DataParams.nr_of_classes_seg_mode)
+            gt_one_hot = tf_utils.to_one_hot(gt_img, depth=config.DataParams.nr_of_classes_seg_mode)
         else:
             raise ValueError()
         return in_img, gt_one_hot
@@ -131,7 +131,7 @@ class ValidationImageDataGenerator(ImageDataGenerator):
         if self.mode == config.TrainingModes.TVFLOW:
             gt_one_hot = tf_utils.convert_8bit_image_to_one_hot(gt_img, depth=config.DataParams.nr_of_classes_tv_flow_mode)
         elif self.mode == config.TrainingModes.SEGMENTATION:
-            gt_one_hot = tf_utils.convert_8bit_image_to_one_hot(gt_img, depth=config.DataParams.nr_of_classes_seg_mode)
+            gt_one_hot = tf_utils.to_one_hot(gt_img, depth=config.DataParams.nr_of_classes_seg_mode)
         else:
             raise ValueError()
         return in_img, gt_one_hot
