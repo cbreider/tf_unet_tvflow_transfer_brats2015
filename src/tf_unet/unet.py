@@ -213,9 +213,16 @@ class Unet(object):
                                                tf.reshape(pixel_wise_softmax(logits), [-1, n_class]))
 
         with tf.name_scope("results"):
-            self.predicter = pixel_wise_softmax(logits)
-            self.correct_pred = tf.equal(tf.argmax(self.predicter, 3), tf.argmax(self.y, 3))
-            self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
+            if cost_function == config.Cost.MEAN_SQUARED:
+                log_int = tf.cast(logits, tf.uint8)
+                y_int = tf.cast(self.y, tf.uint8)
+                self.predicter = logits
+                self.correct_pred = tf.equal(log_int, y_int)
+                self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
+            else:
+                self.predicter = pixel_wise_softmax(logits)
+                self.correct_pred = tf.equal(tf.argmax(self.predicter, 3), tf.argmax(self.y, 3))
+                self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
 
     def _get_cost(self, logits, cost_function, class_weights=None, regularizer=None):
         """
@@ -266,7 +273,7 @@ class Unet(object):
                 loss = 1.0 - 2.0 * (numerator + smooth) / (denominator + smooth)
 
             elif cost_function == config.Cost.MEAN_SQUARED:
-                loss = tf.losses.mean_squared_error(labels=self.y, predictions=logits)
+                loss = tf.reduce_mean(tf.nn.l2_loss(flat_logits - flat_labels))
 
             else:
                 raise ValueError("Unknown cost function: " % cost_function.name)

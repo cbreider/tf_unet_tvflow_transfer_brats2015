@@ -99,7 +99,7 @@ class TrainingParams:
                      epsilon=1e-08,
                      use_locking=False,
                      name='Adam')
-    momentum_args = dict(momentum=0.2,
+    momentum_args = dict(momentum=0.001,
                          learning_rate=0.2,
                          decay_rate=0.95,
                          use_locking=False,
