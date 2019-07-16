@@ -265,6 +265,9 @@ class Unet(object):
 
                 loss = 1.0 - 2.0 * (numerator + smooth) / (denominator + smooth)
 
+            elif cost_function == config.Cost.MEAN_SQUARED:
+                loss = tf.losses.mean_squared_error(labels=self.y, predictions=logits)
+
             else:
                 raise ValueError("Unknown cost function: " % cost_function.name)
 

@@ -17,6 +17,7 @@ class Cost(Enum):
     """
     CROSS_ENTROPY = 1
     DICE_COEFFICIENT = 2
+    MEAN_SQUARED = 3
 
 
 class DataModes(Enum):
@@ -60,7 +61,7 @@ class DataParams:
     image_size = [data_height, data_width]
     nr_of_channels = 1  # grayscale
     nr_of_classes_seg_mode = 4
-    nr_of_classes_tv_flow_mode = 4 # one class for each channel of 8bit image
+    nr_of_classes_tv_flow_mode = 1 # one class for each channel of 8bit image
     shuffle = True  # dict.items() is allready random
     do_image_pre_processing = False  # only for training
     split_train_val_ratio = 0.7
@@ -69,12 +70,12 @@ class DataParams:
 
 class ConvNetParams:
     """ ConvNetParams parameters"""
-    num_layers = 4
-    feat_root = 32
+    num_layers = 3
+    feat_root = 16
     filter_size = 3
     pool_size = 2
     keep_prob_dopout = 0.5
-    cost_function = Cost.CROSS_ENTROPY
+    cost_function = Cost.MEAN_SQUARED
     class_weights = None  # TODO
     regularizer = 0.001  # TODO
 
@@ -84,8 +85,8 @@ class TrainingParams:
     num_epochs = 100  # number of training epochs
     label_smothing = 0
     optimizer = Optimizer.MOMENTUM
-    batch_size_train = 32
-    batch_size_val = 32
+    batch_size_train = 2
+    batch_size_val = 2
     buffer_size_train = 500
     buffer_size_val = 500
     norm_grads = False
