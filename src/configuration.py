@@ -9,6 +9,7 @@ created on June 2019
 
 from enum import Enum
 import tensorflow as tf
+import numpy as np
 
 
 class Cost(Enum):
@@ -56,13 +57,13 @@ class DataParams:
         4,  # enhancing tumor
         0  # everything else
     ]
-    seg_label_colors = [
-        [255,   0,   0]
-        [255, 255,   0]
-        [0,   255,   0]
+    seg_label_colors = np.array([
+        [0,     0,   0],
+        [255,   0,   0],
+        [255, 255,   0],
+        [0,   255,   0],
         [0,     0, 255]
-        [0,     0,   0]
-    ]
+    ])
     raw_data_height = 240  # height of training images
     raw_data_width = 240  # width of training images
     image_size = [raw_data_height, raw_data_width]
