@@ -13,7 +13,7 @@ from scipy import ndimage
 import SimpleITK as sitk
 import nrrd
 from PIL import Image
-
+import tensorflow as tf
 
 # supported file extensions
 nrrd_ext = ".nrrd"
@@ -521,7 +521,7 @@ def plot_prediction(x_test, y_test, prediction, save=False):
         pred /= np.amax(pred)
         cax = ax[i, 2].imshow(pred)
         plt.colorbar(cax, ax=ax[i,2])
-        if i==0:
+        if i == 0:
             ax[i, 0].set_title("x")
             ax[i, 1].set_title("y")
             ax[i, 2].set_title("pred")
@@ -544,6 +544,7 @@ def to_rgb(img):
 
     :returns img: the rgb image [nx, ny, 3]
     """
+
     img = np.atleast_3d(img)
     channels = img.shape[2]
     if channels < 3:
@@ -558,6 +559,10 @@ def to_rgb(img):
     return img
 
 
+def seg_map_to_rgb(seg_map, label_colors):
+    return 0
+
+
 def crop_to_shape(data, shape):
     """
     Crops the array to the given image shape by removing the border (expects a tensor of shape [batches, nx, ny, channels].
@@ -565,6 +570,9 @@ def crop_to_shape(data, shape):
     :param data: the array to crop
     :param shape: the target shape
     """
+    if data.shape == shape:
+        return data
+
     diff_nx = (data.shape[1] - shape[1])
     diff_ny = (data.shape[2] - shape[2])
 
@@ -612,12 +620,17 @@ def combine_img_prediction(data, gt, pred):
     :returns img: the concatenated rgb image
     """
 
-    ny = pred.shape[2]
+    ny = data.shape[2]
     ch = data.shape[3]
-    gt_img = [np.where(r == 1) for r in gt]
-    img = np.concatenate((to_rgb(crop_to_shape(data, pred.shape).reshape(-1, ny, ch)),
-                          to_rgb(crop_to_shape(gt[..., 0], pred.shape).reshape(-1, ny, 1)),
-                          to_rgb(pred[..., 0].reshape(-1, ny, 1))), axis=1)
+    data = data[..., 0].reshape(-1, ny, ch)
+    gt_img = Image.fromarray(gt.reshape(-1, gt.shape[2], ch))
+    pred_img = Image.fromarray(pred.reshape(-1, pred.shape[2], ch))
+    gt_res = np.array(gt_img.resize(data.shape, Image.NEAREST))
+    pred_res = np.array(pred_img.resize(data.shape, Image.NEAREST))
+    img = np.concatenate((to_rgb(data),
+                          to_rgb(gt_res),
+                          to_rgb(pred_res)),
+                          axis=1)
     return img
 
 
