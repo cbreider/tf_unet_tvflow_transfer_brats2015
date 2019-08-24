@@ -209,20 +209,27 @@ class Unet(object):
         self.gradients_node = tf.gradients(self.cost, self.variables)
 
         with tf.name_scope("cross_entropy"):
-            self.cross_entropy = cross_entropy(tf.reshape(self.y, [-1, n_class]),
-                                               tf.reshape(pixel_wise_softmax(logits), [-1, n_class]))
+            if cost_function == config.Cost.MEAN_SQUARED:
+                self.cross_entropy = tf.constant(0) # cross entropy for regression useless
+            else:
+                self.cross_entropy = cross_entropy(tf.reshape(self.y, [-1, n_class]),
+                                                   tf.reshape(pixel_wise_softmax(logits), [-1, n_class]))
 
         with tf.name_scope("results"):
             if cost_function == config.Cost.MEAN_SQUARED:
-                log_int = tf.cast(logits, tf.uint8)
-                y_int = tf.cast(self.y, tf.uint8)
-                self.predicter = logits
-                self.correct_pred = tf.equal(log_int, y_int)
-                self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
+                self.correct_pred = tf.constant(0)  # makes no sense for regression
+                self.predicter = tf.cast(logits, tf.uint8)
+                self.error = tf.math.divide(tf.reduce_mean(tf.cast(tf.math.squared_difference(
+                    self.predicter - tf.cast(self.y, tf.unint8))),
+                    tf.float32), tf.math.square(tf.constant(255.0)))
+                self.error_rate = tf.math.multiply(tf.constant(100.0), self.error)
+                self.accuracy = tf.constant(1.0) - self.error
             else:
                 self.predicter = pixel_wise_softmax(logits)
                 self.correct_pred = tf.equal(tf.argmax(self.predicter, 3), tf.argmax(self.y, 3))
                 self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
+                self.error = tf.constant(1.0) - self.accuracy
+                self.error_rate = tf.math.multiply(self.error, tf.constant(100.0))
 
     def _get_cost(self, logits, cost_function, class_weights=None, regularizer=None):
         """
