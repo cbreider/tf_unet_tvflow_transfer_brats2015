@@ -85,11 +85,14 @@ class Trainer(object):
 			tf.summary.histogram('norm_grads', self.norm_gradients_node)
 
 		tf.summary.scalar('loss', self.net.cost)
-		tf.summary.scalar('cross_entropy', self.net.cross_entropy)
 		tf.summary.scalar('accuracy', self.net.accuracy)
+		tf.summary.scalar('error', self.net.error)
+		tf.summary.scalar('error_rate', self.net.error_rate)
+		tf.summary.scalar('learning_rate', self.learning_rate_node)
+		if not config.ConvNetParams.cost_function == config.Cost.MEAN_SQUARED:
+			tf.summary.scalar('cross_entropy', self.net.cross_entropy)
 
 		self.optimizer = self._get_optimizer(training_iters, global_step)
-		tf.summary.scalar('learning_rate', self.learning_rate_node)
 
 		self.summary_op = tf.summary.merge_all()
 		init = tf.global_variables_initializer()
@@ -97,7 +100,7 @@ class Trainer(object):
 		return init
 
 	def train(self, data_provider_train, data_provider_val, out_path,
-				training_iters=10, epochs=100, dropout=0.75, display_step=1, restore=False, write_graph=False):
+			  training_iters=10, epochs=100, dropout=0.75, display_step=1, restore=False, write_graph=False):
 		"""
 		Lauches the training process
 
@@ -109,15 +112,13 @@ class Trainer(object):
 		:param display_step: number of steps till outputting stats
 		:param restore: Flag if previous model should be restored
 		:param write_graph: Flag if the computation graph should be written as protobuf file to the output path
-		:param out_path_model: path where to save
-		:param out_path_summaries: path where to save
-		:param out_path_prediction: path where to save
+		:param out_path: path where to save
 		"""
 		logging.info(
 			"Start optimizing model with,"
-			"Learning Rate {}, "
-			"Epochs {}, "
-			"Training Iters {},"
+			"Optimizer: {}, "
+			"Nr of Epochs: {}, "
+			"Nr of Training Iters: {},"
 			"Keep prob {}".format(
 				config.TrainingParams.optimizer.name,
 				config.TrainingParams.num_epochs,
@@ -145,7 +146,10 @@ class Trainer(object):
 			test_x, test_y = sess.run(data_provider_val.next_batch)
 			pred_shape = self.store_prediction(sess, test_x, test_y, "_init")
 
-			summary_writer = tf.summary.FileWriter(self.out_path, graph=sess.graph)
+			summary_writer_training = tf.summary.FileWriter(os.path.join(self.out_path, "training_summary"),
+															graph=sess.graph)
+			summary_writer_validation = tf.summary.FileWriter(os.path.join(self.out_path, "validation_summary"),
+															graph=sess.graph)
 			logging.info("Start optimization")
 
 			avg_gradients = None
@@ -169,7 +173,7 @@ class Trainer(object):
 						self.norm_gradients_node.assign(norm_gradients).eval()
 
 					if step % display_step == 0:
-						self.output_minibatch_stats(sess, summary_writer, step, batch_x,
+						self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
 													util.crop_to_shape(batch_y, pred_shape))
 
 					total_loss += loss
@@ -183,20 +187,12 @@ class Trainer(object):
 
 			return save_path
 
-	def store_prediction(self, sess, batch_x, batch_y, name):
-		prediction = sess.run(self.net.predicter, feed_dict={self.net.x: batch_x,
-																self.net.y: batch_y,
-																self.net.keep_prob: 1.})
+	def store_prediction(self, sess, batch_x, batch_y, name, summary_writer, step, epoch):
+		loss, acc, err, prediction = self.run_summary(sess, summary_writer, step, batch_x, batch_y)
+
 		pred_shape = prediction.shape
 
-		loss = sess.run(self.net.cost, feed_dict={self.net.x: batch_x,
-													self.net.y: util.crop_to_shape(batch_y, pred_shape),
-													self.net.keep_prob: 1.})
-
-		logging.info("Verification error= {:.1f}%, loss= {:.4f}".format(error_rate(prediction,
-																					util.crop_to_shape(batch_y,
-																										prediction.shape)),
-																		loss))
+		logging.info("EPOCH {}: Verification error= {:.1f}%, loss= {:.4f}".format(epoch, err, loss))
 
 		img = util.combine_img_prediction(batch_x, batch_y, prediction)
 		util.save_image(img, "%s/%s.jpg" % (self.out_path, name))
@@ -208,23 +204,28 @@ class Trainer(object):
 			"Epoch {:}, Average loss: {:.4f}, learning rate: {:.4f}".format(epoch, (total_loss / training_iters), lr))
 
 	def output_minibatch_stats(self, sess, summary_writer, step, batch_x, batch_y):
+
+		loss, acc, err, predictions = self.run_summary(sess, summary_writer, step, batch_x, batch_y)
+		logging.info(
+			"Iter {:}, Minibatch Loss= {:.4f}, Training Accuracy= {:.4f}, Minibatch error= {:.1f}%".format(step,
+																											loss,
+																											acc,
+																											err))
+
+	def run_summary(self, sess, summary_writer, step, batch_x, batch_y):
 		# Calculate batch loss and accuracy
-		summary_str, loss, acc, predictions = sess.run([self.summary_op,
+		summary_str, loss, acc, err, predictions = sess.run([self.summary_op,
 														self.net.cost,
 														self.net.accuracy,
+														self.net.error_rate,
 														self.net.predicter],
 														feed_dict={self.net.x: batch_x,
 																	self.net.y: batch_y,
 																	self.net.keep_prob: 1.})
 		summary_writer.add_summary(summary_str, step)
 		summary_writer.flush()
-		logging.info(
-			"Iter {:}, Minibatch Loss= {:.4f}, Training Accuracy= {:.4f}, Minibatch error= {:.1f}%".format(step,
-																											loss,
-																											acc,
-																											error_rate(
-																												predictions,
-																												batch_y)))
+
+		return loss, acc, err, predictions
 
 
 def _update_avg_gradients(avg_gradients, gradients, step):
@@ -243,8 +244,14 @@ def error_rate(predictions, labels):
 	:param labels:
 	:return:
 	"""
-
-	return 100.0 - (
-			100.0 *
-			np.sum(np.argmax(predictions, 3) == np.argmax(labels, 3)) /
-			(predictions.shape[0] * predictions.shape[1] * predictions.shape[2]))
+	if config.ConvNetParams.cost_function == config.Cost.MEAN_SQUARED:
+		sum = np.sum(np.square(predictions - labels))
+		div = (predictions.shape[0] * predictions.shape[1] * predictions.shape[2] * 255 * 255)
+		err = sum / div
+		error = 100 - (100 * err)
+		return error
+	else:
+		return 100.0 - (
+				100.0 *
+				np.sum(np.argmax(predictions, 3) == np.argmax(labels, 3)) /
+				(predictions.shape[0] * predictions.shape[1] * predictions.shape[2]))
