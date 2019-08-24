@@ -56,9 +56,22 @@ class DataParams:
         4,  # enhancing tumor
         0  # everything else
     ]
-    data_height = 240  # height of training images
-    data_width = 240  # width of training images
-    image_size = [data_height, data_width]
+    seg_label_colors = [
+        [255,   0,   0]
+        [255, 255,   0]
+        [0,   255,   0]
+        [0,     0, 255]
+        [0,     0,   0]
+    ]
+    raw_data_height = 240  # height of training images
+    raw_data_width = 240  # width of training images
+    image_size = [raw_data_height, raw_data_width]
+    input_data_height = 572
+    input_data_width = 572  # width of training images
+    input_image_size = [input_data_height, input_data_width]
+    output_data_height = 388
+    output_data_width = 388 # width of training images
+    output_image_size = [output_data_height, output_data_width]
     nr_of_channels = 1  # grayscale
     nr_of_classes_seg_mode = 4
     nr_of_classes_tv_flow_mode = 1 # one class for each channel of 8bit image
