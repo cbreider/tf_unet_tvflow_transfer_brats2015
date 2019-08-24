@@ -14,7 +14,7 @@ import logging
 
 class DataPaths(object):
 
-    def __init__(self, data_path="default"):
+    def __init__(self, data_path="default", mode="TVFLOW"):
         self.is_loaded = False
         self.nrrd_ext = ".nrrd"
         self.png_ext = ".png"
@@ -39,6 +39,7 @@ class DataPaths(object):
         self.brats_test_dir = "BRATS2015_Testing"
         self.split_path = "splits"
         self.tf_out_path = "tf_model_output"
+        self.mode = mode
 
     def load_data_paths(self):
         self.project_dir = os.getcwd()  # os.path.dirname(os.path.realpath(__file__))
@@ -59,7 +60,8 @@ class DataPaths(object):
 
         self.tf_out_path = os.path.join(self.project_dir, self.tf_out_path)
         tf_out_path_tmp = "{0:%Y-%m-%d_%H:%M:%S}".format(datetime.now())
-        tf_out_path_tmp = "{}_O_{}_B_{}".format(
+        tf_out_path_tmp = "{}_{}_O_{}_B_{}".format(
+            self.mode,
             tf_out_path_tmp,
             config.TrainingParams.optimizer.name,
             config.TrainingParams.buffer_size_train)

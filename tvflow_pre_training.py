@@ -53,7 +53,7 @@ if __name__ == "__main__":
     # tf.enable_eager_execution()
     tf.reset_default_graph()
 
-    data_paths = DataPaths(data_path="default")
+    data_paths = DataPaths(data_path="default", mode="TVFLOW")
     data_paths.load_data_paths()
 
     file_paths = TrainingDataset(paths=data_paths,
