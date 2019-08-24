@@ -70,8 +70,8 @@ class DataParams:
 
 class ConvNetParams:
     """ ConvNetParams parameters"""
-    num_layers = 3
-    feat_root = 16
+    num_layers = 5
+    feat_root = 64
     filter_size = 3
     pool_size = 2
     keep_prob_dopout = 0.5
@@ -82,16 +82,16 @@ class ConvNetParams:
 
 class TrainingParams:
     """ Training parameters"""
-    num_epochs = 100  # number of training epochs
+    num_epochs = 100000  # number of training epochs
     label_smothing = 0
     optimizer = Optimizer.MOMENTUM
-    batch_size_train = 2
-    batch_size_val = 2
+    batch_size_train = 1
+    batch_size_val = 32
     buffer_size_train = 500
     buffer_size_val = 500
     norm_grads = False
-    training_iters = 2
-    display_step = 1
+    training_iters = 100
+    display_step = 10
     write_graph = True
     adam_args = dict(learning_rate=0.001,
                      beta1=0.9,
@@ -99,8 +99,8 @@ class TrainingParams:
                      epsilon=1e-08,
                      use_locking=False,
                      name='Adam')
-    momentum_args = dict(momentum=0.001,
-                         learning_rate=0.2,
+    momentum_args = dict(momentum=0.99,
+                         learning_rate=0.00001,
                          decay_rate=0.95,
                          use_locking=False,
                          name='Momentum',
