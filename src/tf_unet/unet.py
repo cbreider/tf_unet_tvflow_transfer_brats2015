@@ -154,6 +154,10 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
         bias = bias_variable([n_class], name="bias", trainable=True)
         conv = conv2d(in_node, weight, bias, tf.constant(1.0))
         output_map = tf.nn.relu(conv)
+        if config.ConvNetParams.add_residual_layer:
+            if not padding == 'SAME':
+                raise ValueError("Residual Layer only possible with padding to preserve same size feature maps")
+            output_map = output_map + x_image
         up_h_convs["out"] = output_map
 
     if summaries:

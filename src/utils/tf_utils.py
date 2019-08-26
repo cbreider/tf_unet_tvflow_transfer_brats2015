@@ -37,7 +37,7 @@ def preprocess_images(scan, ground_truth):
 	return combined_flip[:, :, :last_image_dim], combined_flip[:, :, last_image_dim:]
 
 
-def crop_images_to_to_non_zero(scan, ground_truth):
+def crop_images_to_to_non_zero(scan, ground_truth, size):
 	"""
 	crops input and gt images to bounding box of non zero area of gt image
 
@@ -46,13 +46,13 @@ def crop_images_to_to_non_zero(scan, ground_truth):
 	:param ground_truth: ground_truth image
 	:returns:cobmbined padded,cropped and flipped images
 	"""
-	# HACK check if gt is complettely zero tahn return orginal images
+	# HACK check if gt is completly zero then return orginal images
 	total = tf.reduce_sum(tf.abs(ground_truth))
 	is_all_zero = tf.equal(total, 0)
-	return tf.cond(is_all_zero, lambda: (scan, ground_truth), lambda: crop_non_zero_internal(scan, ground_truth))
+	return tf.cond(is_all_zero, lambda: (scan, ground_truth), lambda: crop_non_zero_internal(scan, ground_truth, size))
 
 
-def crop_non_zero_internal(scan, ground_truth):
+def crop_non_zero_internal(scan, ground_truth, out_size):
 	gt_int = tf.cast(ground_truth, tf.int32)
 	zero = tf.constant(0, dtype=tf.int32)
 	where = tf.not_equal(gt_int, zero)
@@ -65,9 +65,9 @@ def crop_non_zero_internal(scan, ground_truth):
 	width = tf.math.add(tf.math.subtract(max_x, min_x), tf.convert_to_tensor(1, dtype=tf.int64))
 	crop_in = tf.image.crop_to_bounding_box(scan, min_y, min_x, height, width)
 	crop_gt = tf.image.crop_to_bounding_box(ground_truth, min_y, min_x, height, width)
-	resize_in = tf.image.resize_images(crop_in, [conf.DataParams.image_size[0], conf.DataParams.image_size[1]],
+	resize_in = tf.image.resize_images(crop_in, out_size,
 									   method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-	resize_gt = tf.image.resize_images(crop_gt, [conf.DataParams.image_size[0], conf.DataParams.image_size[1]],
+	resize_gt = tf.image.resize_images(crop_gt, out_size,
 									   method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 	return resize_in, resize_gt
 
@@ -128,8 +128,11 @@ def to_one_hot(image, depth=4):
 
 
 def intensity_normalize_tensor(tensor, max=255.0, new_max=1.0):
-	normal = tf.math.divide(tensor, tf.constant(max))
-	normal = tf.math.multiply(normal, tf.constant(new_max))
+	if max == new_max:
+		normal = tensor
+	else:
+		normal = tf.math.divide(tensor, tf.constant(max))
+		normal = tf.math.multiply(normal, tf.constant(new_max))
 	# intensity normalize
 	# mean, var = tf.nn.moments(normal, axes=[0, 1, 2])
 	# out = tf.math.divide((normal-mean), tf.math.sqrt(var))

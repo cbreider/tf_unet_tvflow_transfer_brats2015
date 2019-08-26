@@ -67,12 +67,9 @@ class DataParams:
     raw_data_height = 240  # height of training images
     raw_data_width = 240  # width of training images
     image_size = [raw_data_height, raw_data_width]
-    input_data_height = 572
-    input_data_width = 572  # width of training images
-    input_image_size = [input_data_height, input_data_width]
-    output_data_height = 388
-    output_data_width = 388 # width of training images
-    output_image_size = [output_data_height, output_data_width]
+    set_data_height = 240
+    set_data_width = 240  # width of training images
+    set_image_size = [set_data_height, set_data_width]
     nr_of_channels = 1  # grayscale
     nr_of_classes_seg_mode = 5
     nr_of_classes_tv_flow_mode = 1 # one class for each channel of 8bit image
@@ -80,6 +77,9 @@ class DataParams:
     do_image_pre_processing = False  # only for training
     split_train_val_ratio = 0.7
     data_type = tf.float16
+    crop_to_non_zero = True
+    norm_image_value = 255.0
+    data_max_value = 255.0
 
 
 class ConvNetParams:
@@ -90,10 +90,11 @@ class ConvNetParams:
     pool_size = 2
     keep_prob_dopout = 0.5
     cost_function = Cost.MEAN_SQUARED
-    padding = False
-    batch_normalization= False
+    padding = True
+    batch_normalization = True
     class_weights = None  # TODO
-    regularizer = 0.001
+    regularizer = 0.0001
+    add_residual_layer = True
 
 
 class TrainingParams:

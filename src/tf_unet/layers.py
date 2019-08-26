@@ -53,6 +53,8 @@ def crop_and_concat(x1, x2):
     with tf.name_scope("crop_and_concat"):
         x1_shape = tf.shape(x1)
         x2_shape = tf.shape(x2)
+        if x1_shape == x1_shape:
+            return tf.concat([x1, x2], 3)
         # offsets for the top left corner of the crop
         offsets = [0, (x1_shape[1] - x2_shape[1]) // 2, (x1_shape[2] - x2_shape[2]) // 2, 0]
         size = [-1, x2_shape[1], x2_shape[2], -1]

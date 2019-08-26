@@ -162,8 +162,8 @@ class Trainer(object):
 			summary_writer_validation = tf.summary.FileWriter(val_summary_path,
 															graph=sess.graph)
 			pred_shape = [config.TrainingParams.batch_size_val,
-						  config.DataParams.output_data_width,
-						  config.DataParams.output_data_height,
+						  config.DataParams.set_data_width,
+						  config.DataParams.set_data_height,
 						  self.net.n_class]
 
 			test_x, test_y = sess.run(data_provider_val.next_batch)
