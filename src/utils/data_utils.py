@@ -636,7 +636,7 @@ def combine_img_prediction(data, gt, pred, mode=1, label_colors=None):
 
     ny = data.shape[2]
     ch = data.shape[3]
-    data = data.reshape(-1, ny, ch)
+    data = revert_zero_centering(data).reshape(-1, ny, ch)
 
     data_rgb = to_rgb(data)
     data_size = (data_rgb.shape[1], data_rgb.shape[0])
@@ -646,6 +646,8 @@ def combine_img_prediction(data, gt, pred, mode=1, label_colors=None):
         gt_rgb = one_hot_to_rgb(gt, label_colors=label_colors)
         pred_rgb = one_hot_to_rgb(pred, label_colors=label_colors)
     elif mode == 1:
+        gt = revert_zero_centering(gt)
+        pred = revert_zero_centering(pred)
         gt = gt.reshape(-1, gt.shape[2], ch)
         pred = pred.reshape(-1, pred.shape[2], ch)
         gt_rgb = to_rgb(gt)
@@ -658,6 +660,19 @@ def combine_img_prediction(data, gt, pred, mode=1, label_colors=None):
                           pred_resized),
                           axis=1)
     return img
+
+
+def revert_zero_centering(data):
+    nr_img = data.shape[0]
+    images = []
+    for i in range(nr_img):
+        img = data[i]
+        min = np.amin(img)
+        img = img - min
+        img = img / np.amax(data)
+        img *= 255.0
+        images.append(img)
+    return np.array(images)
 
 
 def save_image(img, path):
