@@ -76,6 +76,7 @@ class DataParams:
     shuffle = True  # dict.items() is allready random
     do_image_pre_processing = False  # only for training
     split_train_val_ratio = 0.7
+    use_scale = True
     data_type = tf.float16
     crop_to_non_zero = True
     norm_image_value = 255.0
@@ -94,7 +95,7 @@ class ConvNetParams:
     batch_normalization = True
     class_weights = None  # TODO
     regularizer = 0.00001
-    add_residual_layer = True
+    add_residual_layer = False
 
 
 class TrainingParams:
@@ -110,7 +111,7 @@ class TrainingParams:
     training_iters = 100
     display_step = 10
     write_graph = True
-    adam_args = dict(learning_rate=0.000001,
+    adam_args = dict(learning_rate=0.00001,
                      beta1=0.9,
                      beta2=0.999,
                      epsilon=1e-08,

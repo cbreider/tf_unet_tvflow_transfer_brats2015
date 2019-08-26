@@ -56,6 +56,7 @@ class TrainingDataset(object):
         :param split_ratio: ratio of training : validation data
         :param nr_of_samples: use only a specific number of training images. 0 if use all
         """
+        self.use_scale = config.DataParams.use_scale
         self._paths = paths
         self._new_split = new_split
         self._mode = mode
@@ -92,7 +93,7 @@ class TrainingDataset(object):
         """
         # mode
         if self._mode == config.TrainingModes.TVFLOW:
-            split = self._get_raw_to_tvflow_file_paths_dict(use_scale=False)
+            split = self._get_raw_to_tvflow_file_paths_dict(use_scale=self.use_scale)
         elif self._mode == config.TrainingModes.SEGMENTATION:
             split = self._get_raw_to_seg_file_paths_dict()
         else:
