@@ -93,7 +93,7 @@ class ConvNetParams:
     padding = True
     batch_normalization = True
     class_weights = None  # TODO
-    regularizer = 0.0001
+    regularizer = 0.00001
     add_residual_layer = True
 
 
@@ -101,16 +101,16 @@ class TrainingParams:
     """ Training parameters"""
     num_epochs = 100000  # number of training epochs
     label_smothing = 0
-    optimizer = Optimizer.MOMENTUM
-    batch_size_train = 1
-    batch_size_val = 8
+    optimizer = Optimizer.ADAM
+    batch_size_train = 8
+    batch_size_val = 32
     buffer_size_train = 500
     buffer_size_val = 500
     norm_grads = False
     training_iters = 100
     display_step = 10
     write_graph = True
-    adam_args = dict(learning_rate=0.001,
+    adam_args = dict(learning_rate=0.00001,
                      beta1=0.9,
                      beta2=0.999,
                      epsilon=1e-08,

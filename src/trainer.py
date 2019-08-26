@@ -211,7 +211,7 @@ class Trainer(object):
 
 		pred_shape = prediction.shape
 
-		logging.info("EPOCH {}: Verification error= {:.1f}%, loss= {:.4f}".format(epoch, err, loss))
+		logging.info("EPOCH {}: Verification error= {:.1f}%, loss= {:.6f}".format(epoch, err, loss))
 
 		img = util.combine_img_prediction(batch_x, batch_y, prediction,
 										  mode=1 if config.ConvNetParams.cost_function == config.Cost.MEAN_SQUARED else 0,
@@ -222,7 +222,7 @@ class Trainer(object):
 
 	def output_epoch_stats(self, epoch, total_loss, training_iters, lr):
 		logging.info(
-			"Epoch {:}, Average loss: {:.4f}, learning rate: {:.4f}".format(epoch, (total_loss / training_iters), lr))
+			"Epoch {:}, Average loss: {:.4f}, learning rate: {:.9f}".format(epoch, (total_loss / training_iters), lr))
 
 	def output_minibatch_stats(self, sess, summary_writer, step, batch_x, batch_y):
 
