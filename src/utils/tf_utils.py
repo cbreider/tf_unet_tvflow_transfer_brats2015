@@ -25,12 +25,13 @@ def preprocess_images(scan, ground_truth):
 	image_shape = tf.shape(scan)
 	combined_pad = tf.image.pad_to_bounding_box(
 		combined, 0, 0,
-		tf.maximum(conf.DataParams.image_size[0], image_shape[0]),
-		tf.maximum(conf.DataParams.image_size[1], image_shape[1]))
+		tf.maximum(conf.DataParams.set_image_size[0], image_shape[0]),
+		tf.maximum(conf.DataParams.set_image_size[1], image_shape[1]))
 	last_label_dim = tf.shape(ground_truth)[-1]
 	last_image_dim = tf.shape(scan)[-1]
 	combined_crop = tf.random_crop(value=combined_pad,
-								   size=tf.concat([conf.image_size, [last_label_dim + last_image_dim]], axis=0))
+								   size=tf.concat([conf.DataParams.set_image_size,
+												   [last_label_dim + last_image_dim]], axis=0))
 	combined_flip = tf.image.random_flip_left_right(combined_crop)
 	# mean = tf.metrics.mean(scan)
 	# combined_centered = combined_flip - mean

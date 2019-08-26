@@ -78,10 +78,11 @@ class TrainingImageDataGenerator(ImageDataGenerator):
         # load and preprocess the image
         in_img = tf_utils.load_png_image(filename_input)
         gt_img = tf_utils.load_png_image(filename_gt)
-        if self._do_pre_processing:
-            in_img, gt_img = tf_utils.preprocess_images(in_img, gt_img)
+
         if config.DataParams.crop_to_non_zero:
             in_img, gt_img = tf_utils.crop_images_to_to_non_zero(in_img, gt_img, config.DataParams.set_image_size)
+        if self._do_pre_processing:
+            in_img, gt_img = tf_utils.preprocess_images(in_img, gt_img)
         in_img = tf_utils.intensity_normalize_tensor(in_img,
                                                      max=config.DataParams.data_max_value,
                                                      new_max=config.DataParams.norm_image_value)
@@ -89,7 +90,7 @@ class TrainingImageDataGenerator(ImageDataGenerator):
                                                      max=config.DataParams.data_max_value,
                                                      new_max=config.DataParams.norm_image_value)
         if self.mode == config.TrainingModes.TVFLOW:
-            gt = gt_img #tf_utils.convert_8bit_image_to_one_hot(gt_img, depth=config.DataParams.nr_of_classes_tv_flow_mode)
+            gt = gt_img
         elif self.mode == config.TrainingModes.SEGMENTATION:
             gt = tf_utils.to_one_hot(gt_img, depth=config.DataParams.nr_of_classes_seg_mode)
         else:
@@ -141,8 +142,6 @@ class ValidationImageDataGenerator(ImageDataGenerator):
         # load and preprocess the image
         in_img = tf_utils.load_png_image(filename_input)
         gt_img = tf_utils.load_png_image(filename_gt)
-        if config.DataParams.crop_to_non_zero:
-            in_img, gt_img = tf_utils.crop_images_to_to_non_zero(in_img, gt_img, config.DataParams.set_image_size)
         in_img = tf_utils.intensity_normalize_tensor(in_img,
                                                      max=config.DataParams.data_max_value,
                                                      new_max=config.DataParams.norm_image_value)
@@ -150,7 +149,7 @@ class ValidationImageDataGenerator(ImageDataGenerator):
                                                      max=config.DataParams.data_max_value,
                                                      new_max=config.DataParams.norm_image_value)
         if self.mode == config.TrainingModes.TVFLOW:
-            gt = gt_img #tf_utils.convert_8bit_image_to_one_hot(gt_img, depth=config.DataParams.nr_of_classes_tv_flow_mode)
+            gt = gt_img
         elif self.mode == config.TrainingModes.SEGMENTATION:
             gt = tf_utils.to_one_hot(gt_img, depth=config.DataParams.nr_of_classes_seg_mode)
         else:
