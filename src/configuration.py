@@ -91,6 +91,7 @@ class ConvNetParams:
     keep_prob_dopout = 0.5
     cost_function = Cost.MEAN_SQUARED
     padding = False
+    batch_normalization= False
     class_weights = None  # TODO
     regularizer = 0.001
 
