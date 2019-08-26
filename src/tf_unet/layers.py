@@ -29,9 +29,9 @@ def bias_variable(shape, name="bias", trainable=True):
     return tf.Variable(initial, name=name, trainable=trainable)
 
 
-def conv2d(x, W, b, keep_prob):
+def conv2d(x, W, b, keep_prob, padding='VALID'):
     with tf.name_scope("conv2d"):
-        conv_2d = tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='VALID')
+        conv_2d = tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding=padding)
         conv_2d_b = tf.nn.bias_add(conv_2d, b)
         return tf.nn.dropout(conv_2d_b, keep_prob)
 

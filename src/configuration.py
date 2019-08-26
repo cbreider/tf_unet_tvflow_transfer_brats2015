@@ -90,8 +90,9 @@ class ConvNetParams:
     pool_size = 2
     keep_prob_dopout = 0.5
     cost_function = Cost.MEAN_SQUARED
+    padding = False
     class_weights = None  # TODO
-    regularizer = 0.001  # TODO
+    regularizer = 0.001
 
 
 class TrainingParams:

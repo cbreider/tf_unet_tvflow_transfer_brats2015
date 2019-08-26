@@ -68,6 +68,11 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
 
     trainable = not freeze_layers
 
+    if config.ConvNetParams.padding:
+        padding = "SAME" # pad convolution outputs to original map size
+    else:
+        padding = "VALID" # no padding
+
     in_size = 1000
     size = in_size
     # down layers
@@ -87,9 +92,9 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
             b1 = bias_variable([features], name="b1", trainable=trainable)
             b2 = bias_variable([features], name="b2", trainable=trainable)
 
-            conv1 = conv2d(in_node, w1, b1, keep_prob)
+            conv1 = conv2d(in_node, w1, b1, keep_prob, padding=padding)
             tmp_h_conv = tf.nn.relu(conv1)
-            conv2 = conv2d(tmp_h_conv, w2, b2, keep_prob)
+            conv2 = conv2d(tmp_h_conv, w2, b2, keep_prob, padding=padding)
             dw_h_convs[layer] = tf.nn.relu(conv2)
 
             weights.append((w1, w2))
@@ -124,9 +129,9 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
             b1 = bias_variable([features // 2], name="b1", trainable=trainable)
             b2 = bias_variable([features // 2], name="b2", trainable=trainable)
 
-            conv1 = conv2d(h_deconv_concat, w1, b1, keep_prob)
+            conv1 = conv2d(h_deconv_concat, w1, b1, keep_prob, padding=padding)
             h_conv = tf.nn.relu(conv1)
-            conv2 = conv2d(h_conv, w2, b2, keep_prob)
+            conv2 = conv2d(h_conv, w2, b2, keep_prob, padding=padding)
             in_node = tf.nn.relu(conv2)
             up_h_convs[layer] = in_node
 
