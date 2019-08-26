@@ -80,7 +80,9 @@ class TrainingImageDataGenerator(ImageDataGenerator):
         gt_img = tf_utils.load_png_image(filename_gt)
         if self._do_pre_processing:
             in_img, gt_img = tf_utils.preprocess_images(in_img, gt_img)
-        in_img, gt_img = tf_utils.crop_images_to_to_non_zero(in_img, gt_img)
+        #in_img, gt_img = tf_utils.crop_images_to_to_non_zero(in_img, gt_img)
+        in_img = tf_utils.intensity_normalize_tensor(in_img, max=255.0)
+        gt_img = tf_utils.intensity_normalize_tensor(gt_img, max=255.0)
         if self.mode == config.TrainingModes.TVFLOW:
             gt = gt_img #tf_utils.convert_8bit_image_to_one_hot(gt_img, depth=config.DataParams.nr_of_classes_tv_flow_mode)
         elif self.mode == config.TrainingModes.SEGMENTATION:
@@ -132,6 +134,8 @@ class ValidationImageDataGenerator(ImageDataGenerator):
         in_img = tf_utils.load_png_image(filename_input)
         gt_img = tf_utils.load_png_image(filename_gt)
         #in_img, gt_img = tf_utils.crop_images_to_to_non_zero(in_img, gt_img)
+        in_img = tf_utils.intensity_normalize_tensor(in_img, max=255.0)
+        gt_img = tf_utils.intensity_normalize_tensor(gt_img, max=255.0)
         if self.mode == config.TrainingModes.TVFLOW:
             gt = gt_img #tf_utils.convert_8bit_image_to_one_hot(gt_img, depth=config.DataParams.nr_of_classes_tv_flow_mode)
         elif self.mode == config.TrainingModes.SEGMENTATION:
@@ -140,7 +144,7 @@ class ValidationImageDataGenerator(ImageDataGenerator):
             raise ValueError()
         resize_in = tf.image.resize_images(in_img, config.DataParams.input_image_size,
                                            method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-        resize_gt = tf.image.resize_images(gt, config.DataParams.output_image_size,
+        resize_gt = tf.image.resize_images(gt, config.DataParams.input_image_size,
                                            method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
         return resize_in, resize_gt
 

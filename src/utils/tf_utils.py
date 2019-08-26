@@ -127,3 +127,18 @@ def to_one_hot(image, depth=4):
 	return one_hot
 
 
+def intensity_normalize_tensor(tensor, max=255.0):
+	normal = tf.math.divide(tensor, tf.constant(max))
+	# intensity normalize
+	shape = normal.shape
+	mean, var = tf.nn.moments(normal, axes=[0, 1, 2])
+	out = tf.math.divide((normal-mean), tf.math.sqrt(var))
+	#set black elemts to random
+	zero = tf.constant(0, dtype=tf.float32)
+	where_zero = tf.equal(out, zero)
+	#out = tf.where(where_zero > 0, tf.random_uniform(out.shape, -0.5, 0.5, dtype=tf.float32, seed=0), out)
+	#out = tf.math.divide(tensor, tf.reduce_max(out))
+	return out
+
+
+
