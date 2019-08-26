@@ -37,13 +37,16 @@ if __name__ == "__main__":
     parser.add_argument("--caffemodel_path",
                         help="Path of a preatrined caffe model (hfd5). If given it will load this model",
                         type=str, default=None)
+    parser.add_argument("--freeze",
+                        help="Freeze all layers except for last one",
+                        action='store_true')
     parser.add_argument('--cuda_device', type=int, default=-1,
                         help='Number of cuda device to use (optional)')
     args = parser.parse_args()
     create_new_training_split = False
     create_summaries = True
     restore_path = None
-    caffemodel_path = None
+    freeze = False
     if args.create_new_split:
         create_new_training_split = True
     if not args.create_summaries:
@@ -54,6 +57,8 @@ if __name__ == "__main__":
         caffemodel_path = args.caffemodel_path
     if args.cuda_device >= 0:
         cuda_selector.set_cuda_gpu(args.cuda_device)
+    if args.freeze:
+        freeze = True
 
     # tf.enable_eager_execution()
     tf.reset_default_graph()
@@ -94,7 +99,8 @@ if __name__ == "__main__":
                     keep_prob=config.ConvNetParams.keep_prob_dopout,
                     features_root=config.ConvNetParams.feat_root,
                     filter_size=config.ConvNetParams.filter_size,
-                    pool_size=config.ConvNetParams.pool_size)
+                    pool_size=config.ConvNetParams.pool_size,
+                    freeze_layers=freeze)
 
     opt_args = None
     if config.TrainingParams.optimizer == config.Optimizer.MOMENTUM:

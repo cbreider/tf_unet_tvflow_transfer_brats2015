@@ -23,7 +23,7 @@ from src.tf_unet.layers import (weight_variable, weight_variable_devonc, bias_va
 
 
 def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=64, filter_size=3, pool_size=2,
-                    summaries=True):
+                    summaries=True, freeze_layers=False):
     """
     Creates a new convolutional unet for the given parametrization.
 
@@ -63,6 +63,11 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
     up_h_convs = OrderedDict()
     variables = []
 
+    if freeze_layers:
+        logging.info("Freezing Layers!")
+
+    trainable = not freeze_layers
+
     in_size = 1000
     size = in_size
     # down layers
@@ -71,13 +76,16 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
             features = 2 ** layer * features_root
             stddev = np.sqrt(2 / (filter_size ** 2 * features))
             if layer == 0:
-                w1 = weight_variable([filter_size, filter_size, channels, features], stddev, name="w1")
+                w1 = weight_variable([filter_size, filter_size, channels, features], stddev, name="w1",
+                                     trainable=trainable)
             else:
-                w1 = weight_variable([filter_size, filter_size, features // 2, features], stddev, name="w1")
+                w1 = weight_variable([filter_size, filter_size, features // 2, features], stddev, name="w1",
+                                     trainable=trainable)
 
-            w2 = weight_variable([filter_size, filter_size, features, features], stddev, name="w2")
-            b1 = bias_variable([features], name="b1")
-            b2 = bias_variable([features], name="b2")
+            w2 = weight_variable([filter_size, filter_size, features, features], stddev, name="w2",
+                                 trainable=trainable)
+            b1 = bias_variable([features], name="b1", trainable=trainable)
+            b2 = bias_variable([features], name="b2", trainable=trainable)
 
             conv1 = conv2d(in_node, w1, b1, keep_prob)
             tmp_h_conv = tf.nn.relu(conv1)
@@ -102,16 +110,19 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
             features = 2 ** (layer + 1) * features_root
             stddev = np.sqrt(2 / (filter_size ** 2 * features))
 
-            wd = weight_variable_devonc([pool_size, pool_size, features // 2, features], stddev, name="wd")
-            bd = bias_variable([features // 2], name="bd")
+            wd = weight_variable_devonc([pool_size, pool_size, features // 2, features], stddev, name="wd",
+                                        trainable=trainable)
+            bd = bias_variable([features // 2], name="bd", trainable=trainable)
             h_deconv = tf.nn.relu(deconv2d(in_node, wd, pool_size) + bd)
             h_deconv_concat = crop_and_concat(dw_h_convs[layer], h_deconv)
             deconv[layer] = h_deconv_concat
 
-            w1 = weight_variable([filter_size, filter_size, features, features // 2], stddev, name="w1")
-            w2 = weight_variable([filter_size, filter_size, features // 2, features // 2], stddev, name="w2")
-            b1 = bias_variable([features // 2], name="b1")
-            b2 = bias_variable([features // 2], name="b2")
+            w1 = weight_variable([filter_size, filter_size, features, features // 2], stddev, name="w1",
+                                 trainable=trainable)
+            w2 = weight_variable([filter_size, filter_size, features // 2, features // 2], stddev, name="w2",
+                                 trainable=trainable)
+            b1 = bias_variable([features // 2], name="b1", trainable=trainable)
+            b2 = bias_variable([features // 2], name="b2", trainable=trainable)
 
             conv1 = conv2d(h_deconv_concat, w1, b1, keep_prob)
             h_conv = tf.nn.relu(conv1)
@@ -130,8 +141,8 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
 
     # Output Map
     with tf.name_scope("output_map"):
-        weight = weight_variable([1, 1, features_root, n_class], stddev)
-        bias = bias_variable([n_class], name="bias")
+        weight = weight_variable([1, 1, features_root, n_class], stddev, trainable=True)
+        bias = bias_variable([n_class], name="bias", trainable=True)
         conv = conv2d(in_node, weight, bias, tf.constant(1.0))
         output_map = tf.nn.relu(conv)
         up_h_convs["out"] = output_map
@@ -180,7 +191,8 @@ class Unet(object):
         """
 
     def __init__(self, n_channels, n_class, cost_function=config.Cost.CROSS_ENTROPY, summaries=True, class_weights=None,
-                 regularizer=None, n_layers=5, keep_prob=0.5, features_root=64, filter_size=3, pool_size=2):
+                 regularizer=None, n_layers=5, keep_prob=0.5, features_root=64, filter_size=3, pool_size=2,
+                 freeze_layers=False):
 
         self.n_class = n_class
         self.n_channels = n_channels
@@ -198,7 +210,8 @@ class Unet(object):
                                                               features_root=features_root,
                                                               filter_size=filter_size,
                                                               pool_size=pool_size,
-                                                              summaries=summaries)
+                                                              summaries=summaries,
+                                                              freeze_layers=freeze_layers)
 
         self.cost = self._get_cost(logits=logits,
                                    cost_function=cost_function,

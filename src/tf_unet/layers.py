@@ -15,18 +15,18 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 import tensorflow as tf
 
 
-def weight_variable(shape, stddev=0.1, name="weight"):
+def weight_variable(shape, stddev=0.1, name="weight", trainable=True):
     initial = tf.truncated_normal(shape, stddev=stddev)
-    return tf.Variable(initial, name=name)
+    return tf.Variable(initial, name=name, trainable=trainable)
 
 
-def weight_variable_devonc(shape, stddev=0.1, name="weight_devonc"):
-    return tf.Variable(tf.truncated_normal(shape, stddev=stddev), name=name)
+def weight_variable_devonc(shape, stddev=0.1, name="weight_devonc", trainable=True):
+    return tf.Variable(tf.truncated_normal(shape, stddev=stddev), name=name, trainable=trainable)
 
 
-def bias_variable(shape, name="bias"):
+def bias_variable(shape, name="bias", trainable=True):
     initial = tf.constant(0.1, shape=shape)
-    return tf.Variable(initial, name=name)
+    return tf.Variable(initial, name=name, trainable=trainable)
 
 
 def conv2d(x, W, b, keep_prob):
