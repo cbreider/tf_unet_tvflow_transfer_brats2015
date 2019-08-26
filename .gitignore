@@ -4,4 +4,5 @@ venv/
 *.pyc
 __pycache__/
 tf_model_output/
+pretrained_model/
 

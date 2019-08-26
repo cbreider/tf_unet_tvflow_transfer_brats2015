@@ -15,7 +15,7 @@ import logging
 import os
 import src.utils.data_utils as util
 import numpy as np
-
+from src.tf_unet.caffe2tensorflow_mapping import load_pre_trained_caffe_variables
 
 class Trainer(object):
 	"""
@@ -88,11 +88,11 @@ class Trainer(object):
 		tf.summary.scalar('accuracy', self.net.accuracy)
 		tf.summary.scalar('error', self.net.error)
 		tf.summary.scalar('error_rate', self.net.error_rate)
-		tf.summary.scalar('learning_rate', self.learning_rate_node)
 		if not config.ConvNetParams.cost_function == config.Cost.MEAN_SQUARED:
 			tf.summary.scalar('cross_entropy', self.net.cross_entropy)
 
 		self.optimizer = self._get_optimizer(training_iters, global_step)
+		tf.summary.scalar('learning_rate', self.learning_rate_node)
 
 		self.summary_op = tf.summary.merge_all()
 		init = tf.global_variables_initializer()
@@ -100,7 +100,8 @@ class Trainer(object):
 		return init
 
 	def train(self, data_provider_train, data_provider_val, out_path,
-			  training_iters=10, epochs=100, dropout=0.75, display_step=1, restore=False, write_graph=False):
+			  training_iters=10, epochs=100, dropout=0.75, display_step=1, write_graph=False,
+			  restore_path=None, caffemodel_path=None):
 		"""
 		Lauches the training process
 
@@ -138,18 +139,35 @@ class Trainer(object):
 			sess.run(init)
 			sess.run(data_provider_val.init_op)
 
-			if restore:
-				ckpt = tf.train.get_checkpoint_state(self.out_path)
+			if caffemodel_path and restore_path:
+				raise ValueError("Could not load both: Caffemodel and tf checkpoint")
+
+			if restore_path:
+				ckpt = tf.train.get_checkpoint_state(restore_path)
 				if ckpt and ckpt.model_checkpoint_path:
 					self.net.restore(sess, ckpt.model_checkpoint_path)
 
-			test_x, test_y = sess.run(data_provider_val.next_batch)
-			pred_shape = self.store_prediction(sess, test_x, test_y, "_init")
+			if caffemodel_path:
+				load_pre_trained_caffe_variables(session=sess, file_path=caffemodel_path, trainable=True)
 
-			summary_writer_training = tf.summary.FileWriter(os.path.join(self.out_path, "training_summary"),
+			train_summary_path = os.path.join(self.out_path, "training_summary")
+			val_summary_path = os.path.join(self.out_path, "validation_summary")
+
+			if not os.path.exists(train_summary_path):
+				os.makedirs(train_summary_path)
+			if not os.path.exists(val_summary_path):
+				os.makedirs(val_summary_path)
+			summary_writer_training = tf.summary.FileWriter(train_summary_path,
 															graph=sess.graph)
-			summary_writer_validation = tf.summary.FileWriter(os.path.join(self.out_path, "validation_summary"),
+			summary_writer_validation = tf.summary.FileWriter(val_summary_path,
 															graph=sess.graph)
+			pred_shape = [config.TrainingParams.batch_size_val,
+						  config.DataParams.output_data_width,
+						  config.DataParams.output_data_height,
+						  self.net.n_class]
+
+			test_x, test_y = sess.run(data_provider_val.next_batch)
+			self.store_prediction(sess, test_x, util.crop_to_shape(test_y, pred_shape), "_init", summary_writer_validation, 0, 0)
 			logging.info("Start optimization")
 
 			avg_gradients = None
@@ -180,7 +198,8 @@ class Trainer(object):
 
 				test_x, test_y = sess.run(data_provider_val.next_batch)
 				self.output_epoch_stats(epoch, total_loss, training_iters, lr)
-				self.store_prediction(sess, test_x, test_y, "epoch_%s" % epoch)
+				self.store_prediction(sess, test_x, util.crop_to_shape(test_y, pred_shape),
+									  "epoch_%s" % epoch, summary_writer_validation, step, epoch)
 
 				save_path = self.net.save(sess, save_path)
 			logging.info("Optimization Finished!")
@@ -194,7 +213,9 @@ class Trainer(object):
 
 		logging.info("EPOCH {}: Verification error= {:.1f}%, loss= {:.4f}".format(epoch, err, loss))
 
-		img = util.combine_img_prediction(batch_x, batch_y, prediction)
+		img = util.combine_img_prediction(batch_x, batch_y, prediction,
+										  mode=1 if config.ConvNetParams.cost_function == config.Cost.MEAN_SQUARED else 0,
+										  label_colors=config.DataParams.seg_label_colors)
 		util.save_image(img, "%s/%s.jpg" % (self.out_path, name))
 
 		return pred_shape

@@ -11,14 +11,11 @@ source: https://github.com/jakeret/tf_unet.git
 
 
 from __future__ import print_function, division, absolute_import, unicode_literals
-
-import os
 import numpy as np
 from collections import OrderedDict
 import logging
-
+from datetime import datetime
 import tensorflow as tf
-
 import src.configuration as config
 from src.tf_unet.layers import (weight_variable, weight_variable_devonc, bias_variable,
                                 conv2d, deconv2d, max_pool, crop_and_concat, pixel_wise_softmax,
@@ -64,6 +61,7 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
     deconv = OrderedDict()
     dw_h_convs = OrderedDict()
     up_h_convs = OrderedDict()
+    variables = []
 
     in_size = 1000
     size = in_size
@@ -121,6 +119,8 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
             in_node = tf.nn.relu(conv2)
             up_h_convs[layer] = in_node
 
+            variables.append(wd)
+            variables.append(bd)
             weights.append((w1, w2))
             biases.append((b1, b2))
             convs.append((conv1, conv2))
@@ -154,7 +154,6 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
             for k in up_h_convs.keys():
                 tf.summary.histogram("up_convolution_%s" % k + '/activations', up_h_convs[k])
 
-    variables = []
     for w1, w2 in weights:
         variables.append(w1)
         variables.append(w2)
@@ -218,10 +217,11 @@ class Unet(object):
         with tf.name_scope("results"):
             if cost_function == config.Cost.MEAN_SQUARED:
                 self.correct_pred = tf.constant(0)  # makes no sense for regression
-                self.predicter = tf.cast(logits, tf.uint8)
-                self.error = tf.math.divide(tf.reduce_mean(tf.cast(tf.math.squared_difference(
-                    self.predicter - tf.cast(self.y, tf.unint8))),
-                    tf.float32), tf.math.square(tf.constant(255.0)))
+                self.predicter = logits
+                self.error = tf.math.divide(tf.math.reduce_sum(tf.math.squared_difference(self.predicter, self.y)),
+                                            tf.cast(tf.math.count_nonzero(input_tensor=self.y), tf.float32))
+                self.error = tf.math.divide(self.error,
+                                            tf.math.square(tf.constant(255.0)))
                 self.error_rate = tf.math.multiply(tf.constant(100.0), self.error)
                 self.accuracy = tf.constant(1.0) - self.error
             else:
@@ -280,7 +280,7 @@ class Unet(object):
                 loss = 1.0 - 2.0 * (numerator + smooth) / (denominator + smooth)
 
             elif cost_function == config.Cost.MEAN_SQUARED:
-                loss = tf.reduce_mean(tf.nn.l2_loss(flat_logits - flat_labels))
+                loss = tf.losses.mean_squared_error(flat_logits, flat_labels)
 
             else:
                 raise ValueError("Unknown cost function: " % cost_function.name)
@@ -332,10 +332,12 @@ class Unet(object):
         :param sess: current session instance
         :param model_path: path to file system checkpoint location
         """
-
+        print('{} Resuming session from checkpoint: {}'.format(datetime.now(), model_path))
         saver = tf.train.Saver()
         saver.restore(sess, model_path)
         logging.info("Model restored from file: %s" % model_path)
+
+
 
 
 def get_image_summary(img, idx=0):

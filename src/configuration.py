@@ -9,6 +9,7 @@ created on June 2019
 
 from enum import Enum
 import tensorflow as tf
+import numpy as np
 
 
 class Cost(Enum):
@@ -56,13 +57,13 @@ class DataParams:
         4,  # enhancing tumor
         0  # everything else
     ]
-    seg_label_colors = [
-        [255,   0,   0]
-        [255, 255,   0]
-        [0,   255,   0]
+    seg_label_colors = np.array([
+        [0,     0,   0],
+        [255,   0,   0],
+        [255, 255,   0],
+        [0,   255,   0],
         [0,     0, 255]
-        [0,     0,   0]
-    ]
+    ])
     raw_data_height = 240  # height of training images
     raw_data_width = 240  # width of training images
     image_size = [raw_data_height, raw_data_width]
@@ -73,7 +74,7 @@ class DataParams:
     output_data_width = 388 # width of training images
     output_image_size = [output_data_height, output_data_width]
     nr_of_channels = 1  # grayscale
-    nr_of_classes_seg_mode = 4
+    nr_of_classes_seg_mode = 5
     nr_of_classes_tv_flow_mode = 1 # one class for each channel of 8bit image
     shuffle = True  # dict.items() is allready random
     do_image_pre_processing = False  # only for training
@@ -99,7 +100,7 @@ class TrainingParams:
     label_smothing = 0
     optimizer = Optimizer.MOMENTUM
     batch_size_train = 1
-    batch_size_val = 32
+    batch_size_val = 8
     buffer_size_train = 500
     buffer_size_val = 500
     norm_grads = False
