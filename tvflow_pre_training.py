@@ -31,22 +31,27 @@ if __name__ == "__main__":
     parser.add_argument("--create_summaries",
                         help="crates a tensorboard summary (default true)",
                         action='store_true')
-    parser.add_argument("--restore",
-                        help="crates a tensorboard summary (default False)",
-                        action='store_true')
+    parser.add_argument("--restore_path",
+                        help="Path of a preatrined stored model. If given it will load this model",
+                        type=str, default=None)
+    parser.add_argument("--caffemodel_path",
+                        help="Path of a preatrined caffe model (hfd5). If given it will load this model",
+                        type=str, default=None)
     parser.add_argument('--cuda_device', type=int, default=-1,
                         help='Number of cuda device to use (optional)')
     args = parser.parse_args()
     create_new_training_split = False
     create_summaries = True
-    restore = False
+    restore_path = None
+    caffemodel_path = None
     if args.create_new_split:
         create_new_training_split = True
     if not args.create_summaries:
         create_summaries = False
-    if args.restore:
-        raise NotImplementedError()
-        # restore = True
+    if args.restore_path is not None:
+        restore_path = args.restore_path
+    if args.caffemodel_path is not None:
+        caffemodel_path = args.caffemodel_path
     if args.cuda_device >= 0:
         cuda_selector.set_cuda_gpu(args.cuda_device)
 
@@ -111,6 +116,8 @@ if __name__ == "__main__":
                          epochs=config.TrainingParams.num_epochs,
                          dropout=config.ConvNetParams.keep_prob_dopout,  # probability to keep units
                          display_step=config.TrainingParams.display_step,
-                         write_graph=config.TrainingParams.write_graph)
+                         write_graph=config.TrainingParams.write_graph,
+                         restore_path=restore_path,
+                         caffemodel_path=caffemodel_path)
 
 
