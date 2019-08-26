@@ -76,11 +76,11 @@ class DataParams:
     shuffle = True  # dict.items() is allready random
     do_image_pre_processing = False  # only for training
     split_train_val_ratio = 0.7
-    use_scale = True
+    use_scale = False
     data_type = tf.float16
     crop_to_non_zero = True
     norm_image_value = 255.0
-    data_max_value = 255.0
+    data_max_value = 100.0
 
 
 class ConvNetParams:
@@ -95,7 +95,7 @@ class ConvNetParams:
     batch_normalization = True
     class_weights = None  # TODO
     regularizer = 0.00001
-    add_residual_layer = False
+    add_residual_layer = True
 
 
 class TrainingParams:
