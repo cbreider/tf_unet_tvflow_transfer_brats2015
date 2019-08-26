@@ -33,11 +33,15 @@ if __name__ == "__main__":
                         action='store_true')
     parser.add_argument('--cuda_device', type=int, default=-1,
                         help='Number of cuda device to use (optional)')
+
     args = parser.parse_args()
+
     create_new_training_split = False
     create_summaries = True
     restore_path = None
+    caffemodel_path = None
     freeze = False
+
     if args.create_new_split:
         create_new_training_split = True
     if not args.create_summaries:

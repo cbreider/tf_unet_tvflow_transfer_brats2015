@@ -102,7 +102,7 @@ class TrainingParams:
     num_epochs = 100000  # number of training epochs
     label_smothing = 0
     optimizer = Optimizer.ADAM
-    batch_size_train = 8
+    batch_size_train = 4
     batch_size_val = 32
     buffer_size_train = 500
     buffer_size_val = 500
@@ -110,7 +110,7 @@ class TrainingParams:
     training_iters = 100
     display_step = 10
     write_graph = True
-    adam_args = dict(learning_rate=0.00001,
+    adam_args = dict(learning_rate=0.000001,
                      beta1=0.9,
                      beta2=0.999,
                      epsilon=1e-08,

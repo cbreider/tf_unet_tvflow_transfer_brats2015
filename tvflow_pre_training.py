@@ -46,7 +46,9 @@ if __name__ == "__main__":
     create_new_training_split = False
     create_summaries = True
     restore_path = None
+    caffemodel_path = None
     freeze = False
+
     if args.create_new_split:
         create_new_training_split = True
     if not args.create_summaries:
