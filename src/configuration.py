@@ -108,7 +108,7 @@ class TrainingParams:
     buffer_size_train = 500
     buffer_size_val = 500
     norm_grads = False
-    training_iters = 100
+    training_iters = 500
     display_step = 10
     write_graph = True
     adam_args = dict(learning_rate=0.00001,

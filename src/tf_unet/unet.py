@@ -247,7 +247,7 @@ class Unet(object):
                 self.error = tf.math.divide(tf.math.reduce_sum(tf.math.squared_difference(self.predicter, self.y)),
                                             tf.cast(tf.math.count_nonzero(input_tensor=self.y), tf.float32))
                 self.error = tf.math.divide(self.error,
-                                            tf.math.square(tf.constant(255.0)))
+                                            tf.math.square(tf.constant(config.DataParams.norm_image_value)))
                 self.error_rate = tf.math.multiply(tf.constant(100.0), self.error)
                 self.accuracy = tf.constant(1.0) - self.error
             else:
