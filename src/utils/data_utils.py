@@ -556,7 +556,7 @@ def to_rgb(img):
         img /= np.amax(img)
 
     img *= 255
-    return img
+    return img.astype('uint8')
 
 
 def one_hot_to_rgb(one_hot, label_colors):
@@ -573,7 +573,7 @@ def one_hot_to_rgb(one_hot, label_colors):
     for i in range(label_colors.shape[0]):
         rgb_img[idx == i] = label_colors[i]
 
-    return rgb_img
+    return rgb_img.astype('uint8')
 
 
 def crop_to_shape(data, shape):
@@ -583,7 +583,7 @@ def crop_to_shape(data, shape):
     :param data: the array to crop
     :param shape: the target shape
     """
-    if data.shape == shape:
+    if data.shape[1] == shape[1] and data.shape[2] == shape[2]:
         return data
 
     diff_nx = (data.shape[1] - shape[1])
@@ -622,12 +622,12 @@ def expand_to_shape(data, shape, border=0):
     return expanded
 
 
-def combine_img_prediction(data, gt, pred, mode=1, label_colors = None):
+def combine_img_prediction(data, gt, pred, mode=1, label_colors=None):
     """
     Combines the data, grouth thruth and the prediction into one rgb image
 
     :param data: the data tensor
-    :param gt: the ground thruth tensor
+    :param gt: the ground truth tensor
     :param pred: the prediction tensor
     :param mode: 0 for segmentation 1 for regression
     :param label_colors: array of colors for each label. Only used if mode == 1
@@ -637,19 +637,22 @@ def combine_img_prediction(data, gt, pred, mode=1, label_colors = None):
     ny = data.shape[2]
     ch = data.shape[3]
     data = data.reshape(-1, ny, ch)
-    gt = gt.reshape(-1, gt.shape[2], ch)
-    pred = pred.reshape(-1, pred.shape[2], ch)
 
     data_rgb = to_rgb(data)
+    data_size = (data_rgb.shape[1], data_rgb.shape[0])
     if mode == 0:
+        gt = gt.reshape(-1, gt.shape[2], gt.shape[3])
+        pred = pred.reshape(-1, pred.shape[2], pred.shape[3])
         gt_rgb = one_hot_to_rgb(gt, label_colors=label_colors)
         pred_rgb = one_hot_to_rgb(pred, label_colors=label_colors)
     elif mode == 1:
+        gt = gt.reshape(-1, gt.shape[2], ch)
+        pred = pred.reshape(-1, pred.shape[2], ch)
         gt_rgb = to_rgb(gt)
         pred_rgb = to_rgb(pred)
 
-    gt_resized = np.array(Image.fromarray(gt_rgb).resize(data_rgb.shape, Image.NEAREST))
-    pred_resized = np.array(Image.fromarray(pred_rgb).resize(data_rgb.shape, Image.NEAREST))
+    gt_resized = np.array(Image.fromarray(gt_rgb).resize(data_size, Image.NEAREST))
+    pred_resized = np.array(Image.fromarray(pred_rgb).resize(data_size, Image.NEAREST))
     img = np.concatenate((data_rgb,
                           gt_resized,
                           pred_resized),
