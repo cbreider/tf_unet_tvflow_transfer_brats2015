@@ -128,17 +128,19 @@ def to_one_hot(image, depth=4):
 	return one_hot
 
 
-def intensity_normalize_tensor(tensor, max=255.0, new_max=1.0):
+def mean_center_tensor(tensor, max=255.0, new_max=1.0, normalize_std=False):
 	if max == new_max:
 		normal = tensor
 	else:
 		normal = tf.math.divide(tensor, tf.constant(max))
 		normal = tf.math.multiply(normal, tf.constant(new_max))
 	# intensity normalize
-	# mean, var = tf.nn.moments(normal, axes=[0, 1, 2])
-	# out = tf.math.divide((normal-mean), tf.math.sqrt(var))
-	mean = tf.reduce_mean(normal)
-	out = normal - mean
+	if normalize_std:
+		mean, var = tf.nn.moments(normal, axes=[0, 1, 2])
+		out = tf.math.divide((normal-mean), tf.math.sqrt(var))
+	else:
+		mean = tf.reduce_mean(normal)
+		out = normal - mean
 	#set black elemts to random
 	#zero = tf.constant(0, dtype=tf.float32)
 	#where_zero = tf.equal(out, zero)

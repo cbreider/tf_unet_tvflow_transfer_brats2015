@@ -83,12 +83,14 @@ class TrainingImageDataGenerator(ImageDataGenerator):
             in_img, gt_img = tf_utils.crop_images_to_to_non_zero(in_img, gt_img, config.DataParams.set_image_size)
         if self._do_pre_processing:
             in_img, gt_img = tf_utils.preprocess_images(in_img, gt_img)
-        in_img = tf_utils.intensity_normalize_tensor(in_img,
-                                                     max=config.DataParams.data_max_value,
-                                                     new_max=config.DataParams.norm_image_value)
-        gt_img = tf_utils.intensity_normalize_tensor(gt_img,
-                                                     max=config.DataParams.data_max_value,
-                                                     new_max=config.DataParams.norm_image_value)
+        in_img = tf_utils.mean_center_tensor(in_img,
+                                             max=config.DataParams.data_max_value,
+                                             new_max=config.DataParams.norm_image_value,
+                                             normalize_std=config.DataParams.normailze_std)
+        gt_img = tf_utils.mean_center_tensor(gt_img,
+                                             max=config.DataParams.data_max_value,
+                                             new_max=config.DataParams.norm_image_value,
+                                             normalize_std=config.DataParams.normailze_std)
         if self.mode == config.TrainingModes.TVFLOW:
             gt = gt_img
         elif self.mode == config.TrainingModes.SEGMENTATION:
@@ -142,12 +144,14 @@ class ValidationImageDataGenerator(ImageDataGenerator):
         # load and preprocess the image
         in_img = tf_utils.load_png_image(filename_input)
         gt_img = tf_utils.load_png_image(filename_gt)
-        in_img = tf_utils.intensity_normalize_tensor(in_img,
-                                                     max=config.DataParams.data_max_value,
-                                                     new_max=config.DataParams.norm_image_value)
-        gt_img = tf_utils.intensity_normalize_tensor(gt_img,
-                                                     max=config.DataParams.data_max_value,
-                                                     new_max=config.DataParams.norm_image_value)
+        in_img = tf_utils.mean_center_tensor(in_img,
+                                             max=config.DataParams.data_max_value,
+                                             new_max=config.DataParams.norm_image_value,
+                                             normalize_std=config.DataParams.normailze_std)
+        gt_img = tf_utils.mean_center_tensor(gt_img,
+                                             max=config.DataParams.data_max_value,
+                                             new_max=config.DataParams.norm_image_value,
+                                             normalize_std=config.DataParams.normailze_std)
         if self.mode == config.TrainingModes.TVFLOW:
             gt = gt_img
         elif self.mode == config.TrainingModes.SEGMENTATION:
@@ -196,7 +200,8 @@ class TestImageDataGenerator(ImageDataGenerator):
     def _parse_function(self, filename):
         # load and preprocess the image
         in_img = tf_utils.load_png_image(filename)
-        in_img = tf_utils.intensity_normalize_tensor(in_img,
-                                                     max=config.DataParams.data_max_value,
-                                                     new_max=config.DataParams.norm_image_value)
+        in_img = tf_utils.mean_center_tensor(in_img,
+                                             max=config.DataParams.data_max_value,
+                                             new_max=config.DataParams.norm_image_value,
+                                             normalize_std=config.DataParams.normailze_std)
         return in_img
