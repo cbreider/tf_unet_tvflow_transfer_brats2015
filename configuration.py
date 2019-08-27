@@ -79,8 +79,8 @@ class DataParams:
     use_residual_as_gt = False
     data_type = tf.float16
     crop_to_non_zero = True
-    norm_image_value = 255.0
-    data_max_value = 1.0
+    norm_image_value = 1.0
+    data_max_value = 255.0
     normailze_std = True
     load_only_middle_scans = True
 

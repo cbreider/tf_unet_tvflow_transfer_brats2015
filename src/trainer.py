@@ -185,6 +185,9 @@ class Trainer(object):
 					batch_x, batch_y = sess.run(data_provider_train.next_batch)
 
 					# Run optimization op (backprop)
+					if step == 0:
+						self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
+													util.crop_to_shape(batch_y, pred_shape))
 					_, loss, lr, gradients = sess.run(
 						(self.optimizer, self.net.cost, self.learning_rate_node, self.net.gradients_node),
 						feed_dict={self.net.x: batch_x,
@@ -196,7 +199,7 @@ class Trainer(object):
 						norm_gradients = [np.linalg.norm(gradient) for gradient in avg_gradients]
 						self.norm_gradients_node.assign(norm_gradients).eval()
 
-					if step % display_step == 0:
+					if step % display_step == 0 and step != 0:
 						self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
 													util.crop_to_shape(batch_y, pred_shape))
 
