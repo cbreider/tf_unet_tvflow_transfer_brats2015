@@ -245,7 +245,8 @@ class Unet(object):
                 self.correct_pred = tf.constant(0)  # makes no sense for regression
                 self.predicter = logits
                 self.error = tf.math.divide(tf.math.reduce_sum(tf.math.squared_difference(self.predicter, self.y)),
-                                            tf.cast(tf.math.count_nonzero(input_tensor=self.y), tf.float32))
+                                            tf.cast(tf.math.count_nonzero(input_tensor=tf.cast(self.y, tf.int16)),
+                                                    tf.float32))
                 self.error = tf.math.divide(self.error,
                                             tf.math.square(tf.constant(config.DataParams.norm_image_value)))
                 self.error_rate = tf.math.multiply(tf.constant(100.0), self.error)

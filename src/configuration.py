@@ -74,13 +74,13 @@ class DataParams:
     nr_of_classes_seg_mode = 5
     nr_of_classes_tv_flow_mode = 1 # one class for each channel of 8bit image
     shuffle = True  # dict.items() is allready random
-    do_image_pre_processing = False  # only for training
+    do_image_pre_processing = True  # only for training
     split_train_val_ratio = 0.7
-    use_scale = False
+    use_residual_as_gt = False
     data_type = tf.float16
     crop_to_non_zero = True
     norm_image_value = 255.0
-    data_max_value = 100.0
+    data_max_value = 1.0
 
 
 class ConvNetParams:
@@ -94,7 +94,7 @@ class ConvNetParams:
     padding = True
     batch_normalization = True
     class_weights = None  # TODO
-    regularizer = 0.00001
+    regularizer = 0.000001
     add_residual_layer = True
 
 
@@ -103,13 +103,13 @@ class TrainingParams:
     num_epochs = 100000  # number of training epochs
     label_smothing = 0
     optimizer = Optimizer.ADAM
-    batch_size_train = 4
+    batch_size_train = 8
     batch_size_val = 32
     buffer_size_train = 500
     buffer_size_val = 500
     norm_grads = False
     training_iters = 500
-    display_step = 10
+    display_step = 50
     write_graph = True
     adam_args = dict(learning_rate=0.00001,
                      beta1=0.9,

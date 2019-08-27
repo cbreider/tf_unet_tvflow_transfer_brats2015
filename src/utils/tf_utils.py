@@ -54,9 +54,9 @@ def crop_images_to_to_non_zero(scan, ground_truth, size):
 
 
 def crop_non_zero_internal(scan, ground_truth, out_size):
-	gt_int = tf.cast(ground_truth, tf.int32)
+	scan = tf.cast(ground_truth, tf.int32)
 	zero = tf.constant(0, dtype=tf.int32)
-	where = tf.not_equal(gt_int, zero)
+	where = tf.not_equal(scan, zero)
 	indices = tf.where(where)
 	min_y = tf.reduce_min(indices[:, 0])
 	min_x = tf.reduce_min(indices[:, 1])

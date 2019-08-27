@@ -56,7 +56,7 @@ class TrainingDataset(object):
         :param split_ratio: ratio of training : validation data
         :param nr_of_samples: use only a specific number of training images. 0 if use all
         """
-        self.use_scale = config.DataParams.use_scale
+        self.use_scale = config.DataParams.use_residual_as_gt
         self._paths = paths
         self._new_split = new_split
         self._mode = mode
