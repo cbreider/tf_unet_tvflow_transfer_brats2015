@@ -133,6 +133,9 @@ class TrainingDataset(object):
         tv_flow_ext = "_tvflow.png"
         if use_scale:
             tv_flow_ext = "_tvflow_scale.png"
+        if config.DataParams.load_only_middle_scans:
+            keep_out = ["_{}_".format(i) for i in range(40)]
+            keep_out.extend(["_{}_".format(i) for i in range(120, 150)])
 
         raw_to_tvflow_file_dict = dict()
         raw_to_tvflow_file_dict.update(self._get_paths_dict_tvflow_single(base_path_key=self._paths.raw_train_dir,
@@ -140,13 +143,15 @@ class TrainingDataset(object):
                                                                           ext_key=self._paths.png_ext,
                                                                           ext_val=tv_flow_ext,
                                                                           gg=self._paths.high_grade_gliomas_folder,
-                                                                          without_gt=True))
+                                                                          without_gt=True,
+                                                                          keep_out=keep_out))
         raw_to_tvflow_file_dict.update(self._get_paths_dict_tvflow_single(base_path_key=self._paths.raw_train_dir,
                                                                           base_path_value=self._paths.tv_flow_out_dir,
                                                                           ext_key=self._paths.png_ext,
                                                                           ext_val=tv_flow_ext,
                                                                           gg=self._paths.low_grade_gliomas_folder,
-                                                                          without_gt=True))
+                                                                          without_gt=True,
+                                                                          keep_out=keep_out))
 
         return raw_to_tvflow_file_dict
 
@@ -161,19 +166,24 @@ class TrainingDataset(object):
         """
         if not self._paths.is_loaded:
             return None
+        if config.DataParams.load_only_middle_scans:
+            keep_out = ["_{}_".format(i) for i in range(40)]
+            keep_out.extend(["_{}_".format(i) for i in range(120, 150)])
 
         raw_to_seg_file_dict = dict()
         raw_to_seg_file_dict.update(self._get_paths_dict_seg_single(base_path=self._paths.raw_train_dir,
                                                                     ext_key=self._paths.png_ext,
-                                                                    gg=self._paths.high_grade_gliomas_folder))
+                                                                    gg=self._paths.high_grade_gliomas_folder,
+                                                                    keep_out=keep_out))
         raw_to_seg_file_dict.update(self._get_paths_dict_seg_single(base_path=self._paths.raw_train_dir,
                                                                     ext_key=self._paths.png_ext,
-                                                                    gg=self._paths.low_grade_gliomas_folder))
+                                                                    gg=self._paths.low_grade_gliomas_folder,
+                                                                    keep_out=keep_out))
 
         return raw_to_seg_file_dict
 
     def _get_paths_dict_tvflow_single(self, base_path_key, base_path_value, ext_key=".png", ext_val=".png",
-                                      gg="HGG", without_gt=False):
+                                      gg="HGG", without_gt=False, keep_out = []):
         """
         Creates a dictionary with tvflow and Brats2015
 
@@ -200,6 +210,8 @@ class TrainingDataset(object):
             if not os.path.exists(out_path):
                 continue
             for file in os.listdir(path):
+                if any(st in file for st in keep_out):
+                    continue
                 if file.endswith(ext_key):
                     file_path_key = os.path.join(path, file)
                     file_path_val = file_path_key.replace(base_path_key, base_path_value)
@@ -209,7 +221,7 @@ class TrainingDataset(object):
                     file_dict[file_path_key] = file_path_val
         return file_dict
 
-    def _get_paths_dict_seg_single(self, base_path, ext_key=".png", gg="HGG",):
+    def _get_paths_dict_seg_single(self, base_path, ext_key=".png", gg="HGG", keep_out=[]):
         """
         Creates a dictionary with tvflow and Brats2015
 
@@ -234,6 +246,8 @@ class TrainingDataset(object):
                 file_path_in = file_path
                 file_path_full = os.path.join(patient_path, file_path)
                 for file in os.listdir(file_path_full):
+                    if any(st in file for st in keep_out):
+                        continue
                     if file.endswith(ext_key):
                         file_path_key = os.path.join(file_path_full, file)
                         modality = ""

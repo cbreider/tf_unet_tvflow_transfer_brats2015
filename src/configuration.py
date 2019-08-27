@@ -81,7 +81,7 @@ class DataParams:
     crop_to_non_zero = True
     norm_image_value = 255.0
     data_max_value = 1.0
-
+    load_only_middle_scans = True
 
 class ConvNetParams:
     """ ConvNetParams parameters"""
