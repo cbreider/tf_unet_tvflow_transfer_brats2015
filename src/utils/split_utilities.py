@@ -10,7 +10,7 @@ import os
 import datetime
 import json
 import logging
-import src.configuration as config
+import configuration as config
 
 
 class TestFilePaths(object):

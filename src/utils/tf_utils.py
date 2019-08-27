@@ -8,7 +8,7 @@ created on June 2019
 
 
 import tensorflow as tf
-import src.configuration as conf
+import configuration as conf
 
 
 def preprocess_images(scan, ground_truth):

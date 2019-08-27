@@ -10,7 +10,7 @@ source: https://github.com/jakeret/tf_unet.git
 """
 
 import tensorflow as tf
-import src.configuration as config
+import configuration as config
 import logging
 import os
 import src.utils.data_utils as util

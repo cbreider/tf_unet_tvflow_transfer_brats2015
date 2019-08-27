@@ -9,9 +9,9 @@ created on June 2019
 import tensorflow as tf
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework.ops import convert_to_tensor
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 import src.utils.tf_utils as tf_utils
-import src.configuration as config
+import configuration as config
 import logging
 
 

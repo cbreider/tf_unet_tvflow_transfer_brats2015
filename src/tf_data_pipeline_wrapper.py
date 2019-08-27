@@ -7,7 +7,7 @@ created on June 2019
 """
 
 from src.data_generator import TrainingImageDataGenerator, ValidationImageDataGenerator, TestImageDataGenerator
-import src.configuration as config
+import configuration as config
 import tensorflow as tf
 import tensorflow.data as tf_data
 

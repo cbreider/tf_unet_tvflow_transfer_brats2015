@@ -8,7 +8,7 @@ created on June 2019
 
 import os
 from datetime import datetime
-import src.configuration as config
+import configuration as config
 import logging
 
 

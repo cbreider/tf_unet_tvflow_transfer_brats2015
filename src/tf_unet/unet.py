@@ -16,7 +16,7 @@ from collections import OrderedDict
 import logging
 from datetime import datetime
 import tensorflow as tf
-import src.configuration as config
+import configuration as config
 from src.tf_unet.layers import (weight_variable, weight_variable_devonc, bias_variable,
                                 conv2d, deconv2d, max_pool, crop_and_concat, pixel_wise_softmax,
                                 cross_entropy)

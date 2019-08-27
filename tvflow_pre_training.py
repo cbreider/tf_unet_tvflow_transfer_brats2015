@@ -14,7 +14,7 @@ from src.tf_unet import unet
 import src.utils.gpu_selector as cuda_selector
 import src.trainer as trainer
 import argparse
-import src.configuration as config
+import configuration as config
 import tensorflow as tf
 import logging
 
