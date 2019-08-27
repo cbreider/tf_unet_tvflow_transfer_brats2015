@@ -84,6 +84,7 @@ class DataParams:
     normailze_std = True
     load_only_middle_scans = True
 
+
 class ConvNetParams:
     """ ConvNetParams parameters"""
     num_layers = 5

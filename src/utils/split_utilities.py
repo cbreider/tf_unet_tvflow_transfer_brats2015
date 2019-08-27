@@ -133,9 +133,11 @@ class TrainingDataset(object):
         tv_flow_ext = "_tvflow.png"
         if use_scale:
             tv_flow_ext = "_tvflow_scale.png"
+
+        keep_out = []
         if config.DataParams.load_only_middle_scans:
-            keep_out = ["_{}_".format(i) for i in range(40)]
-            keep_out.extend(["_{}_".format(i) for i in range(120, 150)])
+            keep_out.extend(["_{}.".format(i) for i in range(40)])
+            keep_out.extend(["_{}.".format(i) for i in range(120, 150)])
 
         raw_to_tvflow_file_dict = dict()
         raw_to_tvflow_file_dict.update(self._get_paths_dict_tvflow_single(base_path_key=self._paths.raw_train_dir,
@@ -166,9 +168,11 @@ class TrainingDataset(object):
         """
         if not self._paths.is_loaded:
             return None
+
+        keep_out = []
         if config.DataParams.load_only_middle_scans:
-            keep_out = ["_{}_".format(i) for i in range(40)]
-            keep_out.extend(["_{}_".format(i) for i in range(120, 150)])
+            keep_out.extend(["_{}.".format(i) for i in range(40)])
+            keep_out.extend(["_{}.".format(i) for i in range(120, 150)])
 
         raw_to_seg_file_dict = dict()
         raw_to_seg_file_dict.update(self._get_paths_dict_seg_single(base_path=self._paths.raw_train_dir,
