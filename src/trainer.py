@@ -44,8 +44,7 @@ class Trainer(object):
 																global_step=global_step,
 																decay_steps=training_iters,
 																decay_rate=decay_rate,
-																staircase=True,
-																name=learning_rate)
+																staircase=True)
 
 			optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate_node, momentum=momentum,
 													**self.opt_kwargs).minimize(self.net.cost,
@@ -58,8 +57,7 @@ class Trainer(object):
 																global_step=global_step,
 																decay_steps=training_iters,
 																decay_rate=decay_rate,
-																staircase=True,
-																name=learning_rate)
+																staircase=True)
 			optimizer = tf.train.AdamOptimizer(
 				learning_rate=self.learning_rate_node,
 				**self.opt_kwargs).minimize(

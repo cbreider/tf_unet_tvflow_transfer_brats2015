@@ -70,7 +70,7 @@ def crop_non_zero_internal(scan, ground_truth, out_size):
 									   method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 	resize_gt = tf.image.resize_images(crop_gt, out_size,
 									   method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-	return resize_in, resize_gt
+	return tf.cast(resize_in, tf.float32), tf.cast(resize_gt, tf.float32)
 
 
 def load_png_image(filename, data_type=tf.float32):
