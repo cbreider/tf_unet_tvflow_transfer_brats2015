@@ -96,7 +96,7 @@ class ConvNetParams:
     padding = True
     batch_normalization = True
     class_weights = None  # TODO
-    regularizer = 0.000001
+    regularizer = 0.00001
     add_residual_layer = True
 
 
@@ -113,19 +113,21 @@ class TrainingParams:
     training_iters = 500
     display_step = 50
     write_graph = True
-    adam_args = dict(learning_rate=0.00001,
+    adam_args = dict(learning_rate=0.0001,
                      beta1=0.9,
                      beta2=0.999,
                      epsilon=1e-08,
                      use_locking=False,
                      name='Adam',
-                     decay_rate=0.95)
+                     decay_rate=0.95,
+                     decay_steps=5000)
     momentum_args = dict(momentum=0.99,
                          learning_rate=0.00001,
                          decay_rate=0.95,
                          use_locking=False,
                          name='Momentum',
-                         use_nesterov=False)
+                         use_nesterov=False,
+                         decay_steps=5000)
     adagrad_args = dict(learning_rate=0.001,
                         initial_accumulator_value=0.1,
                         use_locking=False,

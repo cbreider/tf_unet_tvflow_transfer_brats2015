@@ -17,6 +17,7 @@ import src.utils.data_utils as util
 import numpy as np
 from src.tf_unet.caffe2tensorflow_mapping import load_pre_trained_caffe_variables
 
+
 class Trainer(object):
 	"""
 	Trains a unet instance
@@ -39,10 +40,10 @@ class Trainer(object):
 			learning_rate = self.opt_kwargs.pop("learning_rate", 0.2)
 			decay_rate = self.opt_kwargs.pop("decay_rate", 0.95)
 			momentum = self.opt_kwargs.pop("momentum", 0.2)
-
+			decay_steps = self.opt_kwargs.pop("decay_steps", 10000)
 			self.learning_rate_node = tf.train.exponential_decay(learning_rate=learning_rate,
 																global_step=global_step,
-																decay_steps=training_iters,
+																decay_steps=decay_steps,
 																decay_rate=decay_rate,
 																staircase=True)
 
@@ -53,9 +54,10 @@ class Trainer(object):
 		elif self.optimizer == config.Optimizer.ADAM:
 			learning_rate = self.opt_kwargs.pop("learning_rate", 0.001)
 			decay_rate = self.opt_kwargs.pop("decay_rate", 0.95)
+			decay_steps = self.opt_kwargs.pop("decay_steps", 10000)
 			self.learning_rate_node = tf.train.exponential_decay(learning_rate=learning_rate,
 																global_step=global_step,
-																decay_steps=training_iters,
+																decay_steps=decay_steps,
 																decay_rate=decay_rate,
 																staircase=True)
 			optimizer = tf.train.AdamOptimizer(
