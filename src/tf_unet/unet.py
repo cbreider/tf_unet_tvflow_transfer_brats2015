@@ -157,7 +157,10 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
         if config.ConvNetParams.add_residual_layer:
             if not padding == 'SAME':
                 raise ValueError("Residual Layer only possible with padding to preserve same size feature maps")
-            output_map = output_map + x_image
+            if config.DataParams.use_residual_as_gt:
+                output_map = x_image -output_map
+            else:
+                output_map = output_map + x_image
         up_h_convs["out"] = output_map
 
     if summaries:
