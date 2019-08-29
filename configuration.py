@@ -60,7 +60,7 @@ class ConvNetParams:
     batch_normalization = True      # Use Batchnormalization Yes/No
     class_weights = None            # weight for each individual class # TODO ?
     regularizer = 0.00001           # lambda value for l2 regualizer
-    add_residual_layer = True       # Add residual layer/skip layer at the end output = input + last_layer
+    add_residual_layer = False       # Add residual layer/skip layer at the end output = input + last_layer
     freeze_down_layers = True       # freeze encoder layers during training
     freeze_up_layers = False        # freeze decoder layers during training
     activation_func_out = Activation_Func.NONE  # Act func for output map # noe for regression
