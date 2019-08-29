@@ -85,8 +85,8 @@ class TrainingParams:
                      epsilon=1e-08,
                      use_locking=False,
                      name='Adam',
-                     decay_rate=0.95,
-                     decay_steps=5000)
+                     decay_rate=0.8,
+                     decay_steps=3000)
     momentum_args = dict(momentum=0.99,     # Hyperparameters for Momentum optimzer
                          learning_rate=0.00001,
                          decay_rate=0.95,
