@@ -25,6 +25,9 @@ if __name__ == "__main__":
     parser.add_argument("--restore_path",
                         help="Path of a stored model. If given it will load this model",
                         type=str, default=None)
+    parser.add_argument("--restore_mode",
+                        help="Mode of restoring session. 1=Complete Session, 2=Without Out Layer, 3=Complete Net",
+                        type=int, default=None)
     parser.add_argument("--caffemodel_path",
                         help="Path of a preatrined caffe model (hfd5). If given it will load this model",
                         type=str, default=None)
@@ -37,6 +40,7 @@ if __name__ == "__main__":
     create_summaries = True
     restore_path = None
     caffemodel_path = None
+    restore_mode = args.restore_mode
 
     if args.create_new_split:
         create_new_training_split = True
@@ -139,4 +143,5 @@ if __name__ == "__main__":
                          display_step=config.TrainingParams.display_step,
                          write_graph=config.TrainingParams.write_graph,
                          restore_path=restore_path,
-                         caffemodel_path=caffemodel_path)
+                         caffemodel_path=caffemodel_path,
+                         restore_mode=restore_mode)

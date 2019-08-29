@@ -13,9 +13,10 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 
 import numpy as np
 import logging
+import os
 import tensorflow as tf
 from datetime import datetime
-from src.utils.enum_params import Cost, Activation_Func
+from src.utils.enum_params import Cost, Activation_Func, RestoreMode
 from collections import OrderedDict
 from src.tf_unet.layers import (weight_variable, weight_variable_devonc, bias_variable,
                                 conv2d, deconv2d, max_pool, crop_and_concat, pixel_wise_softmax,
@@ -207,7 +208,7 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
         variables.append(b1)
         variables.append(b2)
 
-    return output_map, variables, int(in_size - size)
+    return output_map, variables, int(in_size - size), [weight, bias]
 
 
 class Unet(object):
@@ -239,7 +240,7 @@ class Unet(object):
         self.y = tf.placeholder("float", shape=[None, None, None, n_class], name="y")
         self.keep_prob = tf.placeholder(tf.float32, name="dropout_probability")  # dropout (keep probability)
 
-        logits, self.variables, self.offset = create_conv_net(x=self.x,
+        logits, self.variables, self.offset, self.out_vars = create_conv_net(x=self.x,
                                                               keep_prob=keep_prob,
                                                               channels=n_channels,
                                                               n_class=n_class,
@@ -381,7 +382,7 @@ class Unet(object):
         save_path = saver.save(sess, model_path)
         return save_path
 
-    def restore(self, sess, model_path):
+    def restore(self, sess, model_path, restore_mode=RestoreMode.COMPLETE_SESSION):
         """
         Restores a session from a checkpoint
 
@@ -389,11 +390,17 @@ class Unet(object):
         :param model_path: path to file system checkpoint location
         """
         print('{} Resuming session from checkpoint: {}'.format(datetime.now(), model_path))
-        saver = tf.train.Saver()
+        if restore_mode == RestoreMode.COMPLETE_SESSION:
+            saver = tf.train.Saver()
+        elif restore_mode == RestoreMode.COMPLETE_NET:
+            saver = tf.train.Saver(self.variables + self.out_vars)
+        elif restore_mode == RestoreMode.ONLY_BASE_NET:
+            saver = tf.train.Saver(self.variables)
+        else:
+            raise ValueError()
+
         saver.restore(sess, model_path)
         logging.info("Model restored from file: %s" % model_path)
-
-
 
 
 def get_image_summary(img, idx=0):

@@ -45,7 +45,7 @@ class TrainingDataset(object):
         return self
 
     """Constructor"""
-    def __init__(self, paths, mode=TrainingModes.TVFLOW, new_split=True, split_ratio=0.7, nr_of_samples=0,
+    def __init__(self, paths, mode=TrainingModes.TVFLOW, use_mha=False, new_split=True, split_ratio=[0.7, 0.3], nr_of_samples=0,
                  use_scale_as_gt=False, load_only_mid_scans=False):
         """
         Inits a Dataset of training and validation images- Either creates it by reading files from a specific folder
@@ -58,6 +58,8 @@ class TrainingDataset(object):
         :param nr_of_samples: use only a specific number of training images. 0 if use all
         :param use_scale_as_gt: use sclae images from tv as gt
         :param load_only_mid_scans: use only slices from the middle of mha scan
+        :param use_mha: use mha files istead of pngs. Only for SEGMENTATION MODE
+
         """
         self.use_scale = use_scale_as_gt
         self.load_only_mid_scans = load_only_mid_scans
@@ -78,6 +80,8 @@ class TrainingDataset(object):
         elif self._mode == TrainingModes.SEGMENTATION:
             self.split_name = self._seg_mode
         if self._new_split:
+            if sum(self._split_ratio) != 1.0:
+                raise ValueError()
             self._create_new_split()
             logging.info("Created dataset of {train} training samples and {validation} validation samples.".format(
                 train=len(self.train_paths),
@@ -107,14 +111,15 @@ class TrainingDataset(object):
         if self._nr_of_samples == 0:
             total = len(split)
 
-        train_split_size = total * self._split_ratio
+        train_split_size = total * self._split_ratio[0]
+        val_split_size = total * self._split_ratio[1]
         train_split = dict()
         validation_split = dict()
         i = 0
         for k, v in split.items():
             if i <= train_split_size:
                 train_split[k] = v
-            else:
+            elif i < val_split_size:
                 validation_split[k] = v
             i += 1
         # safe dataset

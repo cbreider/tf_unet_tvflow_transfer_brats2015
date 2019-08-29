@@ -43,6 +43,7 @@ class Optimizer(Enum):
     ADAM = 2            # Adam Optimzer
     MOMENTUM = 3        # SDG with Momentum
 
+
 class Activation_Func(Enum):
     """
     training optimzer
@@ -50,3 +51,12 @@ class Activation_Func(Enum):
     RELU = 1
     SIGMOID = 2
     NONE = 3
+
+
+class RestoreMode(Enum):
+    """
+    training optimzer
+    """
+    COMPLETE_SESSION = 1    # complete session including hyper params
+    ONLY_BASE_NET = 2       # only base net without out put cov and variables for chnaged from tv to segmenation
+    COMPLETE_NET = 3

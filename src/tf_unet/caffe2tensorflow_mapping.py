@@ -61,9 +61,6 @@ def load_pre_trained_caffe_variables(session, file_path):
     f = h5py.File(file_path, 'r')
     data = f['data']
 
-    #for v in tf.get_default_graph().as_graph_def().node:
-    #   print(v.name)
-
     for caffe_var, tf_var in caffe_2_tf_dict.items():
         if caffe_var in skip_layer:
             continue
