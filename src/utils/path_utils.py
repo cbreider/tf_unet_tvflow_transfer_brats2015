@@ -8,7 +8,7 @@ created on June 2019
 
 import os
 from datetime import datetime
-import configuration as config
+from shutil import copyfile
 import logging
 
 
@@ -60,11 +60,7 @@ class DataPaths(object):
 
         self.tf_out_path = os.path.join(self.project_dir, self.tf_out_path)
         tf_out_path_tmp = "{0:%Y-%m-%d_%H:%M:%S}".format(datetime.now())
-        tf_out_path_tmp = "{}_{}_O_{}_B_{}".format(
-            self.mode,
-            tf_out_path_tmp,
-            config.TrainingParams.optimizer.name,
-            config.TrainingParams.buffer_size_train)
+        tf_out_path_tmp = "{}_{}".format(self.mode, tf_out_path_tmp)
 
         self.tf_out_path = os.path.join(self.tf_out_path, tf_out_path_tmp)
 
@@ -97,4 +93,8 @@ class DataPaths(object):
         if not os.path.exists(self.tf_out_path):
             os.makedirs(self.tf_out_path)
             logging.info("Allocating '{:}'".format(self.tf_out_path))
+
+        #save config file to out folder
+        copyfile("configuration.py", os.path.join(self.tf_out_path, "configuration.py"))
+
         self.is_loaded = True

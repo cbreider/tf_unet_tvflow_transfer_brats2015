@@ -17,6 +17,7 @@ import argparse
 import configuration as config
 import tensorflow as tf
 import logging
+from src.utils.enum_params import TrainingModes, DataModes, Optimizer
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
@@ -37,9 +38,6 @@ if __name__ == "__main__":
     parser.add_argument("--caffemodel_path",
                         help="Path of a preatrined caffe model (hfd5). If given it will load this model",
                         type=str, default=None)
-    parser.add_argument("--freeze",
-                        help="Freeze all layers except for last one",
-                        action='store_true')
     parser.add_argument('--cuda_device', type=int, default=-1,
                         help='Number of cuda device to use (optional)')
     args = parser.parse_args()
@@ -47,7 +45,6 @@ if __name__ == "__main__":
     create_summaries = True
     restore_path = None
     caffemodel_path = None
-    freeze = False
 
     if args.create_new_split:
         create_new_training_split = True
@@ -59,8 +56,6 @@ if __name__ == "__main__":
         caffemodel_path = args.caffemodel_path
     if args.cuda_device >= 0:
         cuda_selector.set_cuda_gpu(args.cuda_device)
-    if args.freeze:
-        freeze = True
 
     # tf.enable_eager_execution()
     tf.reset_default_graph()
@@ -69,26 +64,46 @@ if __name__ == "__main__":
     data_paths.load_data_paths()
 
     file_paths = TrainingDataset(paths=data_paths,
-                                 mode=config.TrainingModes.TVFLOW,
+                                 mode=TrainingModes.TVFLOW,
                                  new_split=create_new_training_split,
-                                 split_ratio=config.DataParams.split_train_val_ratio)
+                                 split_ratio=config.DataParams.split_train_val_ratio,
+                                 nr_of_samples=config.DataParams.nr_of_samples,
+                                 use_scale_as_gt=config.DataParams.use_scale_image_as_gt,
+                                 load_only_mid_scans=config.DataParams.load_only_middle_scans)
 
     training_data = ImageData(file_paths=file_paths.train_paths,
                               batch_size=config.TrainingParams.batch_size_train,
                               buffer_size=config.TrainingParams.buffer_size_train,
                               shuffle=config.DataParams.shuffle,
-                              do_pre_processing=config.DataParams.do_image_pre_processing,
-                              mode=config.DataModes.TRAINING,
-                              train_mode=config.TrainingModes.TVFLOW)
-    training_data.create()
+                              mode=DataModes.TRAINING,
+                              train_mode=TrainingModes.TVFLOW,
+                              in_img_size=config.DataParams.raw_image_size,
+                              set_img_size=config.DataParams.set_image_size,
+                              data_max_value=config.DataParams.data_max_value,
+                              data_norm_value=config.DataParams.norm_image_value,
+                              crop_to_non_zero=config.DataParams.crop_to_non_zero,
+                              do_augmentation=config.DataParams.do_image_augmentation,
+                              normalize_std=config.DataParams.normailze_std,
+                              nr_of_classes=config.DataParams.nr_of_classes_tv_flow_mode,
+                              nr_channels=config.DataParams.nr_of_channels)
 
     validation_data = ImageData(file_paths=file_paths.validation_paths,
                                 batch_size=config.TrainingParams.batch_size_val,
                                 buffer_size=config.TrainingParams.buffer_size_val,
                                 shuffle=config.DataParams.shuffle,
-                                do_pre_processing=False,
-                                mode=config.DataModes.VALIDATION,
-                                train_mode=config.TrainingModes.TVFLOW)
+                                mode=DataModes.TRAINING,
+                                train_mode=TrainingModes.TVFLOW,
+                                in_img_size=config.DataParams.raw_image_size,
+                                set_img_size=config.DataParams.set_image_size,
+                                data_max_value=config.DataParams.data_max_value,
+                                data_norm_value=config.DataParams.norm_image_value,
+                                crop_to_non_zero=config.DataParams.crop_to_non_zero_val,
+                                do_augmentation=config.DataParams.do_image_augmentation_val,
+                                normalize_std=config.DataParams.normailze_std,
+                                nr_of_classes=config.DataParams.nr_of_classes_tv_flow_mode,
+                                nr_channels=config.DataParams.nr_of_channels)
+
+    training_data.create()
     validation_data.create()
 
     net = unet.Unet(n_channels=config.DataParams.nr_of_channels,
@@ -102,14 +117,19 @@ if __name__ == "__main__":
                     features_root=config.ConvNetParams.feat_root,
                     filter_size=config.ConvNetParams.filter_size,
                     pool_size=config.ConvNetParams.pool_size,
-                    freeze_layers=freeze)
+                    freeze_down_layers=config.ConvNetParams.freeze_down_layers,
+                    freeze_up_layers=config.ConvNetParams.freeze_up_layers,
+                    use_padding=config.ConvNetParams.padding,
+                    batch_norm=config.ConvNetParams.batch_normalization,
+                    add_residual_layer=config.ConvNetParams.add_residual_layer,
+                    use_scale_image_as_gt=config.DataParams.use_scale_image_as_gt)
 
     opt_args = None
-    if config.TrainingParams.optimizer == config.Optimizer.MOMENTUM:
+    if config.TrainingParams.optimizer == Optimizer.MOMENTUM:
         opt_args = config.TrainingParams.momentum_args
-    elif config.TrainingParams.optimizer == config.Optimizer.ADAGRAD:
+    elif config.TrainingParams.optimizer == Optimizer.ADAGRAD:
         opt_args = config.TrainingParams.adagrad_args
-    elif config.TrainingParams.optimizer == config.Optimizer.ADAM:
+    elif config.TrainingParams.optimizer == Optimizer.ADAM:
         opt_args = config.TrainingParams.adam_args
 
     trainer = trainer.Trainer(net=net,

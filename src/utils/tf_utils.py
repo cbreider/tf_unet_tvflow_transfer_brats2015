@@ -8,7 +8,6 @@ created on June 2019
 
 
 import tensorflow as tf
-import configuration as conf
 
 
 def preprocess_images(scan, ground_truth):
@@ -23,19 +22,21 @@ def preprocess_images(scan, ground_truth):
 	#  preprocess the image
 	combined = tf.concat([scan, ground_truth], axis=2)
 	image_shape = tf.shape(scan)
-	combined_pad = tf.image.pad_to_bounding_box(
-		combined, 0, 0,
-		tf.maximum(conf.DataParams.set_image_size[0], image_shape[0]),
-		tf.maximum(conf.DataParams.set_image_size[1], image_shape[1]))
+
 	last_label_dim = tf.shape(ground_truth)[-1]
 	last_image_dim = tf.shape(scan)[-1]
-	combined_crop = tf.random_crop(value=combined_pad,
-								   size=tf.concat([conf.DataParams.set_image_size,
-												   [last_label_dim + last_image_dim]], axis=0))
+	size = tf.random.uniform((),
+							 minval=tf.cast(tf.math.divide(tf.cast(image_shape[0], tf.float32),
+														 tf.constant(2.0)), tf.int32),
+							 maxval=image_shape[0],
+							 dtype=tf.int32)
+	combined_crop = tf.random_crop(value=combined,
+								   size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0))
 	combined_flip = tf.image.random_flip_left_right(combined_crop)
-	# mean = tf.metrics.mean(scan)
-	# combined_centered = combined_flip - mean
-	return combined_flip[:, :, :last_image_dim], combined_flip[:, :, last_image_dim:]
+	im = tf.image.resize_images(combined_flip[:, :, :last_image_dim], size=[image_shape[0], image_shape[1]])
+	gt = tf.image.resize_images(combined_flip[:, :, last_image_dim:], size=[image_shape[0], image_shape[1]])
+	return im, gt
+
 
 
 def crop_images_to_to_non_zero(scan, ground_truth, size):
@@ -73,18 +74,20 @@ def crop_non_zero_internal(scan, ground_truth, out_size):
 	return tf.cast(resize_in, tf.float32), tf.cast(resize_gt, tf.float32)
 
 
-def load_png_image(filename, data_type=tf.float32):
+def load_png_image(filename, nr_channels, img_size, data_type=tf.float32):
 	"""
 	Loads a png imges within a TF pipeline
 
 	:param filename: use scale images from tvflow as gt instead of smoothed images
 	:param data_type: data type in which the image is casted
-	:returns: image of dtype = data_type
+	:param nr_channels: number of channels in the image
+	:param img_size: size of the image
+	:returns: image of size=size, nr of channels=nr_channels, dtype = data_type
 	"""
 	try:
 		img_string = tf.read_file(filename)
-		img_decoded = tf.image.decode_png(img_string, channels=conf.DataParams.nr_of_channels)
-		img_resized = tf.image.resize_images(img_decoded, size=conf.DataParams.image_size)
+		img_decoded = tf.image.decode_png(img_string, channels=nr_channels)
+		img_resized = tf.image.resize_images(img_decoded, size=img_size)
 		img = tf.cast(img_resized, data_type)
 		return img
 	except Exception as e:
@@ -112,7 +115,7 @@ def convert_8bit_image_to_one_hot(image, depth=255):
 	return one_hot
 
 
-def to_one_hot(image, depth=4):
+def to_one_hot(image, depth):
 	"""
 	Creates a one hot tensor of a given image
 
@@ -128,7 +131,17 @@ def to_one_hot(image, depth=4):
 	return one_hot
 
 
-def mean_center_tensor(tensor, max=255.0, new_max=1.0, normalize_std=False):
+def normalize_and_zero_center_tensor(tensor, max, new_max, normalize_std):
+	"""
+	Creates a one hot tensor of a given image
+
+
+	:param tensor: input tensor of shape [?, ?, ?, ?]
+	:param max: max value of input image as it could be
+	:param new_max: new max which the image is normailzed to
+	:param normalize_std: True if std should be normalized
+	:returns: One hot Tensor of depth = depth:
+	"""
 	if max == new_max:
 		normal = tensor
 	else:

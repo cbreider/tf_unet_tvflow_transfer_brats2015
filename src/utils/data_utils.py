@@ -559,19 +559,27 @@ def to_rgb(img):
     return img.astype('uint8')
 
 
-def one_hot_to_rgb(one_hot, label_colors):
+def one_hot_to_rgb(one_hot):
     """
     converts the given one hot image to an rgb image given the colors
     :param one_hot: one hot tensor [nx, ny, nr_classes]
     :param label_colors: rgb colors for each label [nr_classes, 3]
     :return: rgb images [nx, ny, 3]
     """
-    assert label_colors.shape[0] == one_hot.shape[2]
+    # Color for each Label (used for resut Visualization
+    seg_label_colors = np.array([
+        [0, 0, 0],
+        [255, 0, 0],
+        [255, 255, 0],
+        [0, 255, 0],
+        [0, 0, 255]])
+
+    assert seg_label_colors.shape[0] == one_hot.shape[2]
 
     rgb_img = np.zeros((one_hot.shape[0], one_hot.shape[1], 3))
     idx = np.argmax(one_hot, axis=2)
-    for i in range(label_colors.shape[0]):
-        rgb_img[idx == i] = label_colors[i]
+    for i in range(seg_label_colors.shape[0]):
+        rgb_img[idx == i] = seg_label_colors[i]
 
     return rgb_img.astype('uint8')
 
@@ -643,8 +651,8 @@ def combine_img_prediction(data, gt, pred, mode=1, label_colors=None):
     if mode == 0:
         gt = gt.reshape(-1, gt.shape[2], gt.shape[3])
         pred = pred.reshape(-1, pred.shape[2], pred.shape[3])
-        gt_rgb = one_hot_to_rgb(gt, label_colors=label_colors)
-        pred_rgb = one_hot_to_rgb(pred, label_colors=label_colors)
+        gt_rgb = one_hot_to_rgb(gt)
+        pred_rgb = one_hot_to_rgb(pred)
     elif mode == 1:
         gt = revert_zero_centering(gt)
         pred = revert_zero_centering(pred)

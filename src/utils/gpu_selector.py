@@ -8,7 +8,7 @@ created on June 2019
 
 
 import os
-from tensorflow.python.client import device_lib
+
 
 cuda_device = ''
 

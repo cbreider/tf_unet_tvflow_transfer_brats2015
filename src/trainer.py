@@ -10,13 +10,12 @@ source: https://github.com/jakeret/tf_unet.git
 """
 
 import tensorflow as tf
-import configuration as config
 import logging
 import os
 import src.utils.data_utils as util
 import numpy as np
 from src.tf_unet.caffe2tensorflow_mapping import load_pre_trained_caffe_variables
-
+from src.utils.enum_params import DataModes, Cost, TrainingModes, Optimizer
 
 class Trainer(object):
 	"""
@@ -29,29 +28,29 @@ class Trainer(object):
 
 	"""
 
-	def __init__(self, net, norm_grads=False, optimizer=config.Optimizer.MOMENTUM, opt_kwargs={}):
+	def __init__(self, net, norm_grads=False, optimizer=Optimizer.MOMENTUM, opt_kwargs={}):
 		self.net = net
 		self.norm_grads = norm_grads
-		self.optimizer = optimizer
+		self.optimizer_name = optimizer
 		self.opt_kwargs = opt_kwargs
 
-	def _get_optimizer(self, training_iters, global_step):
-		if self.optimizer == config.Optimizer.MOMENTUM:
+	def _get_optimizer(self, global_step):
+		if self.optimizer_name == Optimizer.MOMENTUM:
 			learning_rate = self.opt_kwargs.pop("learning_rate", 0.2)
 			decay_rate = self.opt_kwargs.pop("decay_rate", 0.95)
 			momentum = self.opt_kwargs.pop("momentum", 0.2)
 			decay_steps = self.opt_kwargs.pop("decay_steps", 10000)
 			self.learning_rate_node = tf.train.exponential_decay(learning_rate=learning_rate,
-																global_step=global_step,
-																decay_steps=decay_steps,
-																decay_rate=decay_rate,
-																staircase=True)
+																 global_step=global_step,
+																 decay_steps=decay_steps,
+																 decay_rate=decay_rate,
+																 staircase=True)
 
 			optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate_node, momentum=momentum,
 													**self.opt_kwargs).minimize(self.net.cost,
 																				global_step=global_step)
 
-		elif self.optimizer == config.Optimizer.ADAM:
+		elif self.optimizer_name == Optimizer.ADAM:
 			learning_rate = self.opt_kwargs.pop("learning_rate", 0.001)
 			decay_rate = self.opt_kwargs.pop("decay_rate", 0.95)
 			decay_steps = self.opt_kwargs.pop("decay_steps", 10000)
@@ -65,7 +64,7 @@ class Trainer(object):
 				**self.opt_kwargs).minimize(
 											self.net.cost,
 											global_step=global_step)
-		elif self.optimizer == config.Optimizer.ADAGRAD:
+		elif self.optimizer_name == Optimizer.ADAGRAD:
 			learning_rate = self.opt_kwargs.pop("learning_rate", 0.001)
 			self.learning_rate_node = tf.Variable(learning_rate, name="learning_rate")
 
@@ -94,10 +93,10 @@ class Trainer(object):
 		tf.summary.scalar('accuracy', self.net.accuracy)
 		tf.summary.scalar('error', self.net.error)
 		tf.summary.scalar('error_rate', self.net.error_rate)
-		if not config.ConvNetParams.cost_function == config.Cost.MEAN_SQUARED:
+		if not self.net.cost == Cost.MSE:
 			tf.summary.scalar('cross_entropy', self.net.cross_entropy)
 
-		self.optimizer = self._get_optimizer(training_iters, global_step)
+		self.optimizer = self._get_optimizer(global_step)
 		tf.summary.scalar('learning_rate', self.learning_rate_node)
 
 		self.summary_op = tf.summary.merge_all()
@@ -105,9 +104,8 @@ class Trainer(object):
 
 		return init
 
-	def train(self, data_provider_train, data_provider_val, out_path,
-			  training_iters=10, epochs=100, dropout=0.75, display_step=1, write_graph=False,
-			  restore_path=None, caffemodel_path=None):
+	def train(self, data_provider_train, data_provider_val, out_path, training_iters=10, epochs=100, dropout=0.75,
+			  display_step=1, write_graph=False, restore_path=None, caffemodel_path=None):
 		"""
 		Lauches the training process
 
@@ -126,11 +124,7 @@ class Trainer(object):
 			"Optimizer: {}, "
 			"Nr of Epochs: {}, "
 			"Nr of Training Iters: {},"
-			"Keep prob {}".format(
-				config.TrainingParams.optimizer.name,
-				config.TrainingParams.num_epochs,
-				config.TrainingParams.training_iters,
-				config.ConvNetParams.keep_prob_dopout))
+			"Keep prob {}".format(self.optimizer_name, epochs, training_iters, dropout))
 
 		init = self._initialize(training_iters=training_iters, output_path=out_path)
 
@@ -154,7 +148,7 @@ class Trainer(object):
 					self.net.restore(sess, ckpt.model_checkpoint_path)
 
 			if caffemodel_path:
-				load_pre_trained_caffe_variables(session=sess, file_path=caffemodel_path, trainable=True)
+				load_pre_trained_caffe_variables(session=sess, file_path=caffemodel_path)
 
 			train_summary_path = os.path.join(self.out_path, "training_summary")
 			val_summary_path = os.path.join(self.out_path, "validation_summary")
@@ -167,13 +161,9 @@ class Trainer(object):
 															graph=sess.graph)
 			summary_writer_validation = tf.summary.FileWriter(val_summary_path,
 															graph=sess.graph)
-			pred_shape = [config.TrainingParams.batch_size_val,
-						  config.DataParams.set_data_width,
-						  config.DataParams.set_data_height,
-						  self.net.n_class]
 
 			test_x, test_y = sess.run(data_provider_val.next_batch)
-			self.store_prediction(sess, test_x, util.crop_to_shape(test_y, pred_shape), "_init", summary_writer_validation, 0, 0)
+			pred_shape = self.store_prediction(sess, test_x, test_y, "_init", summary_writer_validation, 0, 0)
 			logging.info("Start optimization")
 
 			avg_gradients = None
@@ -223,8 +213,7 @@ class Trainer(object):
 		logging.info("EPOCH {}: Verification error= {:.1f}%, loss= {:.6f}".format(epoch, err, loss))
 
 		img = util.combine_img_prediction(batch_x, batch_y, prediction,
-										  mode=1 if config.ConvNetParams.cost_function == config.Cost.MEAN_SQUARED else 0,
-										  label_colors=config.DataParams.seg_label_colors)
+										  mode=1 if self.net.cost_function == Cost.MSE else 0)
 		util.save_image(img, "%s/%s.jpg" % (self.out_path, name))
 
 		return pred_shape
@@ -274,7 +263,7 @@ def error_rate(predictions, labels):
 	:param labels:
 	:return:
 	"""
-	if config.ConvNetParams.cost_function == config.Cost.MEAN_SQUARED:
+	if config.ConvNetParams.cost_function == config.Cost.MSE:
 		sum = np.sum(np.square(predictions - labels))
 		div = (predictions.shape[0] * predictions.shape[1] * predictions.shape[2] * 255 * 255)
 		err = sum / div

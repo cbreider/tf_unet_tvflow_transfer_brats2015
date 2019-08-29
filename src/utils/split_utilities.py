@@ -10,7 +10,7 @@ import os
 import datetime
 import json
 import logging
-import configuration as config
+from src.utils.enum_params import TrainingModes
 
 
 class TestFilePaths(object):
@@ -45,7 +45,8 @@ class TrainingDataset(object):
         return self
 
     """Constructor"""
-    def __init__(self, paths, mode=config.TrainingModes.TVFLOW, new_split=True, split_ratio=0.7, nr_of_samples=0):
+    def __init__(self, paths, mode=TrainingModes.TVFLOW, new_split=True, split_ratio=0.7, nr_of_samples=0,
+                 use_scale_as_gt=False, load_only_mid_scans=False):
         """
         Inits a Dataset of training and validation images- Either creates it by reading files from a specific folder
         declared in "paths" or read a existing split form a .txt
@@ -55,8 +56,11 @@ class TrainingDataset(object):
         :param new_split: Flag indicating whether a new split should be created or an old one should be loaded
         :param split_ratio: ratio of training : validation data
         :param nr_of_samples: use only a specific number of training images. 0 if use all
+        :param use_scale_as_gt: use sclae images from tv as gt
+        :param load_only_mid_scans: use only slices from the middle of mha scan
         """
-        self.use_scale = config.DataParams.use_residual_as_gt
+        self.use_scale = use_scale_as_gt
+        self.load_only_mid_scans = load_only_mid_scans
         self._paths = paths
         self._new_split = new_split
         self._mode = mode
@@ -69,9 +73,9 @@ class TrainingDataset(object):
         self._seg_mode = "seg"
         self.validation_paths = None
         self.train_paths = None
-        if self._mode == config.TrainingModes.TVFLOW:
+        if self._mode == TrainingModes.TVFLOW:
             self.split_name = self._tvflow_mode
-        elif self._mode == config.TrainingModes.SEGMENTATION:
+        elif self._mode == TrainingModes.SEGMENTATION:
             self.split_name = self._seg_mode
         if self._new_split:
             self._create_new_split()
@@ -92,9 +96,9 @@ class TrainingDataset(object):
             paths are set as dictionary in form of {'path_to_training_file': 'path_to_ground_truth_file'}
         """
         # mode
-        if self._mode == config.TrainingModes.TVFLOW:
+        if self._mode == TrainingModes.TVFLOW:
             split = self._get_raw_to_tvflow_file_paths_dict(use_scale=self.use_scale)
-        elif self._mode == config.TrainingModes.SEGMENTATION:
+        elif self._mode == TrainingModes.SEGMENTATION:
             split = self._get_raw_to_seg_file_paths_dict()
         else:
             raise ValueError("Invalid mode '%s'." % self._mode)
@@ -135,7 +139,7 @@ class TrainingDataset(object):
             tv_flow_ext = "_tvflow_scale.png"
 
         keep_out = []
-        if config.DataParams.load_only_middle_scans:
+        if self.load_only_mid_scans:
             keep_out.extend(["_{}.".format(i) for i in range(40)])
             keep_out.extend(["_{}.".format(i) for i in range(120, 150)])
 
@@ -155,6 +159,7 @@ class TrainingDataset(object):
                                                                           without_gt=True,
                                                                           keep_out=keep_out))
 
+
         return raw_to_tvflow_file_dict
 
     def _get_raw_to_seg_file_paths_dict(self):
@@ -170,7 +175,7 @@ class TrainingDataset(object):
             return None
 
         keep_out = []
-        if config.DataParams.load_only_middle_scans:
+        if self.load_only_mid_scans:
             keep_out.extend(["_{}.".format(i) for i in range(40)])
             keep_out.extend(["_{}.".format(i) for i in range(120, 150)])
 
@@ -187,7 +192,7 @@ class TrainingDataset(object):
         return raw_to_seg_file_dict
 
     def _get_paths_dict_tvflow_single(self, base_path_key, base_path_value, ext_key=".png", ext_val=".png",
-                                      gg="HGG", without_gt=False, keep_out = []):
+                                      gg="HGG", without_gt=False, keep_out=[]):
         """
         Creates a dictionary with tvflow and Brats2015
 
@@ -217,9 +222,9 @@ class TrainingDataset(object):
                 if any(st in file for st in keep_out):
                     continue
                 if file.endswith(ext_key):
-                    file_path_key = os.path.join(path, file)
-                    file_path_val = file_path_key.replace(base_path_key, base_path_value)
-                    file_path_val = file_path_val.replace(ext_key, ext_val)
+                    file_path_val = os.path.join(path, file)
+                    file_path_key = file_path_val.replace(base_path_key, base_path_value)
+                    file_path_key = file_path_key.replace(ext_key, ext_val)
                     if not os.path.exists(file_path_val):
                         continue
                     file_dict[file_path_key] = file_path_val
@@ -253,17 +258,17 @@ class TrainingDataset(object):
                     if any(st in file for st in keep_out):
                         continue
                     if file.endswith(ext_key):
-                        file_path_key = os.path.join(file_path_full, file)
+                        file_path_val = os.path.join(file_path_full, file)
                         modality = ""
-                        if self._paths.t1_identifier in file_path_key.lower():
+                        if self._paths.t1_identifier in file_path_val.lower():
                             modality = self._paths.t1_identifier
-                        if self._paths.t1c_identifier in file_path_key.lower():
+                        if self._paths.t1c_identifier in file_path_val.lower():
                             modality = self._paths.t1c_identifier
-                        if self._paths.t2_identifier in file_path_key.lower():
+                        if self._paths.t2_identifier in file_path_val.lower():
                             modality = self._paths.t2_identifier
-                        if self._paths.flair_identifier in file_path_key.lower():
+                        if self._paths.flair_identifier in file_path_val.lower():
                             modality = self._paths.flair_identifier
-                        file_path_val = file_path_key.replace(file_path_in,
+                        file_path_key = file_path_val.replace(file_path_in,
                                                               file_path_gt)
                         if not os.path.exists(file_path_val):
                             continue

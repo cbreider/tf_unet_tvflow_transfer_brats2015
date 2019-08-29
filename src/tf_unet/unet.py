@@ -9,21 +9,22 @@ adapted from jakeret
 source: https://github.com/jakeret/tf_unet.git
 """
 
-
 from __future__ import print_function, division, absolute_import, unicode_literals
+
 import numpy as np
-from collections import OrderedDict
 import logging
-from datetime import datetime
 import tensorflow as tf
-import configuration as config
+from datetime import datetime
+from src.utils.enum_params import Cost
+from collections import OrderedDict
 from src.tf_unet.layers import (weight_variable, weight_variable_devonc, bias_variable,
                                 conv2d, deconv2d, max_pool, crop_and_concat, pixel_wise_softmax,
                                 cross_entropy)
 
 
 def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=64, filter_size=3, pool_size=2,
-                    summaries=True, freeze_layers=False):
+                    summaries=True, freeze_down_layers=False, freeze_up_layers=False, use_padding=False, bn=False,
+                    add_residual_layer=False, use_scale_image_as_gt=False):
     """
     Creates a new convolutional unet for the given parametrization.
 
@@ -31,11 +32,17 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
     :param keep_prob: dropout probability tensor
     :param channels: number of channels in the input image
     :param n_class: number of output labels
-    :param n_layers: number of layers in the net
-    :param features_root: number of features in the first layer
-    :param filter_size: size of the convolution filter
-    :param pool_size: size of the max pooling operation
-    :param summaries: Flag if summaries should be created
+    :param n_layers: number of layers in the net, default 5
+    :param features_root: number of features in the first layer, default 64
+    :param filter_size: size of the convolution filter, default 3
+    :param pool_size: size of the max pooling operation, default 2
+    :param summaries: Flag if summaries should be created, default True
+    :param freeze_down_layers: True to freeze layers in decoder, default False
+    :param freeze_up_layers: True to freeze layers in decoder, default False
+    :param use_padding: True touse padding and preserve image sizes. in_size=out_size, default False
+    :param bn: True to use batch normalization, default False
+    :param add_residual_layer: Add skip layer from input to output new_out = out + in
+    :param use_scale_image_as_gt: Use scale layer from tv as gt (only for tv learning) default False
     """
 
     logging.info("Building Unet with,"
@@ -63,12 +70,19 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
     up_h_convs = OrderedDict()
     variables = []
 
-    if freeze_layers:
-        logging.info("Freezing Layers!")
+    if freeze_down_layers:
+        logging.info("Freezing down Layers!")
+        trainable_down = False
+    else:
+        trainable_down = True
 
-    trainable = not freeze_layers
+    if freeze_up_layers:
+        logging.info("Freezing up Layers!")
+        trainable_up = False
+    else:
+        trainable_up = True
 
-    if config.ConvNetParams.padding:
+    if use_padding:
         padding = "SAME" # pad convolution outputs to original map size
     else:
         padding = "VALID" # no padding
@@ -82,21 +96,19 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
             stddev = np.sqrt(2 / (filter_size ** 2 * features))
             if layer == 0:
                 w1 = weight_variable([filter_size, filter_size, channels, features], stddev, name="w1",
-                                     trainable=trainable)
+                                     trainable=trainable_down)
             else:
                 w1 = weight_variable([filter_size, filter_size, features // 2, features], stddev, name="w1",
-                                     trainable=trainable)
+                                     trainable=trainable_down)
 
             w2 = weight_variable([filter_size, filter_size, features, features], stddev, name="w2",
-                                 trainable=trainable)
-            b1 = bias_variable([features], name="b1", trainable=trainable)
-            b2 = bias_variable([features], name="b2", trainable=trainable)
+                                 trainable=trainable_down)
+            b1 = bias_variable([features], name="b1", trainable=trainable_down)
+            b2 = bias_variable([features], name="b2", trainable=trainable_down)
 
-            conv1 = conv2d(in_node, w1, b1, keep_prob, padding=padding,
-                           bn=config.ConvNetParams.batch_normalization)
+            conv1 = conv2d(in_node, w1, b1, keep_prob, padding=padding, bn=bn)
             tmp_h_conv = tf.nn.relu(conv1)
-            conv2 = conv2d(tmp_h_conv, w2, b2, keep_prob, padding=padding,
-                           bn=config.ConvNetParams.batch_normalization)
+            conv2 = conv2d(tmp_h_conv, w2, b2, keep_prob, padding=padding, bn=bn)
             dw_h_convs[layer] = tf.nn.relu(conv2)
 
             weights.append((w1, w2))
@@ -118,24 +130,22 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
             stddev = np.sqrt(2 / (filter_size ** 2 * features))
 
             wd = weight_variable_devonc([pool_size, pool_size, features // 2, features], stddev, name="wd",
-                                        trainable=trainable)
-            bd = bias_variable([features // 2], name="bd", trainable=trainable)
+                                        trainable=trainable_up)
+            bd = bias_variable([features // 2], name="bd", trainable=trainable_up)
             h_deconv = tf.nn.relu(deconv2d(in_node, wd, pool_size) + bd)
             h_deconv_concat = crop_and_concat(dw_h_convs[layer], h_deconv)
             deconv[layer] = h_deconv_concat
 
             w1 = weight_variable([filter_size, filter_size, features, features // 2], stddev, name="w1",
-                                 trainable=trainable)
+                                 trainable=trainable_up)
             w2 = weight_variable([filter_size, filter_size, features // 2, features // 2], stddev, name="w2",
-                                 trainable=trainable)
-            b1 = bias_variable([features // 2], name="b1", trainable=trainable)
-            b2 = bias_variable([features // 2], name="b2", trainable=trainable)
+                                 trainable=trainable_up)
+            b1 = bias_variable([features // 2], name="b1", trainable=trainable_up)
+            b2 = bias_variable([features // 2], name="b2", trainable=trainable_up)
 
-            conv1 = conv2d(h_deconv_concat, w1, b1, keep_prob, padding=padding,
-                           bn=config.ConvNetParams.batch_normalization)
+            conv1 = conv2d(h_deconv_concat, w1, b1, keep_prob, padding=padding, bn=bn)
             h_conv = tf.nn.relu(conv1)
-            conv2 = conv2d(h_conv, w2, b2, keep_prob, padding=padding,
-                           bn=config.ConvNetParams.batch_normalization)
+            conv2 = conv2d(h_conv, w2, b2, keep_prob, padding=padding, bn=bn)
             in_node = tf.nn.relu(conv2)
             up_h_convs[layer] = in_node
 
@@ -154,10 +164,10 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
         bias = bias_variable([n_class], name="bias", trainable=True)
         conv = conv2d(in_node, weight, bias, tf.constant(1.0))
         output_map = tf.nn.relu(conv)
-        if config.ConvNetParams.add_residual_layer:
+        if add_residual_layer:
             if not padding == 'SAME':
                 raise ValueError("Residual Layer only possible with padding to preserve same size feature maps")
-            if config.DataParams.use_residual_as_gt:
+            if use_scale_image_as_gt:
                 output_map = x_image - output_map
             else:
                 output_map = output_map + x_image
@@ -206,13 +216,15 @@ class Unet(object):
     :param summaries: Flag if summaries should be created
         """
 
-    def __init__(self, n_channels, n_class, cost_function=config.Cost.CROSS_ENTROPY, summaries=True, class_weights=None,
+    def __init__(self, n_channels, n_class, cost_function=Cost.CROSS_ENTROPY, summaries=True, class_weights=None,
                  regularizer=None, n_layers=5, keep_prob=0.5, features_root=64, filter_size=3, pool_size=2,
-                 freeze_layers=False):
+                 freeze_down_layers=False, freeze_up_layers=False, use_padding=False, batch_norm=False,
+                 add_residual_layer=False, use_scale_image_as_gt=False, max_gt_value=1.0):
 
         self.n_class = n_class
         self.n_channels = n_channels
         self.summaries = summaries
+        self.cost_function = cost_function
 
         self.x = tf.placeholder("float", shape=[None, None, None, n_channels], name="x")
         self.y = tf.placeholder("float", shape=[None, None, None, n_class], name="y")
@@ -227,7 +239,12 @@ class Unet(object):
                                                               filter_size=filter_size,
                                                               pool_size=pool_size,
                                                               summaries=summaries,
-                                                              freeze_layers=freeze_layers)
+                                                              freeze_down_layers=freeze_down_layers,
+                                                              freeze_up_layers=freeze_up_layers,
+                                                              use_padding=use_padding,
+                                                              bn=batch_norm,
+                                                              add_residual_layer=add_residual_layer,
+                                                              use_scale_image_as_gt=use_scale_image_as_gt)
 
         self.cost = self._get_cost(logits=logits,
                                    cost_function=cost_function,
@@ -237,20 +254,20 @@ class Unet(object):
         self.gradients_node = tf.gradients(self.cost, self.variables)
 
         with tf.name_scope("cross_entropy"):
-            if cost_function == config.Cost.MEAN_SQUARED:
+            if cost_function == Cost.MSE:
                 self.cross_entropy = tf.constant(0) # cross entropy for regression useless
             else:
                 self.cross_entropy = cross_entropy(tf.reshape(self.y, [-1, n_class]),
                                                    tf.reshape(pixel_wise_softmax(logits), [-1, n_class]))
 
         with tf.name_scope("results"):
-            if cost_function == config.Cost.MEAN_SQUARED:
+            if cost_function == Cost.MSE:
                 self.correct_pred = tf.constant(0)  # makes no sense for regression
                 self.predicter = logits
                 self.error = tf.math.divide(tf.math.reduce_sum(tf.math.squared_difference(self.predicter, self.y)),
                                             tf.cast(tf.size(self.y), tf.float32))
                 self.error = tf.math.divide(self.error,
-                                            tf.math.square(tf.constant(config.DataParams.norm_image_value)))
+                                            tf.math.square(tf.constant(max_gt_value)))
                 self.error_rate = tf.math.multiply(tf.constant(100.0), self.error)
                 self.accuracy = tf.constant(1.0) - self.error
             else:
@@ -273,7 +290,7 @@ class Unet(object):
         with tf.name_scope("cost"):
             flat_logits = tf.reshape(logits, [-1, self.n_class])
             flat_labels = tf.reshape(self.y, [-1, self.n_class])
-            if cost_function == config.Cost.CROSS_ENTROPY:
+            if cost_function == Cost.CROSS_ENTROPY:
 
                 if class_weights is not None:
                     class_weights = tf.constant(np.array(class_weights, dtype=np.float32))
@@ -290,7 +307,7 @@ class Unet(object):
                 else:
                     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=flat_logits,
                                                                                      labels=flat_labels))
-            elif cost_function == config.Cost.DICE_COEFFICIENT:
+            elif cost_function == Cost.DICE_COEFFICIENT:
                 #eps = 1e-5
                 #prediction = pixel_wise_softmax(logits)
                 #intersection = tf.reduce_sum(prediction * self.y)
@@ -308,7 +325,7 @@ class Unet(object):
 
                 loss = 1.0 - 2.0 * (numerator + smooth) / (denominator + smooth)
 
-            elif cost_function == config.Cost.MEAN_SQUARED:
+            elif cost_function == Cost.MSE:
                 loss = tf.losses.mean_squared_error(flat_logits, flat_labels)
 
             else:
