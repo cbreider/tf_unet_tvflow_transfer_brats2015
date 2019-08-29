@@ -122,7 +122,8 @@ if __name__ == "__main__":
                     use_padding=config.ConvNetParams.padding,
                     batch_norm=config.ConvNetParams.batch_normalization,
                     add_residual_layer=config.ConvNetParams.add_residual_layer,
-                    use_scale_image_as_gt=config.DataParams.use_scale_image_as_gt)
+                    use_scale_image_as_gt=config.DataParams.use_scale_image_as_gt,
+                    act_func_out=config.ConvNetParams.activation_func_out)
 
     opt_args = None
     if config.TrainingParams.optimizer == Optimizer.MOMENTUM:

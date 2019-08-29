@@ -42,3 +42,11 @@ class Optimizer(Enum):
     ADAGRAD = 1         # Adagrad Optimizer
     ADAM = 2            # Adam Optimzer
     MOMENTUM = 3        # SDG with Momentum
+
+class Activation_Func(Enum):
+    """
+    training optimzer
+    """
+    RELU = 1
+    SIGMOID = 2
+    NONE = 3

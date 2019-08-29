@@ -8,7 +8,7 @@ created on June 2019
 
 
 import numpy as np
-from src.utils.enum_params import Optimizer, Cost
+from src.utils.enum_params import Optimizer, Cost, Activation_Func
 
 
 class DataParams:
@@ -63,6 +63,7 @@ class ConvNetParams:
     add_residual_layer = True       # Add residual layer/skip layer at the end output = input + last_layer
     freeze_down_layers = True       # freeze encoder layers during training
     freeze_up_layers = False        # freeze decoder layers during training
+    activation_func_out = Activation_Func.NONE  # Act func for output map # noe for regression
 
 
 class TrainingParams:

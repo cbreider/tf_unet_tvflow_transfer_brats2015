@@ -15,7 +15,7 @@ import numpy as np
 import logging
 import tensorflow as tf
 from datetime import datetime
-from src.utils.enum_params import Cost
+from src.utils.enum_params import Cost, Activation_Func
 from collections import OrderedDict
 from src.tf_unet.layers import (weight_variable, weight_variable_devonc, bias_variable,
                                 conv2d, deconv2d, max_pool, crop_and_concat, pixel_wise_softmax,
@@ -24,7 +24,7 @@ from src.tf_unet.layers import (weight_variable, weight_variable_devonc, bias_va
 
 def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=64, filter_size=3, pool_size=2,
                     summaries=True, freeze_down_layers=False, freeze_up_layers=False, use_padding=False, bn=False,
-                    add_residual_layer=False, use_scale_image_as_gt=False):
+                    add_residual_layer=False, use_scale_image_as_gt=False, act_func_out=Activation_Func.RELU):
     """
     Creates a new convolutional unet for the given parametrization.
 
@@ -43,6 +43,7 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
     :param bn: True to use batch normalization, default False
     :param add_residual_layer: Add skip layer from input to output new_out = out + in
     :param use_scale_image_as_gt: Use scale layer from tv as gt (only for tv learning) default False
+    :param act_func_out: Activation function for out map
     """
 
     logging.info("Building Unet with,"
@@ -163,7 +164,14 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
         weight = weight_variable([1, 1, features_root, n_class], stddev, trainable=True)
         bias = bias_variable([n_class], name="bias", trainable=True)
         conv = conv2d(in_node, weight, bias, tf.constant(1.0))
-        output_map = tf.nn.relu(conv)
+        if act_func_out == Activation_Func.RELU:
+            output_map = tf.nn.relu(conv)
+        elif act_func_out == Activation_Func.SIGMOID:
+            output_map = tf.nn.sigmoid(conv)
+        elif act_func_out == Activation_Func.NONE:
+            output_map = conv
+        else:
+            raise ValueError()
         if add_residual_layer:
             if not padding == 'SAME':
                 raise ValueError("Residual Layer only possible with padding to preserve same size feature maps")
@@ -219,7 +227,8 @@ class Unet(object):
     def __init__(self, n_channels, n_class, cost_function=Cost.CROSS_ENTROPY, summaries=True, class_weights=None,
                  regularizer=None, n_layers=5, keep_prob=0.5, features_root=64, filter_size=3, pool_size=2,
                  freeze_down_layers=False, freeze_up_layers=False, use_padding=False, batch_norm=False,
-                 add_residual_layer=False, use_scale_image_as_gt=False, max_gt_value=1.0):
+                 add_residual_layer=False, use_scale_image_as_gt=False, max_gt_value=1.0,
+                 act_func_out=Activation_Func.RELU):
 
         self.n_class = n_class
         self.n_channels = n_channels
@@ -244,7 +253,8 @@ class Unet(object):
                                                               use_padding=use_padding,
                                                               bn=batch_norm,
                                                               add_residual_layer=add_residual_layer,
-                                                              use_scale_image_as_gt=use_scale_image_as_gt)
+                                                              use_scale_image_as_gt=use_scale_image_as_gt,
+                                                              act_func_out=act_func_out)
 
         self.cost = self._get_cost(logits=logits,
                                    cost_function=cost_function,
