@@ -91,7 +91,7 @@ if __name__ == "__main__":
                                 batch_size=config.TrainingParams.batch_size_val,
                                 buffer_size=config.TrainingParams.buffer_size_val,
                                 shuffle=config.DataParams.shuffle,
-                                mode=DataModes.TRAINING,
+                                mode=DataModes.VALIDATION,
                                 train_mode=TrainingModes.TVFLOW,
                                 in_img_size=config.DataParams.raw_image_size,
                                 set_img_size=config.DataParams.set_image_size,

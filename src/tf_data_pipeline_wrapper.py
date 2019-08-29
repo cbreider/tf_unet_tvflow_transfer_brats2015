@@ -11,6 +11,7 @@ import tensorflow as tf
 import tensorflow.data as tf_data
 from src.utils.enum_params import TrainingModes, DataModes
 
+
 class ImageData(object):
     """Wrapper class around the Tensorflow dataset pipeline.
 
@@ -39,11 +40,11 @@ class ImageData(object):
         self._in_img_size = in_img_size
         self._set_img_size = set_img_size
         self._data_max_value = data_max_value
-        self._data_norm_value = data_norm_value,
-        self._crop_to_non_zero = crop_to_non_zero,
-        self._do_augmentation = do_augmentation,
-        self._normalize_std = normalize_std,
-        self._nr_of_classes = nr_of_classes,
+        self._data_norm_value = data_norm_value
+        self._crop_to_non_zero = crop_to_non_zero
+        self._do_augmentation = do_augmentation
+        self._normalize_std = normalize_std
+        self._nr_of_classes = nr_of_classes
         self._nr_channels = nr_channels
         self.data_generator = None
         self.init_op = None
