@@ -17,7 +17,7 @@ import argparse
 import configuration as config
 import tensorflow as tf
 import logging
-from src.utils.enum_params import TrainingModes, DataModes, Optimizer
+from src.utils.enum_params import TrainingModes, DataModes, Optimizer, RestoreMode
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
@@ -41,15 +41,16 @@ if __name__ == "__main__":
     parser.add_argument('--cuda_device', type=int, default=-1,
                         help='Number of cuda device to use (optional)')
     parser.add_argument("--restore_mode",
-                        help="Mode of restoring session. 1=Complete Session, 2=Without Out Layer, 3=Complete Net",
-                        type=int, default=None)
+                        help="Mode of restoring session. 1=Complete Session, 2=Without Out Layer, 3=Complete Net. "
+                             "Only used if restore_path is given",
+                        type=int, default=1)
 
     args = parser.parse_args()
     create_new_training_split = False
     create_summaries = True
     restore_path = None
     caffemodel_path = None
-    restore_mode = args.restore_mode
+    restore_mode = RestoreMode(args.restore_mode)
 
     if args.create_new_split:
         create_new_training_split = True
