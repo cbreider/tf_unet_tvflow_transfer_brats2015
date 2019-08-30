@@ -40,11 +40,16 @@ if __name__ == "__main__":
                         type=str, default=None)
     parser.add_argument('--cuda_device', type=int, default=-1,
                         help='Number of cuda device to use (optional)')
+    parser.add_argument("--restore_mode",
+                        help="Mode of restoring session. 1=Complete Session, 2=Without Out Layer, 3=Complete Net",
+                        type=int, default=None)
+
     args = parser.parse_args()
     create_new_training_split = False
     create_summaries = True
     restore_path = None
     caffemodel_path = None
+    restore_mode = args.restore_mode
 
     if args.create_new_split:
         create_new_training_split = True
@@ -56,6 +61,7 @@ if __name__ == "__main__":
         caffemodel_path = args.caffemodel_path
     if args.cuda_device >= 0:
         cuda_selector.set_cuda_gpu(args.cuda_device)
+
 
     # tf.enable_eager_execution()
     tf.reset_default_graph()
@@ -147,6 +153,7 @@ if __name__ == "__main__":
                          display_step=config.TrainingParams.display_step,
                          write_graph=config.TrainingParams.write_graph,
                          restore_path=restore_path,
-                         caffemodel_path=caffemodel_path)
+                         caffemodel_path=caffemodel_path,
+                         restore_mode=restore_mode)
 
 
