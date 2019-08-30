@@ -54,6 +54,18 @@ def shuffle_lists(list_one, list_two):
     return list_one, list_two
 
 
+def load_dataset_from_mha_files(file_paths, skip_empty=True):
+    "loads mha volumes input and gt given by the file paths dict and converts them to single sclices"
+    out = dict()
+    for gt_f, in_f in file_paths.items():
+        gt = load_3d_volume_as_array(gt_f)
+        in_vol = load_3d_volume_as_array(in_f)
+        for i in range(gt.shape[2]):
+            out[gt[i]] = in_vol[i]
+
+    return out
+
+
 def search_file_in_folder_list(folder_list, file_name):
     """
     Find the full filename from a list of folders
@@ -97,6 +109,7 @@ def load_3d_volume_as_array(filename):
         raise ValueError('{0:} unsupported file format'.format(filename))
     if len(data.shape) != 3:
         raise ValueError("{0:} Loaded array is not 3dim")
+    data = data.astype(dtype=np.int16)
     return data
 
 
@@ -140,7 +153,7 @@ def save_array_as_nifty_volume(data, filename, reference_name=None):
     sitk.WriteImage(img, filename)
 
 
-def intensity_normalize_one_volume(volume):
+def intensity_normalize_one_volume(volume, norm_std=False):
     """
     normalize the itensity of an nd volume based on the mean and std of nonzeor region
     inputs:
@@ -151,8 +164,10 @@ def intensity_normalize_one_volume(volume):
 
     pixels = volume[volume > 0]
     mean = pixels.mean()
-    std = pixels.std()
-    out = (volume - mean) / std
+    out = (volume - mean)
+    if norm_std:
+        std = pixels.std()
+        out /= std
     out_random = np.random.normal(0, 1, size=volume.shape)
     out[volume == 0] = out_random[volume == 0]
     return out

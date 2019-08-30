@@ -46,7 +46,7 @@ class TrainingDataset(object):
 
     """Constructor"""
     def __init__(self, paths, mode=TrainingModes.TVFLOW, use_mha=False, new_split=True, split_ratio=[0.7, 0.3], nr_of_samples=0,
-                 use_scale_as_gt=False, load_only_mid_scans=False):
+                 use_scale_as_gt=False, load_only_mid_scans=False, use_modalities=[], load_test_paths_only=False):
         """
         Inits a Dataset of training and validation images- Either creates it by reading files from a specific folder
         declared in "paths" or read a existing split form a .txt
@@ -75,10 +75,16 @@ class TrainingDataset(object):
         self._seg_mode = "seg"
         self.validation_paths = None
         self.train_paths = None
+        self.train_paths = None
+        self._use_mha = use_mha
+        self._use_modalities = use_modalities
         if self._mode == TrainingModes.TVFLOW:
             self.split_name = self._tvflow_mode
         elif self._mode == TrainingModes.SEGMENTATION:
             self.split_name = self._seg_mode
+        if load_test_paths_only:
+            self._read_test_split_only()
+            return
         if self._new_split:
             if sum(self._split_ratio) != 1.0:
                 raise ValueError()
@@ -113,20 +119,31 @@ class TrainingDataset(object):
 
         train_split_size = total * self._split_ratio[0]
         val_split_size = total * self._split_ratio[1]
+        b_test_split = len(self._split_ratio) == 3
+        tsr = 0
+        if b_test_split:
+            tsr = self._split_ratio[2]
+        test_split_size = total * tsr
+
         train_split = dict()
         validation_split = dict()
+        test_split = dict()
         i = 0
         for k, v in split.items():
             if i <= train_split_size:
                 train_split[k] = v
-            elif i < val_split_size:
+            elif i <= val_split_size + train_split_size:
                 validation_split[k] = v
+            elif i <= val_split_size + train_split_size + test_split_size and b_test_split:
+                test_split[k] = v
             i += 1
         # safe dataset
         self._safe_and_archive_split(train_split, 'split_{}_train'.format(self.split_name))
         self._safe_and_archive_split(validation_split, 'split_{}_validation'.format(self.split_name))
+        self._safe_and_archive_split(validation_split, 'split_{}_test'.format(self.split_name))
         self.validation_paths = validation_split
         self.train_paths = train_split
+        self.test_paths = test_split
 
     def _get_raw_to_tvflow_file_paths_dict(self, use_scale=False):
         """
@@ -178,18 +195,23 @@ class TrainingDataset(object):
         """
         if not self._paths.is_loaded:
             return None
+        ext = self._paths.png_ext
+        directory = self._paths.raw_train_dir
+        if self._use_mha:
+            directory = self._paths.brats_train_dir
+            ext = self._paths.mha_ext
 
         keep_out = []
-        if self.load_only_mid_scans:
+        if self.load_only_mid_scans and not self._use_mha:
             keep_out.extend(["_{}.".format(i) for i in range(40)])
             keep_out.extend(["_{}.".format(i) for i in range(120, 150)])
 
         raw_to_seg_file_dict = dict()
-        raw_to_seg_file_dict.update(self._get_paths_dict_seg_single(base_path=self._paths.raw_train_dir,
-                                                                    ext_key=self._paths.png_ext,
+        raw_to_seg_file_dict.update(self._get_paths_dict_seg_single(base_path=directory,
+                                                                    ext_key=ext,
                                                                     gg=self._paths.high_grade_gliomas_folder,
                                                                     keep_out=keep_out))
-        raw_to_seg_file_dict.update(self._get_paths_dict_seg_single(base_path=self._paths.raw_train_dir,
+        raw_to_seg_file_dict.update(self._get_paths_dict_seg_single(base_path=directory,
                                                                     ext_key=self._paths.png_ext,
                                                                     gg=self._paths.low_grade_gliomas_folder,
                                                                     keep_out=keep_out))
@@ -228,6 +250,17 @@ class TrainingDataset(object):
                     continue
                 if file.endswith(ext_key):
                     file_path_val = os.path.join(path, file)
+                    modality = ""
+                    if self._paths.t1_identifier in file_path_val.lower():
+                        modality = self._paths.t1_identifier
+                    if self._paths.t1c_identifier in file_path_val.lower():
+                        modality = self._paths.t1c_identifier
+                    if self._paths.t2_identifier in file_path_val.lower():
+                        modality = self._paths.t2_identifier
+                    if self._paths.flair_identifier in file_path_val.lower():
+                        modality = self._paths.flair_identifier
+                    if not any(modality in m for m in self._use_modalities):
+                        continue
                     file_path_key = file_path_val.replace(base_path_key, base_path_value)
                     file_path_key = file_path_key.replace(ext_key, ext_val)
                     if not os.path.exists(file_path_val):
@@ -273,6 +306,8 @@ class TrainingDataset(object):
                             modality = self._paths.t2_identifier
                         if self._paths.flair_identifier in file_path_val.lower():
                             modality = self._paths.flair_identifier
+                        if not any(modality in m for m in self._use_modalities):
+                            continue
                         file_path_key = file_path_val.replace(file_path_in,
                                                               file_path_gt)
                         if not os.path.exists(file_path_val):
@@ -312,6 +347,15 @@ class TrainingDataset(object):
                          "split_{}_validation{}".format(self.split_name, self._split_file_extension)))
         self.train_paths = train
         self.validation_paths = validation
+
+    def _read_test_split_only(self):
+        """
+        reads a test from txt
+        """
+        test = self._read_single_split_from_folder(os.path.join(self._paths.split_path,
+                                                                 "split_{}_train{}".format(self.split_name,
+                                                                                           self._split_file_extension)))
+        self.test_paths = test
 
     @staticmethod
     def _read_single_split_from_folder(file_name):

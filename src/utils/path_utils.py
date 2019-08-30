@@ -18,6 +18,7 @@ class DataPaths(object):
         self.is_loaded = False
         self.nrrd_ext = ".nrrd"
         self.png_ext = ".png"
+        self.mha_ext = ".mha"
         self.high_grade_gliomas_folder = 'HGG'
         self.low_grade_gliomas_folder = 'LGG'
         self.test_gg_path = "{}_{}".format(self.high_grade_gliomas_folder, self.low_grade_gliomas_folder)

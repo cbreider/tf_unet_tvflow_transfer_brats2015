@@ -7,7 +7,7 @@ created on June 2019
 """
 
 
-import numpy as np
+import src.utils.path_utils as p_util
 from src.utils.enum_params import Optimizer, Cost, Activation_Func
 
 
@@ -37,7 +37,7 @@ class DataParams:
     shuffle = True                  # Set true to extra Shuffle Trining Data. Note dict.items() is allready random
     do_image_augmentation = True    # Set True to augment training images random crapp, flip, rotation
     do_image_augmentation_val = False  # Set True to augment training images random crapp, flip, rotation for validation
-    split_train_val_ratio = 0.7     # Ration of Nr Training images to Val images
+    split_train_val_ratio = [0.8, 0.2] # [0.6, 0.2 0.2]     # Ration of Nr Training images to Val images (optioanl test)
     use_scale_image_as_gt = False   # choose if you want to use tv scale image instead of smoothed (only training)
     crop_to_non_zero = True         # Choose True to alway crop Training images to region of non zero values
     crop_to_non_zero_val = False    # Choose True to alway crop Training images to region of non zero values for validation
@@ -46,6 +46,7 @@ class DataParams:
     normailze_std = True            # normalize standard deviation for images during pre processing
     load_only_middle_scans = True   # load only slice 40 - 120
     nr_of_samples = 0               # use only a subset of images. if 0 all data is used
+    use_modalities = ["mr_flair", "mr_t1", "mr_t1c", "mr_t2"]  # modalities used for training
 
 
 class ConvNetParams:

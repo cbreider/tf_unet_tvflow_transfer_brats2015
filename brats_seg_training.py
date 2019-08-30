@@ -8,6 +8,7 @@ import argparse
 import configuration as config
 import tensorflow as tf
 import logging
+import src.utils.data_utils as dutil
 from src.utils.enum_params import TrainingModes, DataModes, Optimizer, RestoreMode
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
@@ -68,7 +69,8 @@ if __name__ == "__main__":
                                  use_scale_as_gt=config.DataParams.use_scale_image_as_gt,
                                  load_only_mid_scans=config.DataParams.load_only_middle_scans)
 
-    training_data = ImageData(file_paths=file_paths.train_paths,
+    train_set = dutil.load_dataset_from_mha_files(file_paths.train_paths)
+    training_data = ImageData(data=train_set,
                               batch_size=config.TrainingParams.batch_size_train,
                               buffer_size=config.TrainingParams.buffer_size_train,
                               shuffle=config.DataParams.shuffle,
@@ -84,7 +86,8 @@ if __name__ == "__main__":
                               nr_of_classes=config.DataParams.nr_of_classes_tv_flow_mode,
                               nr_channels=config.DataParams.nr_of_channels)
 
-    validation_data = ImageData(file_paths=file_paths.validation_paths,
+    validation_set = dutil.load_dataset_from_mha_files(file_paths.validation_paths)
+    validation_data = ImageData(data=validation_set,
                                 batch_size=config.TrainingParams.buffer_size_val,
                                 buffer_size=config.TrainingParams.buffer_size_val,
                                 shuffle=config.DataParams.shuffle,
