@@ -41,7 +41,7 @@ class DataParams:
     use_scale_image_as_gt = False   # choose if you want to use tv scale image instead of smoothed (only training)
     crop_to_non_zero = True         # Choose True to alway crop Training images to region of non zero values
     crop_to_non_zero_val = False    # Choose True to alway crop Training images to region of non zero values for validation
-    norm_image_value = 1.0          # Values which Images should be normed to during pre processing
+    norm_image_value = 2.0          # Values which Images should be normed to during pre processing
     data_max_value = 255.0          # Max value of inout images (uint8)
     normailze_std = True            # normalize standard deviation for images during pre processing
     load_only_middle_scans = True   # load only slice 40 - 120
@@ -59,9 +59,9 @@ class ConvNetParams:
     padding = True                  # Use padding to preserve feature map size and prevent downscaling
     batch_normalization = True      # Use Batchnormalization Yes/No
     class_weights = None            # weight for each individual class # TODO ?
-    regularizer = 0.00001           # lambda value for l2 regualizer
+    regularizer = 0.0000001           # lambda value for l2 regualizer
     add_residual_layer = False       # Add residual layer/skip layer at the end output = input + last_layer
-    freeze_down_layers = True       # freeze encoder layers during training
+    freeze_down_layers = False       # freeze encoder layers during training
     freeze_up_layers = False        # freeze decoder layers during training
     activation_func_out = Activation_Func.NONE  # Act func for output map # noe for regression
 
@@ -86,8 +86,8 @@ class TrainingParams:
                      epsilon=1e-08,
                      use_locking=False,
                      name='Adam',
-                     decay_rate=0.8,
-                     decay_steps=3000)
+                     decay_rate=0.95,
+                     decay_steps=5000)
     momentum_args = dict(momentum=0.99,     # Hyperparameters for Momentum optimzer
                          learning_rate=0.00001,
                          decay_rate=0.95,
