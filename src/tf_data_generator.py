@@ -7,6 +7,7 @@ created on June 2019
 """
 
 import tensorflow as tf
+import numpy as np
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework.ops import convert_to_tensor
 from abc import abstractmethod
@@ -43,7 +44,7 @@ class TFImageDataGenerator:
         self.data = None
         self.load_data_from_disk = False
         # check if file
-        el = data.itervalues().next()
+        el = next(iter(data))
         if isinstance(el, str):
             self.load_data_from_disk = True
 
@@ -68,10 +69,15 @@ class TFTrainingImageDataGenerator(TFImageDataGenerator):
         logging.info("Train buffer size {}, batch size {}".format(self._buffer_size, self._batch_size))
 
         # convert lists to TF tensor
-        gt = list(self._raw_data.keys())
-        input_val = list(self._raw_data.values())
-        self._input_data = convert_to_tensor(input_val, dtype=dtypes.string)
-        self._gt_data = convert_to_tensor(gt, dtype=dtypes.string)
+        if self.load_data_from_disk:
+            gt = list(self._raw_data.values())
+            input_val = list(self._raw_data.keys())
+            self._input_data = convert_to_tensor(input_val)
+            self._gt_data = convert_to_tensor(gt)
+        else:
+            self._input_data = np.array([row[1] for row in self._raw_data])
+            self._gt_data = np.array([row[0] for row in self._raw_data])
+
         # create dataset
         tmp_data = tf.data.Dataset.from_tensor_slices((self._input_data, self._gt_data))
         tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=8)
@@ -90,8 +96,8 @@ class TFTrainingImageDataGenerator(TFImageDataGenerator):
             in_img = tf_utils.load_png_image(input, nr_channels=self._nr_channels, img_size=self._in_img_size)
             gt_img = tf_utils.load_png_image(gt, nr_channels=self._nr_channels, img_size=self._in_img_size)
         else:
-            in_img = input
-            gt_img = gt
+            in_img = tf.cast(tf.reshape(input, [input.shape[0],  input.shape[1], 1]), tf.float32)
+            gt_img = tf.cast(tf.reshape(gt, [gt.shape[0],  gt.shape[1], 1]), tf.float32)
 
         if self._crop_to_non_zero:
             in_img, gt_img = tf_utils.crop_images_to_to_non_zero(in_img, gt_img, self._set_img_size)
@@ -128,10 +134,15 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
     def initialize(self):
         logging.info("Validation buffer size {}, batch size {}".format(self._buffer_size, self._batch_size))
         # convert lists to TF tensor
-        gt = list(self._raw_data.keys())
-        input_val = list(self._raw_data.values())
-        self._input_data = convert_to_tensor(input_val, dtype=dtypes.string)
-        self._gt_data = convert_to_tensor(gt, dtype=dtypes.string)
+        if self.load_data_from_disk:
+            gt = list(self._raw_data.values())
+            input_val = list(self._raw_data.keys())
+            self._input_data = convert_to_tensor(input_val)
+            self._gt_data = convert_to_tensor(gt)
+        else:
+            self._input_data = np.array([row[1] for row in self._raw_data])
+            self._gt_data = np.array([row[0] for row in self._raw_data])
+
         # create dataset
         tmp_data = tf.data.Dataset.from_tensor_slices((self._input_data, self._gt_data))
         tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=8)
@@ -150,8 +161,8 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
             in_img = tf_utils.load_png_image(input, nr_channels=self._nr_channels, img_size=self._in_img_size)
             gt_img = tf_utils.load_png_image(gt, nr_channels=self._nr_channels, img_size=self._in_img_size)
         else:
-            in_img = input
-            gt_img = gt
+            in_img = tf.cast(tf.reshape(input, [input.shape[0],  input.shape[1], 1]), tf.float32)
+            gt_img = tf.cast(tf.reshape(gt, [gt.shape[0],  gt.shape[1], 1]), tf.float32)
 
         if self._crop_to_non_zero:
             in_img, gt_img = tf_utils.crop_images_to_to_non_zero(in_img, gt_img, self._set_img_size)

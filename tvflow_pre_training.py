@@ -76,7 +76,8 @@ if __name__ == "__main__":
                                  split_ratio=config.DataParams.split_train_val_ratio,
                                  nr_of_samples=config.DataParams.nr_of_samples,
                                  use_scale_as_gt=config.DataParams.use_scale_image_as_gt,
-                                 load_only_mid_scans=config.DataParams.load_only_middle_scans)
+                                 load_only_mid_scans=config.DataParams.load_only_middle_scans,
+                                 use_modalities=config.DataParams.use_modalities)
 
     training_data = ImageData(data=file_paths.train_paths,
                               batch_size=config.TrainingParams.batch_size_train,

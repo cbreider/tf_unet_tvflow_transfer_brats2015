@@ -67,7 +67,9 @@ if __name__ == "__main__":
                                  split_ratio=config.DataParams.split_train_val_ratio,
                                  nr_of_samples=config.DataParams.nr_of_samples,
                                  use_scale_as_gt=config.DataParams.use_scale_image_as_gt,
-                                 load_only_mid_scans=config.DataParams.load_only_middle_scans)
+                                 load_only_mid_scans=config.DataParams.load_only_middle_scans,
+                                 use_modalities=config.DataParams.use_modalities,
+                                 use_mha=True)
 
     train_set = dutil.load_dataset_from_mha_files(file_paths.train_paths)
     training_data = ImageData(data=train_set,
@@ -83,7 +85,7 @@ if __name__ == "__main__":
                               crop_to_non_zero=config.DataParams.crop_to_non_zero,
                               do_augmentation=config.DataParams.do_image_augmentation,
                               normalize_std=config.DataParams.normailze_std,
-                              nr_of_classes=config.DataParams.nr_of_classes_tv_flow_mode,
+                              nr_of_classes=config.DataParams.nr_of_classes_seg_mode,
                               nr_channels=config.DataParams.nr_of_channels)
 
     validation_set = dutil.load_dataset_from_mha_files(file_paths.validation_paths)
@@ -100,7 +102,7 @@ if __name__ == "__main__":
                                 crop_to_non_zero=config.DataParams.crop_to_non_zero_val,
                                 do_augmentation=config.DataParams.do_image_augmentation_val,
                                 normalize_std=config.DataParams.normailze_std,
-                                nr_of_classes=config.DataParams.nr_of_classes_tv_flow_mode,
+                                nr_of_classes=config.DataParams.nr_of_classes_seg_mode,
                                 nr_channels=config.DataParams.nr_of_channels)
 
     training_data.create()

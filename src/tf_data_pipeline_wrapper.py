@@ -6,7 +6,7 @@ Author: Christian Breiderhoff
 created on June 2019
 """
 
-from src.tf_data_generator import TFTrainingImageDataGenerator, TFValidationImageDataGenerator, TFTestImageDataGenerator
+from src.tf_data_generator import TFTrainingImageDataGenerator, TFValidationImageDataGenerator
 import tensorflow as tf
 import tensorflow.data as tf_data
 from src.utils.enum_params import TrainingModes, DataModes
@@ -70,7 +70,7 @@ class ImageData(object):
             graph = tf.get_default_graph()
             with graph.as_default():
                 if self._mode == DataModes.TRAINING:
-                    self.data_generator = TFTrainingImageDataGenerator(file_paths=self._data,
+                    self.data_generator = TFTrainingImageDataGenerator(data=self._data,
                                                                        batch_size=self._batch_size,
                                                                        buffer_size=self._buffer_size,
                                                                        shuffle=self._shuffle,
@@ -86,7 +86,7 @@ class ImageData(object):
                                                                        nr_channels=self._nr_channels)
 
                 elif self._mode == DataModes.VALIDATION:
-                    self.data_generator = TFValidationImageDataGenerator(file_paths=self._data,
+                    self.data_generator = TFValidationImageDataGenerator(data=self._data,
                                                                          batch_size=self._batch_size,
                                                                          buffer_size=self._buffer_size,
                                                                          shuffle=self._shuffle,

@@ -90,6 +90,7 @@ if __name__ == "__main__":
             predictions = []
 
             for gt, input in file_paths.test_paths.items():
+                predictions = []
                 name = input.replace(data_paths.data_dir + "/", "" )
                 gt = dutils.load_3d_volume_as_array(gt)
                 input_scan = dutils.load_3d_volume_as_array(input)
@@ -119,6 +120,7 @@ if __name__ == "__main__":
 
             if save_all_predictions:
                 dutils.save_array_as_nifty_volume(predictions, os.path.join(model_path, name + ".mha"))
+
 
             accuracy /= idx
             error /= idx

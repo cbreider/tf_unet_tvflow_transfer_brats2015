@@ -180,8 +180,6 @@ class TrainingDataset(object):
                                                                           gg=self._paths.low_grade_gliomas_folder,
                                                                           without_gt=True,
                                                                           keep_out=keep_out))
-
-
         return raw_to_tvflow_file_dict
 
     def _get_raw_to_seg_file_paths_dict(self):
@@ -212,7 +210,7 @@ class TrainingDataset(object):
                                                                     gg=self._paths.high_grade_gliomas_folder,
                                                                     keep_out=keep_out))
         raw_to_seg_file_dict.update(self._get_paths_dict_seg_single(base_path=directory,
-                                                                    ext_key=self._paths.png_ext,
+                                                                    ext_key=ext,
                                                                     gg=self._paths.low_grade_gliomas_folder,
                                                                     keep_out=keep_out))
 
@@ -249,20 +247,20 @@ class TrainingDataset(object):
                 if any(st in file for st in keep_out):
                     continue
                 if file.endswith(ext_key):
-                    file_path_val = os.path.join(path, file)
+                    file_path_key = os.path.join(path, file)
                     modality = ""
-                    if self._paths.t1_identifier in file_path_val.lower():
+                    if self._paths.t1_identifier in file_path_key.lower():
                         modality = self._paths.t1_identifier
-                    if self._paths.t1c_identifier in file_path_val.lower():
+                    if self._paths.t1c_identifier in file_path_key.lower():
                         modality = self._paths.t1c_identifier
-                    if self._paths.t2_identifier in file_path_val.lower():
+                    if self._paths.t2_identifier in file_path_key.lower():
                         modality = self._paths.t2_identifier
-                    if self._paths.flair_identifier in file_path_val.lower():
+                    if self._paths.flair_identifier in file_path_key.lower():
                         modality = self._paths.flair_identifier
                     if not any(modality in m for m in self._use_modalities):
                         continue
-                    file_path_key = file_path_val.replace(base_path_key, base_path_value)
-                    file_path_key = file_path_key.replace(ext_key, ext_val)
+                    file_path_val = file_path_key.replace(base_path_key, base_path_value)
+                    file_path_val = file_path_val.replace(ext_key, ext_val)
                     if not os.path.exists(file_path_val):
                         continue
                     file_dict[file_path_key] = file_path_val
@@ -296,19 +294,19 @@ class TrainingDataset(object):
                     if any(st in file for st in keep_out):
                         continue
                     if file.endswith(ext_key):
-                        file_path_val = os.path.join(file_path_full, file)
+                        file_path_key = os.path.join(file_path_full, file)
                         modality = ""
-                        if self._paths.t1_identifier in file_path_val.lower():
+                        if self._paths.t1_identifier in file_path_key.lower():
                             modality = self._paths.t1_identifier
-                        if self._paths.t1c_identifier in file_path_val.lower():
+                        if self._paths.t1c_identifier in file_path_key.lower():
                             modality = self._paths.t1c_identifier
-                        if self._paths.t2_identifier in file_path_val.lower():
+                        if self._paths.t2_identifier in file_path_key.lower():
                             modality = self._paths.t2_identifier
-                        if self._paths.flair_identifier in file_path_val.lower():
+                        if self._paths.flair_identifier in file_path_key.lower():
                             modality = self._paths.flair_identifier
                         if not any(modality in m for m in self._use_modalities):
                             continue
-                        file_path_key = file_path_val.replace(file_path_in,
+                        file_path_val = file_path_key.replace(file_path_in,
                                                               file_path_gt)
                         if not os.path.exists(file_path_val):
                             continue

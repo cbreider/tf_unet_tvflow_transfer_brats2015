@@ -55,14 +55,20 @@ def shuffle_lists(list_one, list_two):
 
 
 def load_dataset_from_mha_files(file_paths, skip_empty=True):
-    "loads mha volumes input and gt given by the file paths dict and converts them to single sclices"
-    out = dict()
-    for gt_f, in_f in file_paths.items():
+    """
+    loads mha volumes input and gt given by the file paths dict and converts them to single sclices
+    :param file_paths:
+    :param skip_empty:
+    :return:
+    """
+    out = []
+    for in_f, gt_f in file_paths.items():
         gt = load_3d_volume_as_array(gt_f)
         in_vol = load_3d_volume_as_array(in_f)
-        for i in range(gt.shape[2]):
-            out[gt[i]] = in_vol[i]
-
+        for i in range(gt.shape[0]):
+            if int(np.max(in_vol[i]) == 0) and skip_empty:
+                continue
+            out.append([in_vol[i], gt[i]])
     return out
 
 
@@ -118,9 +124,9 @@ def load_nrrd_file_as_array(filename, include_header=False):
         raise ValueError('{0:} unsupported file format'.format(filename))
     readdata, header = nrrd.read(filename)
     if include_header:
-        return readdata, header
+        return np.array(readdata), header
     else:
-        return readdata
+        return np.array(readdata)
 
 
 def load_npy_file_as_array(filename):
@@ -133,7 +139,7 @@ def load_mha_volume_as_array(filename):
     if not (mha_ext in filename):
         raise ValueError('{0:} unsupported file format'.format(filename))
     img = sitk.ReadImage(filename)
-    nda = sitk.GetArrayFromImage(img)
+    nda = np.array(sitk.GetArrayFromImage(img))
     return nda
 
 

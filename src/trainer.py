@@ -155,9 +155,6 @@ class Trainer(object):
             if caffemodel_path:
                 load_pre_trained_caffe_variables(session=sess, file_path=caffemodel_path)
 
-            if restore_mode == RestoreMode.COMPLETE_SESSION:
-                self.out_path = restore_path
-
             train_summary_path = os.path.join(self.out_path, "training_summary")
             val_summary_path = os.path.join(self.out_path, "validation_summary")
 
