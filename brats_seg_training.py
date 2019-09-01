@@ -20,7 +20,7 @@ if __name__ == "__main__":
     parser.add_argument("--create_new_split",
                         help="create a new split rather than loading one (default False)",
                         action='store_true')
-    parser.add_argument("--create_summaries",
+    parser.add_argument("--do_not_create_summaries",
                         help="crates a tensorboard summary (default true)",
                         action='store_true')
     parser.add_argument("--restore_path",
@@ -46,7 +46,7 @@ if __name__ == "__main__":
 
     if args.create_new_split:
         create_new_training_split = True
-    if not args.create_summaries:
+    if not args.do_not_create_summaries:
         create_summaries = False
     if args.restore_path is not None:
         restore_path = args.restore_path
