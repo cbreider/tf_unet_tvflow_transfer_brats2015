@@ -109,12 +109,11 @@ class TFTrainingImageDataGenerator(TFImageDataGenerator):
                                                            max=self._data_max_value,
                                                            new_max=self._data_norm_value,
                                                            normalize_std=self._normalize_std)
-        gt_img = tf_utils.normalize_and_zero_center_tensor(gt_img,
+        if self._mode == TrainingModes.TVFLOW:
+            gt = tf_utils.normalize_and_zero_center_tensor(gt_img,
                                                            max=self._data_max_value,
                                                            new_max=self._data_norm_value,
                                                            normalize_std=self._normalize_std)
-        if self._mode == TrainingModes.TVFLOW:
-            gt = gt_img
         elif self._mode == TrainingModes.SEGMENTATION:
             gt = tf_utils.to_one_hot(gt_img, depth=self._nr_of_classes)
         else:
@@ -174,12 +173,12 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
                                                            max=self._data_max_value,
                                                            new_max=self._data_norm_value,
                                                            normalize_std=self._normalize_std)
-        gt_img = tf_utils.normalize_and_zero_center_tensor(gt_img,
+
+        if self._mode == TrainingModes.TVFLOW:
+            gt = tf_utils.normalize_and_zero_center_tensor(gt_img,
                                                            max=self._data_max_value,
                                                            new_max=self._data_norm_value,
                                                            normalize_std=self._normalize_std)
-        if self._mode == TrainingModes.TVFLOW:
-            gt = gt_img
         elif self._mode == TrainingModes.SEGMENTATION:
             gt = tf_utils.to_one_hot(gt_img, depth=self._nr_of_classes)
         else:
