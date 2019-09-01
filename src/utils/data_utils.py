@@ -13,7 +13,7 @@ from scipy import ndimage
 import SimpleITK as sitk
 import nrrd
 from PIL import Image
-
+import copy
 
 # supported file extensions
 nrrd_ext = ".nrrd"
@@ -62,13 +62,19 @@ def load_dataset_from_mha_files(file_paths, skip_empty=True):
     :return:
     """
     out = []
+    f=0
     for in_f, gt_f in file_paths.items():
         gt = load_3d_volume_as_array(gt_f)
         in_vol = load_3d_volume_as_array(in_f)
+        gt = gt.astype(np.uint8)
+        in_vol = in_vol.astype(np.float32) / np.float32(np.max(in_vol)) * 255.0
+        in_vol = in_vol.astype(np.uint8)
         for i in range(gt.shape[0]):
             if int(np.max(in_vol[i]) == 0) and skip_empty:
                 continue
             out.append([in_vol[i], gt[i]])
+        print(f)
+        f+=1
     return out
 
 
@@ -580,7 +586,7 @@ def to_rgb(img):
     return img.astype('uint8')
 
 
-def one_hot_to_rgb(one_hot):
+def one_hot_to_rgb(one_hot, scan):
     """
     converts the given one hot image to an rgb image given the colors
     :param one_hot: one hot tensor [nx, ny, nr_classes]
@@ -596,10 +602,9 @@ def one_hot_to_rgb(one_hot):
         [0, 0, 255]])
 
     assert seg_label_colors.shape[0] == one_hot.shape[2]
-
-    rgb_img = np.zeros((one_hot.shape[0], one_hot.shape[1], 3))
+    rgb_img = copy.deepcopy(scan) 
     idx = np.argmax(one_hot, axis=2)
-    for i in range(seg_label_colors.shape[0]):
+    for i in range(1, seg_label_colors.shape[0]):
         rgb_img[idx == i] = seg_label_colors[i]
 
     return rgb_img.astype('uint8')
@@ -672,8 +677,8 @@ def combine_img_prediction(data, gt, pred, mode=1, label_colors=None):
     if mode == 0:
         gt = gt.reshape(-1, gt.shape[2], gt.shape[3])
         pred = pred.reshape(-1, pred.shape[2], pred.shape[3])
-        gt_rgb = one_hot_to_rgb(gt)
-        pred_rgb = one_hot_to_rgb(pred)
+        gt_rgb = one_hot_to_rgb(gt, data_rgb)
+        pred_rgb = one_hot_to_rgb(pred, data_rgb)
     elif mode == 1:
         gt = revert_zero_centering(gt)
         pred = revert_zero_centering(pred)

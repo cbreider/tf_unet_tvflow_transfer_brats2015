@@ -31,8 +31,7 @@ class DataParams:
     set_image_size = [set_data_height,
                       set_data_width]  # size which the images should be reszied to for training
     nr_of_channels = 1              # number of channles of in/out images (grayscale)
-    nr_of_classes_seg_mode = \
-        len(brats_label_values)
+    nr_of_classes_seg_mode = 5
     nr_of_classes_tv_flow_mode = 1  # one class for each channel of 8bit image
     shuffle = True                  # Set true to extra Shuffle Trining Data. Note dict.items() is allready random
     do_image_augmentation = True    # Set True to augment training images random crapp, flip, rotation
@@ -56,7 +55,7 @@ class ConvNetParams:
     filter_size = 3                 # kernel size
     pool_size = 2                   # size of max pooling
     keep_prob_dopout = 0.75          # keep prob for dropout
-    cost_function = Cost.MSE        # Cost function to use. Choose from class Cost(Enum)
+    cost_function = Cost.CROSS_ENTROPY        # Cost function to use. Choose from class Cost(Enum)
     padding = True                  # Use padding to preserve feature map size and prevent downscaling
     batch_normalization = True      # Use Batchnormalization Yes/No
     class_weights = None            # weight for each individual class # TODO ?
@@ -64,7 +63,7 @@ class ConvNetParams:
     add_residual_layer = False       # Add residual layer/skip layer at the end output = input + last_layer
     freeze_down_layers = False       # freeze encoder layers during training
     freeze_up_layers = False        # freeze decoder layers during training
-    activation_func_out = Activation_Func.NONE  # Act func for output map # noe for regression
+    activation_func_out = Activation_Func.RELU  # Act func for output map # noe for regression
 
 
 class TrainingParams:
@@ -72,13 +71,13 @@ class TrainingParams:
     num_epochs = 100000             # number of training epochs
     label_smothing = 0              # smooth label values int gt to confuse network # TODO ?
     optimizer = Optimizer.ADAM      # Optimizer to use. Choose from class Optimizer(Enum):
-    batch_size_train = 4            # batch size used for training
+    batch_size_train = 1            # batch size used for training
     batch_size_val = 32             # batch size used for validation
-    buffer_size_train = 500         # buffer size for tf training data pipeline (only used for tv training)
-    buffer_size_val = 500           # buffer size for tf validation data pipeline (only used for tv training)
+    buffer_size_train = 50         # buffer size for tf training data pipeline (only used for tv training)
+    buffer_size_val = 50           # buffer size for tf validation data pipeline (only used for tv training)
     norm_grads = False              # norm gradients in summary
-    training_iters = 1000           # iterations per epoch
-    display_step = 200              # number of iterations between
+    training_iters = 4000           # iterations per epoch
+    display_step = 400              # number of iterations between
     write_graph = True              # write graph in tf summary
 
     adam_args = dict(learning_rate=0.00001,  # Hyperparameters for Adam optimzer
