@@ -601,8 +601,7 @@ def one_hot_to_rgb(one_hot, scan):
         [0, 255, 0],
         [0, 0, 255]])
 
-    assert seg_label_colors.shape[0] == one_hot.shape[2]
-    rgb_img = copy.deepcopy(scan) 
+    rgb_img = copy.deepcopy(scan)
     idx = np.argmax(one_hot, axis=2)
     for i in range(1, seg_label_colors.shape[0]):
         rgb_img[idx == i] = seg_label_colors[i]

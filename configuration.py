@@ -31,7 +31,7 @@ class DataParams:
     set_image_size = [set_data_height,
                       set_data_width]  # size which the images should be reszied to for training
     nr_of_channels = 1              # number of channles of in/out images (grayscale)
-    nr_of_classes_seg_mode = 5
+    nr_of_classes_seg_mode = 2
     nr_of_classes_tv_flow_mode = 1  # one class for each channel of 8bit image
     shuffle = True                  # Set true to extra Shuffle Trining Data. Note dict.items() is allready random
     do_image_augmentation = True    # Set True to augment training images random crapp, flip, rotation

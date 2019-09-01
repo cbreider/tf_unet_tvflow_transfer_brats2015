@@ -123,6 +123,9 @@ def to_one_hot(image, depth):
     :param depth: depth of the one hot tensor default =255 (8bit image)
     :returns: One hot Tensor of depth = depth:
     """
+    if depth == 2: # hole tumor and every thing else
+        mask = tf.greater(image, 0.)
+        image = tf.where(mask, tf.ones_like(image), image)
     image = tf.reshape(image, [tf.shape(image)[0], tf.shape(image)[1]])
     if not image.dtype == tf.uint8:
         image = tf.cast(image, tf.uint8)
