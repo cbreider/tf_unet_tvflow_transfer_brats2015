@@ -69,10 +69,10 @@ if __name__ == "__main__":
                                  use_scale_as_gt=config.DataParams.use_scale_image_as_gt,
                                  load_only_mid_scans=config.DataParams.load_only_middle_scans,
                                  use_modalities=config.DataParams.use_modalities,
-                                 use_mha=True)
+                                 use_mha=False)
 
-    train_set = dutil.load_dataset_from_mha_files(file_paths.train_paths)
-    training_data = ImageData(data=train_set,
+    #train_set = dutil.load_dataset_from_mha_files(file_paths.train_paths)
+    training_data = ImageData(data=file_paths.train_paths,
                               batch_size=config.TrainingParams.batch_size_train,
                               buffer_size=config.TrainingParams.buffer_size_train,
                               shuffle=config.DataParams.shuffle,
@@ -88,9 +88,9 @@ if __name__ == "__main__":
                               nr_of_classes=config.DataParams.nr_of_classes_seg_mode,
                               nr_channels=config.DataParams.nr_of_channels)
 
-    validation_set = dutil.load_dataset_from_mha_files(file_paths.validation_paths)
-    validation_data = ImageData(data=validation_set,
-                                batch_size=config.TrainingParams.buffer_size_val,
+    #validation_set = dutil.load_dataset_from_mha_files(file_paths.validation_paths)
+    validation_data = ImageData(data=file_paths.validation_paths,
+                                batch_size=config.TrainingParams.batch_size_val,
                                 buffer_size=config.TrainingParams.buffer_size_val,
                                 shuffle=config.DataParams.shuffle,
                                 mode=DataModes.VALIDATION,
