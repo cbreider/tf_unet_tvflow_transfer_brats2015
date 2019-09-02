@@ -34,12 +34,12 @@ class DataParams:
     nr_of_classes_seg_mode = 2
     nr_of_classes_tv_flow_mode = 1  # one class for each channel of 8bit image
     shuffle = True                  # Set true to extra Shuffle Trining Data. Note dict.items() is allready random
-    do_image_augmentation = True    # Set True to augment training images random crapp, flip, rotation
+    do_image_augmentation = False    # Set True to augment training images random crapp, flip, rotation
     do_image_augmentation_val = False  # Set True to augment training images random crapp, flip, rotation for validation
     split_train_val_ratio = [0.8, 0.2] # [0.6, 0.2 0.2]     # Ration of Nr Training images to Val images (optioanl test)
-    use_scale_image_as_gt = False   # choose if you want to use tv scale image instead of smoothed (only training)
+    use_scale_image_as_gt = False   # choose if you want to use tv scale image instead of smoothed (only tv training)
     crop_to_non_zero = True         # Choose True to alway crop Training images to region of non zero values
-    crop_to_non_zero_val = False    # Choose True to alway crop Training images to region of non zero values for validation
+    crop_to_non_zero_val = True    # Choose True to alway crop Training images to region of non zero values for validation
     norm_image_value = 2.0          # Values which Images should be normed to during pre processing
     data_max_value = 255.0          # Max value of inout images (uint8)
     normailze_std = True            # normalize standard deviation for images during pre processing
@@ -55,11 +55,11 @@ class ConvNetParams:
     filter_size = 3                 # kernel size
     pool_size = 2                   # size of max pooling
     keep_prob_dopout = 0.75          # keep prob for dropout
-    cost_function = Cost.CROSS_ENTROPY        # Cost function to use. Choose from class Cost(Enum)
+    cost_function = Cost.DICE_COEFFICIENT        # Cost function to use. Choose from class Cost(Enum)
     padding = True                  # Use padding to preserve feature map size and prevent downscaling
     batch_normalization = True      # Use Batchnormalization Yes/No
     class_weights = None            # weight for each individual class # TODO ?
-    regularizer = 0.0000001           # lambda value for l2 regualizer
+    regularizer = 0.00001           # lambda value for l2 regualizer
     add_residual_layer = False       # Add residual layer/skip layer at the end output = input + last_layer
     freeze_down_layers = False       # freeze encoder layers during training
     freeze_up_layers = False        # freeze decoder layers during training
@@ -70,17 +70,17 @@ class TrainingParams:
     """ Training parameters"""
     num_epochs = 100000             # number of training epochs
     label_smothing = 0              # smooth label values int gt to confuse network # TODO ?
-    optimizer = Optimizer.ADAM      # Optimizer to use. Choose from class Optimizer(Enum):
-    batch_size_train = 1            # batch size used for training
+    optimizer = Optimizer.MOMENTUM      # Optimizer to use. Choose from class Optimizer(Enum):
+    batch_size_train = 2            # batch size used for training
     batch_size_val = 32             # batch size used for validation
     buffer_size_train = 50         # buffer size for tf training data pipeline (only used for tv training)
     buffer_size_val = 50           # buffer size for tf validation data pipeline (only used for tv training)
     norm_grads = False              # norm gradients in summary
-    training_iters = 4000           # iterations per epoch
-    display_step = 400              # number of iterations between
+    training_iters = 1000           # iterations per epoch
+    display_step = 200              # number of iterations between
     write_graph = True              # write graph in tf summary
 
-    adam_args = dict(learning_rate=0.00001,  # Hyperparameters for Adam optimzer
+    adam_args = dict(learning_rate=0.000001,  # Hyperparameters for Adam optimzer
                      beta1=0.9,
                      beta2=0.999,
                      epsilon=1e-08,
@@ -89,12 +89,12 @@ class TrainingParams:
                      decay_rate=0.95,
                      decay_steps=5000)
     momentum_args = dict(momentum=0.99,     # Hyperparameters for Momentum optimzer
-                         learning_rate=0.00001,
-                         decay_rate=0.95,
+                         learning_rate=0.000001,
+                         decay_rate=0.90,
                          use_locking=False,
                          name='Momentum',
                          use_nesterov=False,
-                         decay_steps=5000)
+                         decay_steps=10000)
     adagrad_args = dict(learning_rate=0.001,  # Hyperparameters for Adagrd optimzer
                         initial_accumulator_value=0.1,
                         use_locking=False,
