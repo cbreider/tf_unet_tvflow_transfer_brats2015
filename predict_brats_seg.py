@@ -11,6 +11,7 @@ import logging
 import numpy as np
 from random import *
 from src.utils.enum_params import TrainingModes, DataModes, Optimizer, RestoreMode
+from src.tf_data_pipeline_wrapper import ImageData
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 
@@ -63,6 +64,22 @@ if __name__ == "__main__":
     if not os.path.exists(out_path):
         os.makedirs(out_path)
 
+    data = ImageData(data=file_paths.test_paths,
+                                batch_size=config.TrainingParams.batch_size_val,
+                                buffer_size=config.TrainingParams.buffer_size_val,
+                                shuffle=config.DataParams.shuffle,
+                                mode=DataModes.VALIDATION,
+                                train_mode=TrainingModes.SEGMENTATION,
+                                in_img_size=config.DataParams.raw_image_size,
+                                set_img_size=config.DataParams.set_image_size,
+                                data_max_value=config.DataParams.data_max_value,
+                                data_norm_value=config.DataParams.norm_image_value,
+                                crop_to_non_zero=config.DataParams.crop_to_non_zero_val,
+                                do_augmentation=config.DataParams.do_image_augmentation_val,
+                                normalize_std=config.DataParams.normailze_std,
+                                nr_of_classes=config.DataParams.nr_of_classes_seg_mode,
+                                nr_channels=config.DataParams.nr_of_channels)
+
     net = unet.Unet(n_channels=config.DataParams.nr_of_channels,
                     n_class=config.DataParams.nr_of_classes_seg_mode,
                     cost_function=config.ConvNetParams.cost_function,
@@ -81,6 +98,7 @@ if __name__ == "__main__":
 
     with tf.Session as sess:
         net.restore(sess=sess, model_path=model_path, RestoreMode=RestoreMode.COMPLETE_SESSION)
+        sess.run(data.init_op)
         if not use_Brats_Testing:
             idx = 0
             accuracy = 0
@@ -89,38 +107,34 @@ if __name__ == "__main__":
             cross_entropy = 0
             predictions = []
 
-            for gt, input in file_paths.test_paths.items():
+            for i in range(len(file_paths.test_paths)):
                 predictions = []
                 name = input.replace(data_paths.data_dir + "/", "" )
-                gt = dutils.load_3d_volume_as_array(gt)
-                input_scan = dutils.load_3d_volume_as_array(input)
-                input_scan = dutils.intensity_normalize_one_volume(input_scan, norm_std=config.DataParams.normailze_std)
-                input_scan = input_scan / np.max(input_scan)
+                batch_x, batch_y, name = sess.run(data.next_batch)
 
-                for i in range(gt.size[2]):
-                    prediction, ce, dc, err, acc = sess.run([net.predicter,
+                prediction, ce, dc, err, acc = sess.run([net.predicter,
                                                          net.cross_entropy,
-                                                         net.dice, net.error,
+                                                         net.dice,
+                                                         net.error,
                                                          net.accuracy],
-                                                            feed_dict={net.x: input_scan[i],
-                                                                       net.y: gt[i],
-                                                                       net.keep_prob: 1.})
-                    accuracy += acc
-                    error += err
-                    dice += dc
-                    cross_entropy += ce
-                    predictions[i] = prediction
-                    fname = "{}_{}.jpg".format(name, i)
-                    st = randint(1, 100)
-                    if st == 100:
-                        img = dutils.combine_img_prediction(input_scan, gt, prediction, mode=0)
-                        dutils.save_image(img, os.path.join(out_path, name))
+                                                        feed_dict={net.x: batch_x,
+                                                                   net.y: batch_y,
+                                                                   net.keep_prob: 1.})
+                accuracy += acc
+                error += err
+                dice += dc
+                cross_entropy += ce
+                predictions[i] = prediction
+                fname = "{}.jpg".format(i)
+                st = randint(1, 100)
+                if st == 100:
+                    img = dutils.combine_img_prediction(batch_x, batch_y, prediction, mode=0)
+                    dutils.save_image(img, os.path.join(out_path, name))
 
-                    idx += 1
+                idx += 1
 
             if save_all_predictions:
                 dutils.save_array_as_nifty_volume(predictions, os.path.join(model_path, name + ".mha"))
-
 
             accuracy /= idx
             error /= idx

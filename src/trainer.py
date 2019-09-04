@@ -260,22 +260,3 @@ def _update_avg_gradients(avg_gradients, gradients, step):
 
     return avg_gradients
 
-
-def error_rate(predictions, labels):
-    """
-    Return the error rate based on dense predictions and 1-hot labels
-    :param predictions:
-    :param labels:
-    :return:
-    """
-    if config.ConvNetParams.cost_function == config.Cost.MSE:
-        sum = np.sum(np.square(predictions - labels))
-        div = (predictions.shape[0] * predictions.shape[1] * predictions.shape[2] * 255 * 255)
-        err = sum / div
-        error = 100 - (100 * err)
-        return error
-    else:
-        return 100.0 - (
-                100.0 *
-                np.sum(np.argmax(predictions, 3) == np.argmax(labels, 3)) /
-                (predictions.shape[0] * predictions.shape[1] * predictions.shape[2]))
