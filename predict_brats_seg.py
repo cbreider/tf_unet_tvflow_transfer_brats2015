@@ -79,6 +79,7 @@ if __name__ == "__main__":
                                 normalize_std=config.DataParams.normailze_std,
                                 nr_of_classes=config.DataParams.nr_of_classes_seg_mode,
                                 nr_channels=config.DataParams.nr_of_channels)
+    data.create()
 
     net = unet.Unet(n_channels=config.DataParams.nr_of_channels,
                     n_class=config.DataParams.nr_of_classes_seg_mode,
@@ -96,6 +97,12 @@ if __name__ == "__main__":
                     use_scale_image_as_gt=config.DataParams.use_scale_image_as_gt,
                     act_func_out=config.ConvNetParams.activation_func_out)
 
+    idx = 0
+    accuracy = 0
+    error = 0
+    dice = 0
+    cross_entropy = 0
+
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         ckpt = tf.train.get_checkpoint_state(model_path)
@@ -103,17 +110,8 @@ if __name__ == "__main__":
             net.restore(sess, ckpt.model_checkpoint_path, restore_mode=RestoreMode.COMPLETE_NET)
         sess.run(data.init_op)
         if not use_Brats_Testing:
-            idx = 0
-            accuracy = 0
-            error = 0
-            dice = 0
-            cross_entropy = 0
-            predictions = []
-
             for i in range(len(file_paths.test_paths)):
-                predictions = []
-                name = input.replace(data_paths.data_dir + "/", "" )
-                batch_x, batch_y, name = sess.run(data.next_batch)
+                batch_x, batch_y = sess.run(data.next_batch)
 
                 prediction, ce, dc, err, acc = sess.run([net.predicter,
                                                          net.cross_entropy,
@@ -127,40 +125,39 @@ if __name__ == "__main__":
                 error += err
                 dice += dc
                 cross_entropy += ce
-                predictions[i] = prediction
                 fname = "{}.jpg".format(i)
                 st = randint(1, 100)
                 if st == 100:
                     img = dutils.combine_img_prediction(batch_x, batch_y, prediction, mode=0)
-                    dutils.save_image(img, os.path.join(out_path, name))
+                    dutils.save_image(img, os.path.join(out_path, fname))
 
                 idx += 1
 
             if save_all_predictions:
                 dutils.save_array_as_nifty_volume(predictions, os.path.join(model_path, name + ".mha"))
 
-            accuracy /= idx
-            error /= idx
-            dice /= idx
-            ce /= idx
+    accuracy /= idx
+    error /= idx
+    dice /= idx
+    ce /= idx
 
-            outF = open(os.path.join(model_path, "results.txt", "w"))
+    outF = open(os.path.join(model_path, "results.txt"), "w")
 
-            outF.write("ERROR: {}".format(error))
-            outF.write("\n")
-            outF.write("ACCURACY: {}".format(accuracy))
-            outF.write("\n")
-            outF.write("CROSS ENTROPY: {}".format(cross_entropy))
-            outF.write("\n")
-            outF.write("DICE: {}".format(dice))
-            outF.write("\n")
-            outF.close()
+    outF.write("ERROR: {}".format(error))
+    outF.write("\n")
+    outF.write("ACCURACY: {}".format(accuracy))
+    outF.write("\n")
+    outF.write("CROSS ENTROPY: {}".format(cross_entropy))
+    outF.write("\n")
+    outF.write("DICE: {}".format(dice))
+    outF.write("\n")
+    outF.close()
 
-            print("Test successfully evaluated:")
-            print("ERROR: {}".format(error))
-            print("ACCURACY: {}".format(accuracy))
-            print("CROSS ENTROPY: {}".format(cross_entropy))
-            print("DICE: {}".format(dice))
+    print("Test successfully evaluated:")
+    print("ERROR: {}".format(error))
+    print("ACCURACY: {}".format(accuracy))
+    print("CROSS ENTROPY: {}".format(cross_entropy))
+    print("DICE: {}".format(dice))
 
 
 
