@@ -131,10 +131,9 @@ if __name__ == "__main__":
                     img = dutils.combine_img_prediction(batch_x, batch_y, prediction, mode=0)
                     dutils.save_image(img, os.path.join(out_path, fname))
 
-                idx += 1
+                print("Test {} of {}  finished".format(idx, len(file_paths.test_paths)))
 
-            if save_all_predictions:
-                dutils.save_array_as_nifty_volume(predictions, os.path.join(model_path, name + ".mha"))
+                idx += 1
 
     accuracy /= idx
     error /= idx
