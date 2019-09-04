@@ -96,8 +96,11 @@ if __name__ == "__main__":
                     use_scale_image_as_gt=config.DataParams.use_scale_image_as_gt,
                     act_func_out=config.ConvNetParams.activation_func_out)
 
-    with tf.Session as sess:
-        net.restore(sess=sess, model_path=model_path, RestoreMode=RestoreMode.COMPLETE_SESSION)
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        ckpt = tf.train.get_checkpoint_state(model_path)
+        if ckpt and ckpt.model_checkpoint_path:
+            net.restore(sess, ckpt.model_checkpoint_path, restore_mode=RestoreMode.COMPLETE_NET)
         sess.run(data.init_op)
         if not use_Brats_Testing:
             idx = 0
