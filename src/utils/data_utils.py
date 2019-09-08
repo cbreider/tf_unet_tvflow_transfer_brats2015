@@ -602,9 +602,12 @@ def one_hot_to_rgb(one_hot, scan):
         [0, 0, 255]])
 
     rgb_img = copy.deepcopy(scan)
-    idx = np.argmax(one_hot, axis=2)
-    for i in range(1, seg_label_colors.shape[0]):
-        rgb_img[idx == i] = seg_label_colors[i]
+    if one_hot.shape[2] > 1:
+        idx = np.argmax(one_hot, axis=2)
+        for i in range(1, seg_label_colors.shape[0]):
+            rgb_img[idx == i] = seg_label_colors[i]
+    else:
+        rgb_img[one_hot.reshape((240, 240)) == 1] = seg_label_colors[1]
 
     return rgb_img.astype('uint8')
 

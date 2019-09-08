@@ -104,6 +104,7 @@ if __name__ == "__main__":
     cross_entropy = 0
 
     with tf.Session() as sess:
+        print("Running Tests on {} samples".format(len(file_paths.test_paths)))
         sess.run(tf.global_variables_initializer())
         ckpt = tf.train.get_checkpoint_state(model_path)
         if ckpt and ckpt.model_checkpoint_path:
