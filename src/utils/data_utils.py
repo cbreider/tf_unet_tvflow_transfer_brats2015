@@ -607,7 +607,7 @@ def one_hot_to_rgb(one_hot, scan):
         for i in range(1, seg_label_colors.shape[0]):
             rgb_img[idx == i] = seg_label_colors[i]
     else:
-        rgb_img[one_hot.reshape((240, 240)) == 1] = seg_label_colors[1]
+        rgb_img[one_hot.reshape((one_hot.shape[0], one_hot.shape[1])) == 1] = seg_label_colors[1]
 
     return rgb_img.astype('uint8')
 
