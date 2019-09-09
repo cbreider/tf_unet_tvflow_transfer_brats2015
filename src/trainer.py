@@ -175,6 +175,7 @@ class Trainer(object):
             for epoch in range(epochs):
                 total_loss = 0
                 sess.run(data_provider_train.init_op)
+                sess.run(data_provider_val.init_op)
 
                 for step in range((epoch * training_iters), ((epoch + 1) * training_iters)):
                     batch_x, batch_y = sess.run(data_provider_train.next_batch)

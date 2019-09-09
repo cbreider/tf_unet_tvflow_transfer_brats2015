@@ -11,7 +11,7 @@ import datetime
 import json
 import logging
 from src.utils.enum_params import TrainingModes
-
+from random import shuffle
 
 class TestFilePaths(object):
     # TODO
@@ -105,38 +105,39 @@ class TrainingDataset(object):
         """Creates and sets a new split training paths and validtaion paths
             paths are set as dictionary in form of {'path_to_training_file': 'path_to_ground_truth_file'}
         """
-        # mode
-        if self._mode == TrainingModes.TVFLOW:
-            split = self._get_raw_to_tvflow_file_paths_dict(use_scale=self.use_scale)
-        elif self._mode == TrainingModes.SEGMENTATION:
-            split = self._get_raw_to_seg_file_paths_dict()
-        else:
-            raise ValueError("Invalid mode '%s'." % self._mode)
-        # random.shuffle(split) # Not in use dict.items() is random
-        total = self._nr_of_samples
-        if self._nr_of_samples == 0:
-            total = len(split)
-
-        train_split_size = total * self._split_ratio[0]
-        val_split_size = total * self._split_ratio[1]
-        b_test_split = len(self._split_ratio) == 3
-        tsr = 0
-        if b_test_split:
-            tsr = self._split_ratio[2]
-        test_split_size = total * tsr
-
         train_split = dict()
         validation_split = dict()
         test_split = dict()
-        i = 0
-        for k, v in split.items():
-            if i <= train_split_size:
-                train_split[k] = v
-            elif i <= val_split_size + train_split_size:
-                validation_split[k] = v
-            elif i <= val_split_size + train_split_size + test_split_size and b_test_split:
-                test_split[k] = v
-            i += 1
+        # mode
+        if self._mode == TrainingModes.TVFLOW:
+            split = self._get_raw_to_tvflow_file_paths_dict(use_scale=self.use_scale)
+            # random.shuffle(split) # Not in use dict.items() is random
+            total = self._nr_of_samples
+            if self._nr_of_samples == 0:
+                total = len(split)
+            train_split_size = total * self._split_ratio[0]
+            val_split_size = total * self._split_ratio[1]
+            b_test_split = len(self._split_ratio) == 3
+            tsr = 0
+            if b_test_split:
+                tsr = self._split_ratio[2]
+            test_split_size = total * tsr
+
+            i = 0
+            for k, v in split.items():
+                if i <= train_split_size:
+                    train_split[k] = v
+                elif i <= val_split_size + train_split_size:
+                    validation_split[k] = v
+                elif i <= val_split_size + train_split_size + test_split_size and b_test_split:
+                    test_split[k] = v
+                i += 1
+
+        elif self._mode == TrainingModes.SEGMENTATION:
+            train_split, validation_split, test_split = self._get_raw_to_seg_file_paths_dict()
+        else:
+            raise ValueError("Invalid mode '%s'." % self._mode)
+
         # safe dataset
         self._safe_and_archive_split(train_split, 'split_{}_train'.format(self.split_name))
         self._safe_and_archive_split(validation_split, 'split_{}_validation'.format(self.split_name))
@@ -199,22 +200,38 @@ class TrainingDataset(object):
             directory = self._paths.brats_train_dir
             ext = self._paths.mha_ext
 
+        patient_paths = self._get_patient_folders(base_path=directory,
+                                                  gg=self._paths.high_grade_gliomas_folder)
+        patient_paths.extend(self._get_patient_folders(base_path=directory,
+                                                       gg=self._paths.low_grade_gliomas_folder))
+
+        train_split, validation_split, test_split = self._split_patients(patient_paths=patient_paths)
+
         keep_out = []
         if self.load_only_mid_scans and not self._use_mha:
             keep_out.extend(["_{}.".format(i) for i in range(40)])
             keep_out.extend(["_{}.".format(i) for i in range(120, 150)])
 
-        raw_to_seg_file_dict = dict()
-        raw_to_seg_file_dict.update(self._get_paths_dict_seg_single(base_path=directory,
-                                                                    ext_key=ext,
-                                                                    gg=self._paths.high_grade_gliomas_folder,
-                                                                    keep_out=keep_out))
-        raw_to_seg_file_dict.update(self._get_paths_dict_seg_single(base_path=directory,
-                                                                    ext_key=ext,
-                                                                    gg=self._paths.low_grade_gliomas_folder,
-                                                                    keep_out=keep_out))
+        train_dict = dict()
+        val_dict = dict()
+        test_dict = dict()
+        train_dict.update(self._get_paths_dict_seg_single(patient_paths=train_split,
+                                                          ext_key=ext,
+                                                          keep_out=keep_out))
+        val_dict.update(self._get_paths_dict_seg_single(patient_paths=validation_split,
+                                                          ext_key=ext,
+                                                          keep_out=keep_out))
+        test_dict.update(self._get_paths_dict_seg_single(patient_paths=test_split,
+                                                          ext_key=ext,
+                                                          keep_out=keep_out))
 
-        return raw_to_seg_file_dict
+        return train_dict, val_dict, test_dict
+
+    def _get_patient_folders(self, base_path, gg="HGG"):
+        gg_path = os.path.join(base_path, gg)
+        patient_names = os.listdir(gg_path)
+        patient_paths = [os.path.join(gg_path, patient) for patient in patient_names]
+        return  patient_paths
 
     def _get_paths_dict_tvflow_single(self, base_path_key, base_path_value, ext_key=".png", ext_val=".png",
                                       gg="HGG", without_gt=False, keep_out=[]):
@@ -266,7 +283,7 @@ class TrainingDataset(object):
                     file_dict[file_path_key] = file_path_val
         return file_dict
 
-    def _get_paths_dict_seg_single(self, base_path, ext_key=".png", gg="HGG", keep_out=[]):
+    def _get_paths_dict_seg_single(self, patient_paths, ext_key=".png", keep_out=[]):
         """
         Creates a dictionary with tvflow and Brats2015
 
@@ -278,9 +295,6 @@ class TrainingDataset(object):
                 {"path/to/brats2015/Patient/Flair/slice.png" : "path/to/tvflow/Patient/Flair/slice.png"}
         """
         file_dict = dict()
-        gg_path = os.path.join(base_path, gg)
-        patient_names = os.listdir(gg_path)
-        patient_paths = [os.path.join(gg_path, patient) for patient in patient_names]
         for patient_path in patient_paths:
             file_paths = os.listdir(patient_path)
             file_paths = sorted(file_paths, reverse=True)
@@ -343,7 +357,11 @@ class TrainingDataset(object):
         validation = self._read_single_split_from_folder(
             os.path.join(self._paths.split_path,
                          "split_{}_validation{}".format(self.split_name, self._split_file_extension)))
-        self.train_paths = train
+
+        if len(train) > self._nr_of_samples:
+            self.train_paths = train[:self._nr_of_samples]
+        else:
+            self.train_paths = train
         self.validation_paths = validation
 
     def _read_test_split_only(self):
@@ -351,9 +369,38 @@ class TrainingDataset(object):
         reads a test from txt
         """
         test = self._read_single_split_from_folder(os.path.join(self._paths.split_path,
-                                                                 "split_{}_train{}".format(self.split_name,
+                                                                 "split_{}_test{}".format(self.split_name,
                                                                                            self._split_file_extension)))
         self.test_paths = test
+
+    def _split_patients(self, patient_paths):
+        shuffle(patient_paths)
+
+        total = self._nr_of_samples
+        if self._nr_of_samples == 0:
+            total = len(patient_paths)
+        train_split_size = len(patient_paths) * self._split_ratio[0]
+        val_split_size = len(patient_paths) * self._split_ratio[1]
+        b_test_split = len(self._split_ratio) == 3
+        tsr = 0
+        if b_test_split:
+            tsr = self._split_ratio[2]
+        test_split_size = len(patient_paths) * tsr
+
+        i = 0
+        train_split = []
+        validation_split = []
+        test_split = []
+        for p in patient_paths:
+            if i <= train_split_size and i <= total:
+                train_split.append(p)
+            elif i > train_split_size and i > total and i <= val_split_size + train_split_size:
+                validation_split.append(p)
+            elif i <= val_split_size + train_split_size + test_split_size and b_test_split:
+                test_split.append(p)
+            i += 1
+
+        return train_split, validation_split, test_split
 
     @staticmethod
     def _read_single_split_from_folder(file_name):
