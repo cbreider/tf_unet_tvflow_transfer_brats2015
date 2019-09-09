@@ -96,6 +96,7 @@ class Trainer(object):
         tf.summary.scalar('error_rate', self.net.error_rate)
         if not self.net.cost == Cost.MSE:
             tf.summary.scalar('cross_entropy', self.net.cross_entropy)
+            tf.summary.scalar('dice', self.net.dice)
 
         self.optimizer = self._get_optimizer(global_step)
         tf.summary.scalar('learning_rate', self.learning_rate_node)
@@ -217,11 +218,12 @@ class Trainer(object):
             return save_path
 
     def store_prediction(self, sess, batch_x, batch_y, name, summary_writer, step, epoch):
-        loss, acc, err, prediction = self.run_summary(sess, summary_writer, step, batch_x, batch_y)
+        loss, acc, err, prediction, dice, ce = self.run_summary(sess, summary_writer, step, batch_x, batch_y)
 
         pred_shape = prediction.shape
 
-        logging.info("EPOCH {}: Verification error= {:.1f}%, loss= {:.6f}".format(epoch, err, loss))
+        logging.info("EPOCH {}: Verification error= {:.1f}%, loss= {:.6f}, Dice= {:.4f}, cross entropy = {:.4f}".format(
+            epoch, err, loss, dice, ce))
 
         img = util.combine_img_prediction(batch_x, batch_y, prediction,
                                           mode=1 if self.net.cost_function == Cost.MSE else 0)
@@ -235,27 +237,27 @@ class Trainer(object):
 
     def output_minibatch_stats(self, sess, summary_writer, step, batch_x, batch_y):
 
-        loss, acc, err, predictions = self.run_summary(sess, summary_writer, step, batch_x, batch_y)
+        loss, acc, err, predictions, dice, ce = self.run_summary(sess, summary_writer, step, batch_x, batch_y)
         logging.info(
-            "Iter {:}, Minibatch Loss= {:.4f}, Training Accuracy= {:.4f}, Minibatch error= {:.1f}%".format(step,
-                                                                                                            loss,
-                                                                                                            acc,
-                                                                                                            err))
+            "Iter {:}, Minibatch Loss= {:.4f}, Training Accuracy= {:.4f}, "
+            "Minibatch error= {:.1f}%, Dice= {:.4f}, cross entropy = {:.4f}".format(step, loss, acc, err, dice, ce))
 
     def run_summary(self, sess, summary_writer, step, batch_x, batch_y):
         # Calculate batch loss and accuracy
-        summary_str, loss, acc, err, predictions = sess.run([self.summary_op,
+        summary_str, loss, acc, err, predictions, dice, ce = sess.run([self.summary_op,
                                                         self.net.cost,
                                                         self.net.accuracy,
                                                         self.net.error_rate,
-                                                        self.net.predicter],
+                                                        self.net.predicter,
+                                                        self.net.dice,
+                                                        self.net.cross_entropy],
                                                         feed_dict={self.net.x: batch_x,
                                                                     self.net.y: batch_y,
                                                                     self.net.keep_prob: 1.})
         summary_writer.add_summary(summary_str, step)
         summary_writer.flush()
 
-        return loss, acc, err, predictions
+        return loss, acc, err, predictions, dice, ce
 
 
 def _update_avg_gradients(avg_gradients, gradients, step):
