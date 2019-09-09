@@ -375,11 +375,13 @@ class TrainingDataset(object):
 
     def _split_patients(self, patient_paths):
         shuffle(patient_paths)
-
         total = self._nr_of_samples
         if self._nr_of_samples == 0:
             total = len(patient_paths)
         train_split_size = len(patient_paths) * self._split_ratio[0]
+        if self._nr_of_samples > train_split_size:
+            raise ValueError()
+
         val_split_size = len(patient_paths) * self._split_ratio[1]
         b_test_split = len(self._split_ratio) == 3
         tsr = 0
@@ -387,14 +389,14 @@ class TrainingDataset(object):
             tsr = self._split_ratio[2]
         test_split_size = len(patient_paths) * tsr
 
-        i = 0
+        i = 1
         train_split = []
         validation_split = []
         test_split = []
         for p in patient_paths:
             if i <= train_split_size and i <= total:
                 train_split.append(p)
-            elif i > train_split_size and i > total and i <= val_split_size + train_split_size:
+            elif i > train_split_size and i <= val_split_size + train_split_size:
                 validation_split.append(p)
             elif i <= val_split_size + train_split_size + test_split_size and b_test_split:
                 test_split.append(p)

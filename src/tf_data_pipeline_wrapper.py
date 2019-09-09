@@ -33,7 +33,7 @@ class ImageData(object):
         :param mode: mode either training,validtation or testing
         """
         self._data = data
-        self._batch_size = batch_size
+        self.batch_size = batch_size
         self._mode = mode
         self._buffer_size = buffer_size
         self._shuffle = shuffle
@@ -50,6 +50,7 @@ class ImageData(object):
         self.init_op = None
         self.next_batch = None
         self.train_mode = train_mode
+        self.size = len(self._data)
         if not (mode == DataModes.TRAINING or
                 mode == DataModes.VALIDATION or
                 mode == DataModes.TESTING):
@@ -71,7 +72,7 @@ class ImageData(object):
             with graph.as_default():
                 if self._mode == DataModes.TRAINING:
                     self.data_generator = TFTrainingImageDataGenerator(data=self._data,
-                                                                       batch_size=self._batch_size,
+                                                                       batch_size=self.batch_size,
                                                                        buffer_size=self._buffer_size,
                                                                        shuffle=self._shuffle,
                                                                        mode=self.train_mode,
@@ -87,7 +88,7 @@ class ImageData(object):
 
                 elif self._mode == DataModes.VALIDATION:
                     self.data_generator = TFValidationImageDataGenerator(data=self._data,
-                                                                         batch_size=self._batch_size,
+                                                                         batch_size=self.batch_size,
                                                                          buffer_size=self._buffer_size,
                                                                          shuffle=self._shuffle,
                                                                          mode=self.train_mode,

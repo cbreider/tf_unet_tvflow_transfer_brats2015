@@ -174,10 +174,15 @@ class Trainer(object):
             avg_gradients = None
             for epoch in range(epochs):
                 total_loss = 0
+
+                # renitialze dataprovider if looped through a hole epoch
                 sess.run(data_provider_train.init_op)
-                sess.run(data_provider_val.init_op)
 
                 for step in range((epoch * training_iters), ((epoch + 1) * training_iters)):
+                    # renitialze dataprovider if looped through a hole dataset
+                    if step * data_provider_train.batch_size % data_provider_train.size == 0:
+                        sess.run(data_provider_train.init_op)
+
                     batch_x, batch_y = sess.run(data_provider_train.next_batch)
 
                     # Run optimization op (backprop)
