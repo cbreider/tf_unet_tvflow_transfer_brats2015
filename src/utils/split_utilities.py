@@ -141,7 +141,7 @@ class TrainingDataset(object):
         # safe dataset
         self._safe_and_archive_split(train_split, 'split_{}_train'.format(self.split_name))
         self._safe_and_archive_split(validation_split, 'split_{}_validation'.format(self.split_name))
-        self._safe_and_archive_split(validation_split, 'split_{}_test'.format(self.split_name))
+        self._safe_and_archive_split(test_split, 'split_{}_test'.format(self.split_name))
         self.validation_paths = validation_split
         self.train_paths = train_split
         self.test_paths = test_split
