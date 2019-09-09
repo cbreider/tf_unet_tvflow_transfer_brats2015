@@ -43,7 +43,7 @@ class DataParams:
     norm_image_value = 1.0          # Values which Images should be normed to during pre processing
     data_max_value = 255.0          # Max value of inout images (uint8)
     normailze_std = True            # normalize standard deviation for images during pre processing
-    load_only_middle_scans = True   # load only slice 40 - 120
+    load_only_middle_scans = False   # load only slice 40 - 120
     nr_of_samples = 0               # use only a subset of images. if 0 all data is used
     use_modalities = ["mr_flair"] #, "mr_t1", "mr_t1c", "mr_t2"]  # modalities used for training
 
