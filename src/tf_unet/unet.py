@@ -285,18 +285,20 @@ class Unet(object):
             else:
                 self.predicter = pixel_wise_softmax(logits)
                 if self.n_class == 2:
-                    pred_slice = tf.slice(self.predicter, [0, 0, 0, 1], [-1, -1, -1, 1])
-                    y_slice = tf.slice(self.y, [0, 0, 0, 1], [-1, -1, -1, 1])
+                    self.pred_slice = tf.argmax(self.predicter, axis=3)
+                    self.y_slice = tf.slice(self.y, [0, 0, 0, 1], [-1, -1, -1, 1])
+                    self.correct_pred = tf.equal(self.pred_slice, self.y_slice)
                 else:
-                    pred_slice = self.predicter
-                    y_slice = self.y
-                self.correct_pred = tf.equal(pred_slice, y_slice)
+                    self.pred_slice = tf.argmax(self.predicter, axis=3)
+                    self.pred_slice = tf.one_hot(self.pred_slice, depth=self.n_class)
+                    self.y_slice = self.y
+                    self.correct_pred = tf.equal(tf.argmax(self.pred_slice, axis=3), tf.argmax(self.y_slice, axis=3))
                 self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
                 self.error = tf.constant(1.0) - self.accuracy
                 self.error_rate = tf.math.multiply(self.error, tf.constant(100.0))
                 eps = 1e-5
-                intersection = tf.reduce_sum(pred_slice * y_slice)
-                union = eps + tf.reduce_sum(pred_slice) + tf.reduce_sum(y_slice)
+                intersection = tf.reduce_sum(self.pred_slice * self.y_slice)
+                union = eps + tf.reduce_sum(self.pred_slice) + tf.reduce_sum(self.y_slice)
                 self.dice = (2 * intersection / union)
 
     def _get_cost(self, logits, cost_function, class_weights=None, regularizer=None):
