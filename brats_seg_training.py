@@ -8,6 +8,7 @@ import argparse
 import configuration as config
 import tensorflow as tf
 import logging
+import os
 import src.utils.data_utils as dutil
 from src.utils.enum_params import TrainingModes, DataModes, Optimizer, RestoreMode
 
@@ -55,11 +56,24 @@ if __name__ == "__main__":
     if args.cuda_device >= 0:
         cuda_selector.set_cuda_gpu(args.cuda_device)
 
+
+
     # tf.enable_eager_execution()
     tf.reset_default_graph()
 
     data_paths = DataPaths(data_path="default", mode="SEGMENTATION")
     data_paths.load_data_paths()
+
+    outF = open(os.path.join(data_paths.tf_out_path, "args.txt"), "w")
+    outF.write("create_new_split: {}".format(create_new_training_split))
+    outF.write("\n")
+    outF.write("restore_path: {}".format(restore_path))
+    outF.write("\n")
+    outF.write("caffemodel_path: {}".format(caffemodel_path))
+    outF.write("\n")
+    outF.write("restore_mode: {}".format(restore_mode))
+    outF.write("\n")
+    outF.close()
 
     file_paths = TrainingDataset(paths=data_paths,
                                  mode=TrainingModes.SEGMENTATION,
