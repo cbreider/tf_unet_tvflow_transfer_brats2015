@@ -285,8 +285,8 @@ class Unet(object):
             else:
                 self.predicter = pixel_wise_softmax(logits)
                 if self.n_class == 2:
-                    self.pred_slice = tf.argmax(self.predicter, axis=3)
-                    self.y_slice = tf.slice(self.y, [0, 0, 0, 1], [-1, -1, -1, 1])
+                    self.pred_slice = tf.cast(tf.argmax(self.predicter, axis=3), tf.float32)
+                    self.y_slice = tf.cast(tf.argmax(self.y, axis=3), tf.float32)
                     self.correct_pred = tf.equal(self.pred_slice, self.y_slice)
                 else:
                     self.pred_slice = tf.argmax(self.predicter, axis=3)
