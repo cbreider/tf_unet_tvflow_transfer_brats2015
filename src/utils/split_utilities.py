@@ -358,10 +358,7 @@ class TrainingDataset(object):
             os.path.join(self._paths.split_path,
                          "split_{}_validation{}".format(self.split_name, self._split_file_extension)))
 
-        if len(train) > self._nr_of_samples:
-            self.train_paths = train[:self._nr_of_samples]
-        else:
-            self.train_paths = train
+        self.train_paths = train
         self.validation_paths = validation
 
     def _read_test_split_only(self):
