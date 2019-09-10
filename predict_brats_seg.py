@@ -81,16 +81,20 @@ if __name__ == "__main__":
                                 nr_channels=config.DataParams.nr_of_channels)
     data.create()
 
+
     net = unet.Unet(n_channels=config.DataParams.nr_of_channels,
                     n_class=config.DataParams.nr_of_classes_seg_mode,
                     cost_function=config.ConvNetParams.cost_function,
-                    summaries=False,
+                    summaries=True,
                     class_weights=config.ConvNetParams.class_weights,
                     regularizer=config.ConvNetParams.regularizer,
                     n_layers=config.ConvNetParams.num_layers,
+                    keep_prob=config.ConvNetParams.keep_prob_dopout,
                     features_root=config.ConvNetParams.feat_root,
                     filter_size=config.ConvNetParams.filter_size,
                     pool_size=config.ConvNetParams.pool_size,
+                    freeze_down_layers=config.ConvNetParams.freeze_down_layers,
+                    freeze_up_layers=config.ConvNetParams.freeze_up_layers,
                     use_padding=config.ConvNetParams.padding,
                     batch_norm=config.ConvNetParams.batch_normalization,
                     add_residual_layer=config.ConvNetParams.add_residual_layer,
@@ -108,7 +112,7 @@ if __name__ == "__main__":
         sess.run(tf.global_variables_initializer())
         ckpt = tf.train.get_checkpoint_state(model_path)
         if ckpt and ckpt.model_checkpoint_path:
-            net.restore(sess, ckpt.model_checkpoint_path, restore_mode=RestoreMode.COMPLETE_NET)
+            net.restore(sess, ckpt.model_checkpoint_path, restore_mode=RestoreMode.COMPLETE_SESSION)
         sess.run(data.init_op)
         if not use_Brats_Testing:
             for i in range(len(file_paths.test_paths)):
