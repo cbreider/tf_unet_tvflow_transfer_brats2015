@@ -36,7 +36,7 @@ class DataParams:
     shuffle = True                  # Set true to extra Shuffle Trining Data. Note dict.items() is allready random
     do_image_augmentation = False    # Set True to augment training images random crapp, flip, rotation
     do_image_augmentation_val = False  # Set True to augment training images random crapp, flip, rotation for validation
-    split_train_val_ratio = [0.7, 0.3] # [0.6, 0.2 0.2]     # Ration of Nr Training images to Val images (optioanl test)
+    split_train_val_ratio = [0.7, 0.05, 0.25] # [0.6, 0.2 0.2]     # Ration of Nr Training images to Val images (optioanl test)
     use_scale_image_as_gt = False   # choose if you want to use tv scale image instead of smoothed (only tv training)
     crop_to_non_zero = True         # Choose True to alway crop Training images to region of non zero values
     crop_to_non_zero_val = True    # Choose True to alway crop Training images to region of non zero values for validation
@@ -45,7 +45,7 @@ class DataParams:
     normailze_std = True            # normalize standard deviation for images during pre processing
     load_only_middle_scans = False   # load only slice 40 - 120
     nr_of_samples = 0               # use only a subset of images. if 0 all data is used
-    use_modalities = ["mr_flair"] #, "mr_t1", "mr_t1c", "mr_t2"]  # modalities used for training
+    use_modalities = ["mr_flair", "mr_t1", "mr_t1c", "mr_t2"]  # modalities used for training
 
 
 class ConvNetParams:
@@ -80,7 +80,7 @@ class TrainingParams:
     display_step = 200              # number of iterations between
     write_graph = True              # write graph in tf summary
 
-    adam_args = dict(learning_rate=0.0000001,  # Hyperparameters for Adam optimzer
+    adam_args = dict(learning_rate=0.0001,  # Hyperparameters for Adam optimzer
                      beta1=0.9,
                      beta2=0.999,
                      epsilon=1e-08,
@@ -89,7 +89,7 @@ class TrainingParams:
                      decay_rate=0.95,
                      decay_steps=5000)
     momentum_args = dict(momentum=0.99,     # Hyperparameters for Momentum optimzer
-                         learning_rate=0.000001,
+                         learning_rate=0.00001,
                          decay_rate=0.90,
                          use_locking=False,
                          name='Momentum',
