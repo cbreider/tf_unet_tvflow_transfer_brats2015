@@ -1,4 +1,4 @@
-# Pre train Unet on Total Variation smoothed Data
+# Pre-train Unet on Total Variation smoothed Data and fintuning it on Brats2015 brain tumor segmentation
 
 Lab Visualization & Medical Image Analysis SS2019
 Institute of Computer Science II
@@ -50,7 +50,7 @@ The script *predict_brats_seg.py* evaluates the test segmentation performance on
 
 * --model_path: Path to the (trained) tf model
 * -- cuda_device: Use a specific cuda device )(optional)
-' --save_all_predictions: Safe all predictions as PNG. If not given it will only (randomly) save 1/100 of the data.
+* --save_all_predictions: Safe all predictions as PNG. If not given it will only (randomly) save 1/100 of the data.
 
 ## Provide Data
 The Brats dataset should be provided as follows:
