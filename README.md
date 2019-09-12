@@ -1,4 +1,4 @@
-# Pre-train Unet on Total Variation smoothed Data and fintuning it on Brats2015 brain tumor segmentation
+# Pre-train Unet on Total Variation smoothed Data and fine-tuning it on Brats2015 brain tumor segmentation
 
 Lab Visualization & Medical Image Analysis SS2019
 Institute of Computer Science II
