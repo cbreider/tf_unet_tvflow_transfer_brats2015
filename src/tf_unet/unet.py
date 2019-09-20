@@ -310,7 +310,7 @@ class Unet(object):
         :param class_weights: weights for the different classes in case of multi-class imbalance
         :param regularizer: power of the L2 regularizers added to the loss function
         """
-
+        tf_reg = True
         with tf.name_scope("cost"):
             flat_logits = tf.reshape(logits, [-1, self.n_class])
             flat_labels = tf.reshape(self.y, [-1, self.n_class])
@@ -358,6 +358,9 @@ class Unet(object):
             if regularizer is not None:
                 regularizers = sum([tf.nn.l2_loss(variable) for variable in self.variables])
                 loss += (regularizer * regularizers)
+
+            tv = tf.reduce_sum(tf.image.total_variation(logits))
+            loss += 0.1 * tv
 
             return loss
 

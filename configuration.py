@@ -34,9 +34,9 @@ class DataParams:
     nr_of_classes_seg_mode = 2
     nr_of_classes_tv_flow_mode = 1  # one class for each channel of 8bit image
     shuffle = True                  # Set true to extra Shuffle Trining Data. Note dict.items() is allready random
-    do_image_augmentation = False    # Set True to augment training images random crapp, flip, rotation
+    do_image_augmentation = True    # Set True to augment training images random crapp, flip, rotation
     do_image_augmentation_val = False  # Set True to augment training images random crapp, flip, rotation for validation
-    split_train_val_ratio = [0.7, 0.05, 0.25] # [0.6, 0.2 0.2]     # Ration of Nr Training images to Val images (optioanl test)
+    split_train_val_ratio = [0.7, 0.3] # [0.6, 0.2 0.2]     # Ration of Nr Training images to Val images (optioanl test)
     use_scale_image_as_gt = False   # choose if you want to use tv scale image instead of smoothed (only tv training)
     crop_to_non_zero = True         # Choose True to alway crop Training images to region of non zero values
     crop_to_non_zero_val = True    # Choose True to alway crop Training images to region of non zero values for validation
@@ -55,7 +55,7 @@ class ConvNetParams:
     filter_size = 3                 # kernel size
     pool_size = 2                   # size of max pooling
     keep_prob_dopout = 0.75          # keep prob for dropout
-    cost_function = Cost.CROSS_ENTROPY        # Cost function to use. Choose from class Cost(Enum)
+    cost_function = Cost.MSE        # Cost function to use. Choose from class Cost(Enum)
     padding = True                  # Use padding to preserve feature map size and prevent downscaling
     batch_normalization = True      # Use Batchnormalization Yes/No
     class_weights = None            # weight for each individual class # TODO ?
