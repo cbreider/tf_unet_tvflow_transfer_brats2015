@@ -60,6 +60,7 @@ class ConvNetParams:
     batch_normalization = True      # Use Batchnormalization Yes/No
     class_weights = None            # weight for each individual class # TODO ?
     regularizer = 0.0000001           # lambda value for l2 regualizer
+    tv_regularizer = 0.01            # tv regularize for TV loss. oly used if Cost funcion is TV
     add_residual_layer = False       # Add residual layer/skip layer at the end output = input + last_layer
     freeze_down_layers = False       # freeze encoder layers during training
     freeze_up_layers = False        # freeze decoder layers during training

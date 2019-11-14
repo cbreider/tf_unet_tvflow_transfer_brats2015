@@ -16,6 +16,7 @@ class Cost(Enum):
     CROSS_ENTROPY = 1       # Choose to use Cross Entropy Cost (Segmentation)
     DICE_COEFFICIENT = 2    # Choose to use Dice Coefficient Cost (Segmentation)
     MSE = 3                 # Choose to use Mean Squared Error Cost (TV Training / Regression)
+    TV = 4                  # tv loss
 
 
 class DataModes(Enum):

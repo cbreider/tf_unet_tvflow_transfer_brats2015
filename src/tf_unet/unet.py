@@ -229,7 +229,7 @@ class Unet(object):
                  regularizer=None, n_layers=5, keep_prob=0.5, features_root=64, filter_size=3, pool_size=2,
                  freeze_down_layers=False, freeze_up_layers=False, use_padding=False, batch_norm=False,
                  add_residual_layer=False, use_scale_image_as_gt=False, max_gt_value=1.0,
-                 act_func_out=Activation_Func.RELU):
+                 act_func_out=Activation_Func.RELU, tv_regularizer=0.01):
 
         self.n_class = n_class
         self.n_channels = n_channels
@@ -260,7 +260,8 @@ class Unet(object):
         self.cost = self._get_cost(logits=logits,
                                    cost_function=cost_function,
                                    class_weights=class_weights,
-                                   regularizer=regularizer)
+                                   regularizer=regularizer,
+                                   tv_regularizer=tv_regularizer)
 
         self.gradients_node = tf.gradients(self.cost, self.variables)
 
@@ -301,7 +302,7 @@ class Unet(object):
                 union = eps + tf.reduce_sum(self.pred_slice) + tf.reduce_sum(self.y_slice)
                 self.dice = (2 * intersection / union)
 
-    def _get_cost(self, logits, cost_function, class_weights=None, regularizer=None):
+    def _get_cost(self, logits, cost_function, class_weights=None, regularizer=None, tv_regularizer=0.01):
         """
         Constructs the cost function, either cross_entropy, weighted cross_entropy or dice_coefficient.
 
@@ -352,6 +353,10 @@ class Unet(object):
             elif cost_function == Cost.MSE:
                 loss = tf.losses.mean_squared_error(flat_logits, flat_labels)
 
+            elif cost_function == Cost.TV:
+                loss = tf.losses.mean_squared_error(flat_logits, flat_labels)
+                tv = tf.reduce_sum(tf.image.total_variation(logits))
+                loss += 0.1 * tv
             else:
                 raise ValueError("Unknown cost function: " % cost_function.name)
 
@@ -359,8 +364,6 @@ class Unet(object):
                 regularizers = sum([tf.nn.l2_loss(variable) for variable in self.variables])
                 loss += (regularizer * regularizers)
 
-            tv = tf.reduce_sum(tf.image.total_variation(logits))
-            loss += 0.1 * tv
 
             return loss
 
