@@ -189,11 +189,11 @@ class Trainer(object):
                     # Run optimization op (backprop)
                     if step == 0:
                         self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
-                                                    util.crop_to_shape(batch_x, pred_shape))
+                                                    util.crop_to_shape(batch_y, pred_shape))
                     _, loss, lr, gradients = sess.run(
                         (self.optimizer, self.net.cost, self.learning_rate_node, self.net.gradients_node),
                         feed_dict={self.net.x: batch_x,
-                                    self.net.y: util.crop_to_shape(batch_x, pred_shape),
+                                    self.net.y: util.crop_to_shape(batch_y, pred_shape),
                                     self.net.keep_prob: dropout})
 
                     if self.net.summaries and self.norm_grads:
@@ -203,7 +203,7 @@ class Trainer(object):
 
                     if step % display_step == 0 and step != 0:
                         self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
-                                                    util.crop_to_shape(batch_x, pred_shape))
+                                                    util.crop_to_shape(batch_y, pred_shape))
 
                     total_loss += loss
 
@@ -218,7 +218,7 @@ class Trainer(object):
             return save_path
 
     def store_prediction(self, sess, batch_x, batch_y, name, summary_writer, step, epoch):
-        loss, acc, err, prediction, dice, ce = self.run_summary(sess, summary_writer, step, batch_x, batch_x)
+        loss, acc, err, prediction, dice, ce = self.run_summary(sess, summary_writer, step, batch_x, batch_y)
 
         pred_shape = prediction.shape
 

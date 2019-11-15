@@ -8,7 +8,7 @@ created on June 2019
 
 
 import tensorflow as tf
-
+import sys
 
 def preprocess_images(scan, ground_truth):
     """
@@ -75,7 +75,7 @@ def crop_non_zero_internal(scan, ground_truth, out_size):
 
 def load_png_image(filename, nr_channels, img_size, data_type=tf.float32):
     """
-    Loads a png imges within a TF pipeline
+    Loads a png images within a TF pipeline
 
     :param filename: use scale images from tvflow as gt instead of smoothed images
     :param data_type: data type in which the image is casted
@@ -91,6 +91,56 @@ def load_png_image(filename, nr_channels, img_size, data_type=tf.float32):
         return img
     except Exception as e:
         print("type error: " + str(e) + str(filename))
+
+#def get_tv_smoothed_and_clusterd_one_hot(image, save_samples):
+
+
+def get_tv_smoothed(img, tau, weight, eps, m_itr):
+    u = tf.zeros_like(img)
+    px = tf.zeros_like(img)
+    py = tf.zeros_like(img)
+    nm = tf.cast(tf.shape(img)[0] * tf.shape(img)[1] * tf.shape(img)[2], tf.float32)
+    error = tf.constant(0.0)
+    err_prev = tf.constant(eps)
+    err_init = tf.constant(0.0)
+    i = tf.constant(0)
+    img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr = tf.while_loop(
+        tv_cond,
+        tv_body,
+        [img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr])
+
+    return u
+
+
+def tv_cond(img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr):
+
+    return tf.logical_or(tf.greater_equal(tf.math.abs(err_prev - error), tf.multiply(eps, err_init)), tf.less_equal(i, m_itr))
+
+
+def tv_body(img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr):
+    u_old = u
+    ux = tf.subtract(tf.roll(u, shift=-1, axis=2), u)
+    uy = tf.subtract(tf.roll(u, shift=-1, axis=1), u)
+    px_new = tf.add(px, tf.multiply(tf.truediv(tau, weight), ux))
+    py_new = tf.add(py, tf.multiply(tf.truediv(tau, weight), uy))
+    norm_new = tf.math.maximum(tf.constant(1.0), tf.math.sqrt(
+        tf.math.pow(px_new, tf.constant(2.0)) + tf.math.pow(py_new, tf.constant(2.0))))
+    px = tf.truediv(px_new, norm_new)
+    py = tf.truediv(py_new, norm_new)
+    # calculate divergence
+    rx = tf.roll(px, shift=1, axis=2)
+    ry = tf.roll(py, shift=1, axis=1)
+    div_p = tf.add(tf.subtract(px, rx), tf.subtract(py, ry))
+
+    # update image
+    u = tf.add(img, tf.multiply(weight, div_p))
+    err_prev = error
+    # calculate error
+    error = tf.truediv(tf.norm(tf.subtract(u, u_old)), tf.math.sqrt(nm))
+    tf.print("fuck")
+    err_init = tf.cond(tf.equal(i, tf.constant(0)), lambda : error, lambda : err_init)
+    i = tf.math.add(i, tf.constant(1))
+    return [img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr]
 
 
 def convert_8bit_image_to_one_hot(image, depth=255):
