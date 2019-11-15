@@ -143,6 +143,9 @@ def tv_body(img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, 
     return [img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr]
 
 
+def get_kmeans_clustering(img, num_clusters, num_itr):
+
+    
 def convert_8bit_image_to_one_hot(image, depth=255):
     """
     Creates a one hot tensor of a given image

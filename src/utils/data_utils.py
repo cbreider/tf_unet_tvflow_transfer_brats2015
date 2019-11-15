@@ -586,6 +586,7 @@ def to_rgb(img):
     return img.astype('uint8')
 
 
+def tv_clustered_one_hot_to_rgb()
 def one_hot_to_rgb(one_hot, scan):
     """
     converts the given one hot image to an rgb image given the colors
