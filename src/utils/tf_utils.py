@@ -143,9 +143,33 @@ def tv_body(img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, 
     return [img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr]
 
 
-def get_kmeans_clustering(img, num_clusters, num_itr):
+def get_kmeans(img, clusters_n, iteration_n):
+    points_expanded = tf.expand_dims(img, 0)
+    for step in range(iteration_n):
+        centroids_expanded = tf.expand_dims(centroids, 1)
 
-    
+        distances = tf.reduce_sum(tf.square(tf.subtract(points_expanded, centroids_expanded)), 2)
+        assignments = tf.argmin(distances, 0)
+
+        means = []
+        for c in range(clusters_n):
+            means.append(tf.reduce_mean(
+                tf.gather(points_expanded,
+                          tf.reshape(
+                              tf.where(
+                                  tf.equal(assignments, c)
+                              ), [1, -1])
+                          ), reduction_indices=[1]))
+
+        new_centroids = tf.concat(means, 0)
+        centroids = new_centroids
+        #update_centroids = tf.assign(centroids, new_centroids)
+
+    centroids_expanded = tf.expand_dims(centroids, 1)
+    distances = tf.reduce_sum(tf.square(tf.subtract(points_expanded, centroids_expanded)), 2)
+    assignments = tf.argmin(distances, 0)
+    return [centroids, assignments]
+
 def convert_8bit_image_to_one_hot(image, depth=255):
     """
     Creates a one hot tensor of a given image
