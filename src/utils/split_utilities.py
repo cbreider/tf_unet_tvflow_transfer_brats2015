@@ -45,7 +45,7 @@ class TrainingDataset(object):
         return self
 
     """Constructor"""
-    def __init__(self, paths, mode=TrainingModes.TVFLOW, use_mha=False, new_split=True, split_ratio=[0.7, 0.3], nr_of_samples=0,
+    def __init__(self, paths, mode=TrainingModes.TVFLOW_REGRESSION, use_mha=False, new_split=True, split_ratio=[0.7, 0.3], nr_of_samples=0,
                  use_scale_as_gt=False, load_only_mid_scans=False, use_modalities=[], load_test_paths_only=False):
         """
         Inits a Dataset of training and validation images- Either creates it by reading files from a specific folder
@@ -78,7 +78,7 @@ class TrainingDataset(object):
         self.train_paths = None
         self._use_mha = use_mha
         self._use_modalities = use_modalities
-        if self._mode == TrainingModes.TVFLOW:
+        if self._mode == TrainingModes.TVFLOW_REGRESSION:
             self.split_name = self._tvflow_mode
         elif self._mode == TrainingModes.SEGMENTATION:
             self.split_name = self._seg_mode
@@ -109,7 +109,7 @@ class TrainingDataset(object):
         validation_split = dict()
         test_split = dict()
         # mode
-        if self._mode == TrainingModes.TVFLOW:
+        if self._mode == TrainingModes.TVFLOW_REGRESSION:
             split = self._get_raw_to_tvflow_file_paths_dict(use_scale=self.use_scale)
             # random.shuffle(split) # Not in use dict.items() is random
             total = self._nr_of_samples

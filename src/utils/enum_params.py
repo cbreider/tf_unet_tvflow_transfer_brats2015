@@ -32,8 +32,9 @@ class TrainingModes(Enum):
     """
     training modes
     """
-    TVFLOW = 1
+    TVFLOW_REGRESSION = 1
     SEGMENTATION = 2
+    TVFLOW_SEGMENTATION = 3
 
 
 class Optimizer(Enum):

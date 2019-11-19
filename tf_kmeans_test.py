@@ -13,13 +13,19 @@ def get_kmeans(points, centroids, iteration_n):
 
         means = []
         for c in range(clusters_n):
-            means.append(tf.reduce_mean(
-                tf.gather(points,
-                          tf.reshape(
-                              tf.where(
-                                  tf.equal(assignments, c)
-                              ), [1, -1])
-                          ), reduction_indices=[1]))
+            eq = tf.equal(assignments, c)
+            eqw = tf.where(eq)
+            eqwr = tf.reshape(eqw, [1, -1])
+            eqwrsl = tf.gather(points, eqwr)
+            mean = tf.reduce_mean(eqwrsl, reduction_indices=[1])
+            means.append(mean)
+            #means.append(tf.reduce_mean)
+                #tf.gather(points,
+                 #         tf.reshape(
+                  #            tf.where(
+                    #              tf.equal(assignments, c)
+                   #           ), [1, -1])
+                     #     ), reduction_indices=[1]))
 
         new_centroids = tf.concat(means, 0)
         centroids = new_centroids

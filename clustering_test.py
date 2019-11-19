@@ -51,15 +51,15 @@ def denoise(img, weight=0.1, tau=0.125, eps=1e-3, num_iter_max=200, ):
     u = np.zeros_like(img)
     px = np.zeros_like(img)
     py = np.zeros_like(img)
-    nm = np.prod(img.shape[:3])
+    nm = np.prod(img.shape[:2])
 
     i = 0
     while i < num_iter_max:
         u_old = u
 
         # x and y components of u's gradient
-        ux = np.roll(u, -1, axis=2) - u
-        uy = np.roll(u, -1, axis=1) - u
+        ux = np.roll(u, -1, axis=1) - u
+        uy = np.roll(u, -1, axis=0) - u
 
         # update the dual variable
         px_new = px + (tau / weight) * ux
@@ -69,8 +69,8 @@ def denoise(img, weight=0.1, tau=0.125, eps=1e-3, num_iter_max=200, ):
         py = py_new / norm_new
 
         # calculate divergence
-        rx = np.roll(px, 1, axis=2)
-        ry = np.roll(py, 1, axis=1)
+        rx = np.roll(px, 1, axis=1)
+        ry = np.roll(py, 1, axis=0)
         div_p = (px - rx) + (py - ry)
 
         # update image
@@ -96,38 +96,45 @@ def denoise(img, weight=0.1, tau=0.125, eps=1e-3, num_iter_max=200, ):
     return u
 
 tau = 0.125
-weight = 0.3
+weight = 0.1
 eps = 0.00001
 m_itr = 200
 
-X1 = np.array(plt.imread("/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0006_1/VSD.Brain.XX.O.MR_T2.54545/VSD.Brain.XX.O.MR_T2.54545_85.png"))
-X2 = np.array(plt.imread("/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0006_1/VSD.Brain.XX.O.MR_T1c.54544/VSD.Brain.XX.O.MR_T1c.54544_85.png"))
-X = np.array([X1, X2])
-X = np.reshape(X, (2, 240, 240, 1))
+X = np.array(plt.imread("/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0006_1/VSD.Brain.XX.O.MR_T2.54545/VSD.Brain.XX.O.MR_T2.54545_85.png"))
+#X2 = np.array(plt.imread("/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0006_1/VSD.Brain.XX.O.MR_T1c.54544/VSD.Brain.XX.O.MR_T1c.54544_85.png"))
+#X = np.array([X1, X2])
+X = np.reshape(X, (240, 240, 1))
 t = denoise(copy.deepcopy(X), tau=tau, weight=weight, eps=eps, num_iter_max=m_itr)
 out = t - t.min()
 out = out / out.max()
-img1t = np.array(np.reshape(out[0], (240, 240)))
-img2t = np.array(np.reshape(out[1], (240, 240)))
+img1t = np.array(np.reshape(out, (240, 240)))
+#img2t = np.array(np.reshape(out[1], (240, 240)))
 
 
-pl = tf.placeholder(tf.float32, shape=[2, 240, 240, 1])
-tv_func = tfu.get_tv_smoothed(pl, tau=tau, weight=weight, eps=eps, m_itr=m_itr)
+pl = tf.placeholder(tf.float32, shape=[240, 240, 1])
+tv_cluster = tfu.get_tv_smoothed_and_clusterd_one_hot(pl, nr_img=2,
+                                                    tv_tau=tau, tv_weight=weight, tv_eps=eps,
+                                                    tv_m_itr=m_itr, km_cluster_n=10,
+                                                                              km_itr_n=100)
+#tv_func = tfu.get_tv_smoothed(pl, tau=tau, weight=weight, eps=eps, m_itr=m_itr)
+#kmeans_cluster, assignments = tfu.get_kmeans(tv_func, 6, iteration_n=300)
+
 with tf.Session() as sess:
 
     tf.global_variables_initializer().run()
-    out = sess.run(tv_func, feed_dict={pl: X})
-    out = out - out.min()
-    out = out / out.max()
-    img1 = np.array(np.reshape(out[0], (240, 240)))
-    img2 = np.array(np.reshape(out[1], (240, 240)))
-    plt.matshow(X1)
-    plt.matshow(img1)
-    plt.matshow(img1t)
-
-    plt.matshow(X2)
-    plt.matshow(img2)
-    plt.matshow(img2t)
+    tv_smoothed, clustering= sess.run(tv_cluster, feed_dict={pl: X})
+    img1_tv = np.array(np.reshape(tv_smoothed, (240, 240)))
+    #img2_tv = np.array(np.reshape(tv_smoothed[1], (240, 240)))
+    img1_cl = np.array(np.reshape(clustering, (240, 240)))
+    #img2_cl = np.array(np.reshape(clustering[1], (240, 240)))
+    print()
+    X = np.reshape(X, (240, 240))
+    plt.matshow(X)
+    plt.matshow(img1_tv)
+    plt.matshow(img1_cl)
+    #plt.matshow(X2)
+    #plt.matshow(img2_tv)
+    #plt.matshow(img2_cl)
     plt.show()
     
 

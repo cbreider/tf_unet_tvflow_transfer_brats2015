@@ -586,7 +586,35 @@ def to_rgb(img):
     return img.astype('uint8')
 
 
-def tv_clustered_one_hot_to_rgb()
+def tv_clustered_one_hot_to_rgb(one_hot):
+    """
+    converts the given one hot image to an rgb image given the colors
+    :param one_hot: one hot tensor [nx, ny, nr_classes]
+    :param label_colors: rgb colors for each label [nr_classes, 3]
+    :return: rgb images [nx, ny, 3]
+    """
+    # Color for each Label (used for resut Visualization
+    seg_label_colors = np.array([
+        [0, 0, 0],
+        [255, 0, 0],
+        [0, 255, 0],
+        [0, 0, 255],
+        [255, 255, 0],
+        [255, 0, 255],
+        [0, 255, 255]
+        ])
+
+    rgb_img = np.zeros((one_hot.shape[0], one_hot.shape[1], 3))
+
+    idx = np.argmax(one_hot, axis=2)
+    n_clusters = np.max(idx) + 1
+    for i in range(n_clusters):
+        g_val = int(0.0 + i * (255 / n_clusters))
+        rgb_img[idx == i] = [g_val, g_val, g_val]
+
+    return rgb_img.astype('uint8')
+
+
 def one_hot_to_rgb(one_hot, scan):
     """
     converts the given one hot image to an rgb image given the colors
@@ -693,6 +721,45 @@ def combine_img_prediction(data, gt, pred, mode=1, label_colors=None):
     gt_resized = np.array(Image.fromarray(gt_rgb).resize(data_size, Image.NEAREST))
     pred_resized = np.array(Image.fromarray(pred_rgb).resize(data_size, Image.NEAREST))
     img = np.concatenate((data_rgb,
+                          gt_resized,
+                          pred_resized),
+                          axis=1)
+    return img
+
+
+def combine_img_prediction_tvclustering(data, tv, gt, pred):
+    """
+    Combines the data, grouth thruth and the prediction into one rgb image
+
+    :param data: the data tensor
+    :param gt: the ground truth tensor
+    :param tv: the tv smoothed tensor
+    :param pred: the prediction tensor
+    :param mode: 0 for segmentation 1 for regression
+    :param label_colors: array of colors for each label. Only used if mode == 1
+    :returns img: the concatenated rgb image
+    """
+
+    ny = data.shape[2]
+    ch = data.shape[3]
+    data = revert_zero_centering(data).reshape(-1, ny, ch)
+
+    data_rgb = to_rgb(data)
+    data_size = (data_rgb.shape[1], data_rgb.shape[0])
+    gt = gt.reshape(-1, gt.shape[2], gt.shape[3])
+    pred = pred.reshape(-1, pred.shape[2], pred.shape[3])
+    gt_rgb = tv_clustered_one_hot_to_rgb(gt)
+    pred_rgb = tv_clustered_one_hot_to_rgb(pred)
+
+    tv = revert_zero_centering(tv)
+    tv = tv.reshape(-1, tv.shape[2], ch)
+    tv_rgb = to_rgb(tv)
+
+    gt_resized = np.array(Image.fromarray(gt_rgb).resize(data_size, Image.NEAREST))
+    pred_resized = np.array(Image.fromarray(pred_rgb).resize(data_size, Image.NEAREST))
+    tv_resized = np.array(Image.fromarray(tv_rgb).resize(data_size, Image.NEAREST))
+    img = np.concatenate((data_rgb,
+                          tv_resized,
                           gt_resized,
                           pred_resized),
                           axis=1)

@@ -16,6 +16,7 @@ import src.utils.data_utils as util
 import numpy as np
 from src.tf_unet.caffe2tensorflow_mapping import load_pre_trained_caffe_variables
 from src.utils.enum_params import DataModes, Cost, TrainingModes, Optimizer, RestoreMode
+import matplotlib.pyplot as plt
 
 
 class Trainer(object):
@@ -168,8 +169,8 @@ class Trainer(object):
             summary_writer_validation = tf.summary.FileWriter(val_summary_path,
                                                             graph=sess.graph)
 
-            test_x, test_y = sess.run(data_provider_val.next_batch)
-            pred_shape = self.store_prediction(sess, test_x, test_y, "_init", summary_writer_validation, 0, 0)
+            test_x, test_y, test_tv, = sess.run(data_provider_val.next_batch)
+            pred_shape = self.store_prediction(sess, test_x, test_y, "_init", summary_writer_validation, 0, 0, test_tv)
             logging.info("Start optimization")
 
             avg_gradients = None
@@ -184,7 +185,7 @@ class Trainer(object):
                     if step * data_provider_train.batch_size % data_provider_train.size == 0:
                         sess.run(data_provider_train.init_op)
 
-                    batch_x, batch_y = sess.run(data_provider_train.next_batch)
+                    batch_x, batch_y, __ = sess.run(data_provider_train.next_batch)
 
                     # Run optimization op (backprop)
                     if step == 0:
@@ -207,25 +208,27 @@ class Trainer(object):
 
                     total_loss += loss
 
-                test_x, test_y = sess.run(data_provider_val.next_batch)
+                test_x, test_y, test_tv = sess.run(data_provider_val.next_batch)
                 self.output_epoch_stats(epoch, total_loss, training_iters, lr)
                 self.store_prediction(sess, test_x, util.crop_to_shape(test_y, pred_shape),
-                                      "epoch_%s" % epoch, summary_writer_validation, step, epoch)
+                                      "epoch_%s" % epoch, summary_writer_validation, step, epoch, test_tv)
 
                 save_path = self.net.save(sess, save_path)
             logging.info("Optimization Finished!")
 
             return save_path
 
-    def store_prediction(self, sess, batch_x, batch_y, name, summary_writer, step, epoch):
+    def store_prediction(self, sess, batch_x, batch_y, name, summary_writer, step, epoch, batch_tv):
         loss, acc, err, prediction, dice, ce = self.run_summary(sess, summary_writer, step, batch_x, batch_y)
 
         pred_shape = prediction.shape
 
         logging.info("EPOCH {}: Verification error= {:.1f}%, loss= {:.6f}, Dice= {:.4f}, cross entropy = {:.4f}".format(
             epoch, err, loss, dice, ce))
-
-        img = util.combine_img_prediction(batch_x, batch_y, prediction,
+        if batch_tv is not None:
+            img = util.combine_img_prediction_tvclustering(data=batch_x, gt=batch_y, tv=batch_tv, pred=prediction)
+        else:
+            img = util.combine_img_prediction(batch_x, batch_y, prediction,
                                           mode=1 if self.net.cost_function == Cost.MSE else 0)
         util.save_image(img, "%s/%s.jpg" % (self.out_path, name))
 

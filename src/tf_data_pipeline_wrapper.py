@@ -21,7 +21,7 @@ class ImageData(object):
     def __init__(self, data, in_img_size, set_img_size, data_max_value=255.0, data_norm_value=1.0,
                  crop_to_non_zero=False, do_augmentation=False, normalize_std=False, nr_of_classes=1.0,
                  nr_channels=1, batch_size=128, buffer_size=800, shuffle=False,
-                 mode=DataModes.TRAINING, train_mode=TrainingModes.TVFLOW):
+                 mode=DataModes.TRAINING, train_mode=TrainingModes.TVFLOW_REGRESSION):
         """
         Inits a Tensorflow data pipeline
 

@@ -356,7 +356,7 @@ class Unet(object):
             elif cost_function == Cost.TV:
                 loss = tf.losses.mean_squared_error(flat_logits, flat_labels)
                 tv = tf.reduce_sum(tf.image.total_variation(logits))
-                loss += 0.1 * tv
+                loss += tv_regularizer * tv
             else:
                 raise ValueError("Unknown cost function: " % cost_function.name)
 

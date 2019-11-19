@@ -8,7 +8,8 @@ created on June 2019
 
 
 import tensorflow as tf
-import sys
+import numpy as np
+
 
 def preprocess_images(scan, ground_truth):
     """
@@ -38,7 +39,7 @@ def preprocess_images(scan, ground_truth):
     return im, gt
 
 
-def crop_images_to_to_non_zero(scan, ground_truth, size):
+def crop_images_to_to_non_zero(scan, ground_truth, size, tvimg=None):
     """
     crops input and gt images to bounding box of non zero area of gt image
 
@@ -50,10 +51,14 @@ def crop_images_to_to_non_zero(scan, ground_truth, size):
     # HACK check if gt is completly zero then return orginal images
     total = tf.reduce_sum(tf.abs(ground_truth))
     is_all_zero = tf.equal(total, 0)
-    return tf.cond(is_all_zero, lambda: (scan, ground_truth), lambda: crop_non_zero_internal(scan, ground_truth, size))
+    return tf.cond(is_all_zero,
+                   lambda: (scan, ground_truth, tvimg),
+                   lambda: crop_non_zero_internal(scan=scan, ground_truth=ground_truth, tvimg=tvimg, out_size=size))
 
 
-def crop_non_zero_internal(scan, ground_truth, out_size):
+def crop_non_zero_internal(scan, ground_truth, out_size, tvimg=None):
+    resize_tv = None
+    crop_tv = None
     scan = tf.cast(scan, tf.int32)
     zero = tf.constant(0, dtype=tf.int32)
     where = tf.not_equal(scan, zero)
@@ -66,11 +71,16 @@ def crop_non_zero_internal(scan, ground_truth, out_size):
     width = tf.math.add(tf.math.subtract(max_x, min_x), tf.convert_to_tensor(1, dtype=tf.int64))
     crop_in = tf.image.crop_to_bounding_box(scan, min_y, min_x, height, width)
     crop_gt = tf.image.crop_to_bounding_box(ground_truth, min_y, min_x, height, width)
+    if tvimg is not None:
+        crop_tv = tf.image.crop_to_bounding_box(tvimg, min_y, min_x, height, width)
     resize_in = tf.image.resize_images(crop_in, out_size,
                                        method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
     resize_gt = tf.image.resize_images(crop_gt, out_size,
                                        method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    return tf.cast(resize_in, tf.float32), tf.cast(resize_gt, tf.float32)
+    if crop_tv is not None:
+        resize_tv = tf.cast(tf.image.resize_images(crop_tv, out_size,
+                                       method=tf.image.ResizeMethod.NEAREST_NEIGHBOR), tf.float32)
+    return tf.cast(resize_in, tf.float32), tf.cast(resize_gt, tf.float32), resize_tv
 
 
 def load_png_image(filename, nr_channels, img_size, data_type=tf.float32):
@@ -92,7 +102,23 @@ def load_png_image(filename, nr_channels, img_size, data_type=tf.float32):
     except Exception as e:
         print("type error: " + str(e) + str(filename))
 
-#def get_tv_smoothed_and_clusterd_one_hot(image, save_samples):
+
+def get_tv_smoothed_and_clusterd_one_hot(image, nr_img, tv_tau, tv_weight, tv_eps, tv_m_itr, km_cluster_n, km_itr_n):
+    inimg = image - tf.reduce_min(image)
+    mean, var = tf.nn.moments(inimg, axes=[0, 1, 2])
+    inimg = tf.math.divide((inimg), tf.math.sqrt(var))
+    inimg = inimg / tf.reduce_max(inimg)
+
+    tv_sm = get_tv_smoothed(inimg, tv_tau, tv_weight, tv_eps, tv_m_itr)
+    tv_sm = tv_sm - tf.reduce_min(tv_sm)
+    mean, var = tf.nn.moments(tv_sm, axes=[0, 1, 2])
+    tv_sm = tf.math.divide((tv_sm), tf.math.sqrt(var))
+    tv_sm = tv_sm / tf.reduce_max(tv_sm)
+
+    clustered = get_kmeans(tv_sm, clusters_n=km_cluster_n, iteration_n=km_itr_n)
+    #tv_sm = tf.expand_dims(tv_sm, 2)
+    clustered = tf.expand_dims(clustered, 2)
+    return tv_sm, clustered
 
 
 def get_tv_smoothed(img, tau, weight, eps, m_itr):
@@ -119,8 +145,8 @@ def tv_cond(img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, 
 
 def tv_body(img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr):
     u_old = u
-    ux = tf.subtract(tf.roll(u, shift=-1, axis=2), u)
-    uy = tf.subtract(tf.roll(u, shift=-1, axis=1), u)
+    ux = tf.subtract(tf.roll(u, shift=-1, axis=1), u)
+    uy = tf.subtract(tf.roll(u, shift=-1, axis=0), u)
     px_new = tf.add(px, tf.multiply(tf.truediv(tau, weight), ux))
     py_new = tf.add(py, tf.multiply(tf.truediv(tau, weight), uy))
     norm_new = tf.math.maximum(tf.constant(1.0), tf.math.sqrt(
@@ -128,8 +154,8 @@ def tv_body(img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, 
     px = tf.truediv(px_new, norm_new)
     py = tf.truediv(py_new, norm_new)
     # calculate divergence
-    rx = tf.roll(px, shift=1, axis=2)
-    ry = tf.roll(py, shift=1, axis=1)
+    rx = tf.roll(px, shift=1, axis=1)
+    ry = tf.roll(py, shift=1, axis=0)
     div_p = tf.add(tf.subtract(px, rx), tf.subtract(py, ry))
 
     # update image
@@ -137,38 +163,56 @@ def tv_body(img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, 
     err_prev = error
     # calculate error
     error = tf.truediv(tf.norm(tf.subtract(u, u_old)), tf.math.sqrt(nm))
-    tf.print("fuck")
     err_init = tf.cond(tf.equal(i, tf.constant(0)), lambda : error, lambda : err_init)
     i = tf.math.add(i, tf.constant(1))
     return [img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr]
 
 
 def get_kmeans(img, clusters_n, iteration_n):
-    points_expanded = tf.expand_dims(img, 0)
+    points = tf.reshape(img, [tf.shape(img)[0] * tf.shape(img)[1] * tf.shape(img)[2], 1])
+    points_expanded = tf.expand_dims(points, 0)
+    centroids = tf.random.uniform([clusters_n, 1],
+                                  minval=tf.math.reduce_min(points_expanded),
+                                  maxval=tf.math.reduce_max(points_expanded))
+    #np.random.uniform(0, 10, (clusters_n, 1)).astype()
+    #points_expanded = tf.expand_dims(img, 0)
     for step in range(iteration_n):
         centroids_expanded = tf.expand_dims(centroids, 1)
-
-        distances = tf.reduce_sum(tf.square(tf.subtract(points_expanded, centroids_expanded)), 2)
+        a = tf.subtract(points_expanded, centroids_expanded)
+        b = tf.square(a)
+        distances = tf.reduce_sum(b, 2)
         assignments = tf.argmin(distances, 0)
 
         means = []
         for c in range(clusters_n):
-            means.append(tf.reduce_mean(
-                tf.gather(points_expanded,
-                          tf.reshape(
-                              tf.where(
-                                  tf.equal(assignments, c)
-                              ), [1, -1])
-                          ), reduction_indices=[1]))
+            eq = tf.equal(assignments, c)
+            eqw = tf.where(eq)
+            eqwr = tf.reshape(eqw, [1, -1])
+            eqwrsl = tf.gather(points, eqwr)
+            mean = tf.reduce_mean(eqwrsl, reduction_indices=[1])
+            means.append(mean)
+            #means.append(tf.reduce_mean)
+            # tf.gather(points,
+            #         tf.reshape(
+            #            tf.where(
+            #              tf.equal(assignments, c)
+            #           ), [1, -1])
+            #     ), reduction_indices=[1]))
 
         new_centroids = tf.concat(means, 0)
         centroids = new_centroids
         #update_centroids = tf.assign(centroids, new_centroids)
 
     centroids_expanded = tf.expand_dims(centroids, 1)
-    distances = tf.reduce_sum(tf.square(tf.subtract(points_expanded, centroids_expanded)), 2)
-    assignments = tf.argmin(distances, 0)
-    return [centroids, assignments]
+    centroids_expanded = tf.transpose(centroids_expanded)
+    centroids_expanded = tf.reverse(tf.math.top_k(centroids_expanded[0], k=clusters_n, sorted=True).values, [-1])
+    centroids_expanded = tf.expand_dims(centroids_expanded, 0)
+    distances = tf.square(tf.subtract(img, centroids_expanded))
+    assignments = tf.argmin(distances, axis=2, output_type=tf.int32)
+    assignments = tf.cast(assignments, tf.float32)
+
+    return assignments
+
 
 def convert_8bit_image_to_one_hot(image, depth=255):
     """

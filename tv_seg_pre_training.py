@@ -95,7 +95,7 @@ if __name__ == "__main__":
                               buffer_size=config.TrainingParams.buffer_size_train,
                               shuffle=config.DataParams.shuffle,
                               mode=DataModes.TRAINING,
-                              train_mode=TrainingModes.TVFLOW_REGRESSION,
+                              train_mode=TrainingModes.TVFLOW_SEGMENTATION,
                               in_img_size=config.DataParams.raw_image_size,
                               set_img_size=config.DataParams.set_image_size,
                               data_max_value=config.DataParams.data_max_value,
@@ -103,7 +103,7 @@ if __name__ == "__main__":
                               crop_to_non_zero=config.DataParams.crop_to_non_zero,
                               do_augmentation=config.DataParams.do_image_augmentation,
                               normalize_std=config.DataParams.normailze_std,
-                              nr_of_classes=config.DataParams.nr_of_classes_tv_flow_mode,
+                              nr_of_classes=config.DataParams.nr_of_classes_tv_seg_mode,
                               nr_channels=config.DataParams.nr_of_channels)
 
     validation_data = ImageData(data=file_paths.validation_paths,
@@ -111,7 +111,7 @@ if __name__ == "__main__":
                                 buffer_size=config.TrainingParams.buffer_size_val,
                                 shuffle=config.DataParams.shuffle,
                                 mode=DataModes.VALIDATION,
-                                train_mode=TrainingModes.TVFLOW_REGRESSION,
+                                train_mode=TrainingModes.TVFLOW_SEGMENTATION,
                                 in_img_size=config.DataParams.raw_image_size,
                                 set_img_size=config.DataParams.set_image_size,
                                 data_max_value=config.DataParams.data_max_value,
@@ -119,14 +119,14 @@ if __name__ == "__main__":
                                 crop_to_non_zero=config.DataParams.crop_to_non_zero_val,
                                 do_augmentation=config.DataParams.do_image_augmentation_val,
                                 normalize_std=config.DataParams.normailze_std,
-                                nr_of_classes=config.DataParams.nr_of_classes_tv_flow_mode,
+                                nr_of_classes=config.DataParams.nr_of_classes_tv_seg_mode,
                                 nr_channels=config.DataParams.nr_of_channels)
 
     training_data.create()
     validation_data.create()
 
     net = unet.Unet(n_channels=config.DataParams.nr_of_channels,
-                    n_class=config.DataParams.nr_of_classes_tv_flow_mode,
+                    n_class=config.DataParams.nr_of_classes_tv_seg_mode,
                     cost_function=config.ConvNetParams.cost_function,
                     summaries=create_summaries,
                     class_weights=config.ConvNetParams.class_weights,

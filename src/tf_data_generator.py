@@ -22,7 +22,7 @@ class TFImageDataGenerator:
     """
 
     def __init__(self, data, in_img_size, set_img_size, data_max_value=255.0, data_norm_value=1.0, batch_size=32,
-                 buffer_size=800, crop_to_non_zero=True, shuffle=False, do_augmentation=False, mode=TrainingModes.TVFLOW,
+                 buffer_size=800, crop_to_non_zero=True, shuffle=False, do_augmentation=False, mode=TrainingModes.TVFLOW_REGRESSION,
                  normalize_std=False, nr_of_classes=1.0, nr_channels=1):
 
         self._in_img_size = in_img_size
@@ -43,6 +43,12 @@ class TFImageDataGenerator:
         self._gt_data = None
         self.data = None
         self.load_data_from_disk = False
+        self.tv_tau = 0.125
+        self.tv_weight = 0.2
+        self.tv_eps = 0.00001
+        self.tv_nr_itr = 100
+        self.kmeans_n_itr = 100
+
         # check if file
         el = next(iter(data))
         if isinstance(el, str):
@@ -67,7 +73,7 @@ class TFTrainingImageDataGenerator(TFImageDataGenerator):
 
     def initialize(self):
         logging.info("Train buffer size {}, batch size {}".format(self._buffer_size, self._batch_size))
-
+        tv_data = convert_to_tensor(1)
         # convert lists to TF tensor
         if self.load_data_from_disk:
             gt = list(self._raw_data.values())
@@ -80,7 +86,7 @@ class TFTrainingImageDataGenerator(TFImageDataGenerator):
 
         # create dataset
         tmp_data = tf.data.Dataset.from_tensor_slices((self._input_data, self._gt_data))
-        tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=8)
+        tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=1)
         # shuffle the first `buffer_size` elements of the dataset
         tmp_data = tmp_data.prefetch(buffer_size=self._buffer_size)
         if self._shuffle:
@@ -92,6 +98,8 @@ class TFTrainingImageDataGenerator(TFImageDataGenerator):
     def _parse_function(self, input, gt):
         # load and preprocess the image
         # if data is given as png path load the data first
+        tv_img = None
+        resize_tv = None
         if self.load_data_from_disk:
             in_img = tf_utils.load_png_image(input, nr_channels=self._nr_channels, img_size=self._in_img_size)
             gt_img = tf_utils.load_png_image(gt, nr_channels=self._nr_channels, img_size=self._in_img_size)
@@ -99,8 +107,25 @@ class TFTrainingImageDataGenerator(TFImageDataGenerator):
             in_img = tf.cast(tf.reshape(input, [input.shape[0],  input.shape[1], 1]), tf.float32)
             gt_img = tf.cast(tf.reshape(gt, [gt.shape[0],  gt.shape[1], 1]), tf.float32)
 
+        if self._mode == TrainingModes.TVFLOW_REGRESSION:
+            gt_img = tf_utils.normalize_and_zero_center_tensor(gt_img,
+                                                           max=self._data_max_value,
+                                                           new_max=self._data_norm_value,
+                                                           normalize_std=self._normalize_std)
+
+        if self._mode == TrainingModes.TVFLOW_SEGMENTATION:
+            tv_img, gt_img = tf_utils.get_tv_smoothed_and_clusterd_one_hot(image=in_img,
+                                                                   nr_img=self._batch_size,
+                                                                   tv_tau=self.tv_tau,
+                                                                   tv_weight=self.tv_weight,
+                                                                   tv_eps=self.tv_eps,
+                                                                   tv_m_itr=self.tv_nr_itr,
+                                                                   km_cluster_n=self._nr_of_classes,
+                                                                   km_itr_n=self.kmeans_n_itr)
+
         if self._crop_to_non_zero:
-            in_img, gt_img = tf_utils.crop_images_to_to_non_zero(in_img, gt_img, self._set_img_size)
+            in_img, gt_img, tv_img = tf_utils.crop_images_to_to_non_zero(scan=in_img, ground_truth=gt_img,
+                                                                 size=self._set_img_size, tvimg=tv_img)
 
         if self._do_augmentation:
             in_img, gt_img = tf_utils.preprocess_images(in_img, gt_img)
@@ -109,23 +134,28 @@ class TFTrainingImageDataGenerator(TFImageDataGenerator):
                                                            max=self._data_max_value,
                                                            new_max=self._data_norm_value,
                                                            normalize_std=self._normalize_std)
-        if self._mode == TrainingModes.TVFLOW:
-            gt = tf_utils.normalize_and_zero_center_tensor(gt_img,
-                                                           max=self._data_max_value,
-                                                           new_max=self._data_norm_value,
-                                                           normalize_std=self._normalize_std)
-        elif self._mode == TrainingModes.SEGMENTATION:
+
+        if self._mode == TrainingModes.SEGMENTATION:
             gt = tf_utils.to_one_hot(gt_img, depth=self._nr_of_classes)
+        elif self._mode == TrainingModes.TVFLOW_SEGMENTATION:
+            gt_img = tf.reshape(gt_img, [tf.shape(gt_img)[0], tf.shape(gt_img)[1]])
+            gt = tf.one_hot(tf.cast(gt_img, tf.int32), depth=self._nr_of_classes)
+            tv_img = tf_utils.normalize_and_zero_center_tensor(tv_img,
+                                                               max=self._data_max_value,
+                                                               new_max=self._data_norm_value,
+                                                               normalize_std=self._normalize_std)
+
         else:
-            raise ValueError()
+            gt = gt_img
+
         if self._set_img_size == self._in_img_size:
-            return in_img, gt
+            return in_img, gt, tv_img
 
         resize_in = tf.image.resize_images(in_img, self._set_img_size,
                                            method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
         resize_gt = tf.image.resize_images(gt, self._set_img_size,
                                            method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-        return resize_in, resize_gt
+        return resize_in, resize_gt, resize_tv
 
 
 class TFValidationImageDataGenerator(TFImageDataGenerator):
@@ -133,6 +163,7 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
     def initialize(self):
         logging.info("Validation buffer size {}, batch size {}".format(self._buffer_size, self._batch_size))
         # convert lists to TF tensor
+        tv_data = convert_to_tensor(1)
         if self.load_data_from_disk:
             gt = list(self._raw_data.values())
             input_val = list(self._raw_data.keys())
@@ -144,7 +175,7 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
 
         # create dataset
         tmp_data = tf.data.Dataset.from_tensor_slices((self._input_data, self._gt_data))
-        tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=8)
+        tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=1)
         tmp_data = tmp_data.prefetch(buffer_size=self._buffer_size)
         # shuffle the first `buffer_size` elements of the dataset
         if self._shuffle:
@@ -156,6 +187,8 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
     def _parse_function(self, input, gt):
         # load and preprocess the image
         # if data is given as png path load the data first
+        tv_img = None
+        resize_tv = None
         if self.load_data_from_disk:
             in_img = tf_utils.load_png_image(input, nr_channels=self._nr_channels, img_size=self._in_img_size)
             gt_img = tf_utils.load_png_image(gt, nr_channels=self._nr_channels, img_size=self._in_img_size)
@@ -163,8 +196,25 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
             in_img = tf.cast(tf.reshape(input, [input.shape[0],  input.shape[1], 1]), tf.float32)
             gt_img = tf.cast(tf.reshape(gt, [gt.shape[0],  gt.shape[1], 1]), tf.float32)
 
+        if self._mode == TrainingModes.TVFLOW_REGRESSION:
+            gt_img = tf_utils.normalize_and_zero_center_tensor(gt_img,
+                                                           max=self._data_max_value,
+                                                           new_max=self._data_norm_value,
+                                                           normalize_std=self._normalize_std)
+
+        if self._mode == TrainingModes.TVFLOW_SEGMENTATION:
+            tv_img, gt_img = tf_utils.get_tv_smoothed_and_clusterd_one_hot(image=in_img,
+                                                                             nr_img=self._batch_size,
+                                                                             tv_tau=self.tv_tau,
+                                                                             tv_weight=self.tv_weight,
+                                                                             tv_eps=self.tv_eps,
+                                                                             tv_m_itr=self.tv_nr_itr,
+                                                                             km_cluster_n=self._nr_of_classes,
+                                                                             km_itr_n=self.kmeans_n_itr)
+
         if self._crop_to_non_zero:
-            in_img, gt_img = tf_utils.crop_images_to_to_non_zero(in_img, gt_img, self._set_img_size)
+            in_img, gt_img, tv_img = tf_utils.crop_images_to_to_non_zero(scan=in_img, ground_truth=gt_img,
+                                                                 size=self._set_img_size, tvimg=tv_img)
 
         if self._do_augmentation:
             in_img, gt_img = tf_utils.preprocess_images(in_img, gt_img)
@@ -173,23 +223,25 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
                                                            max=self._data_max_value,
                                                            new_max=self._data_norm_value,
                                                            normalize_std=self._normalize_std)
-
-        if self._mode == TrainingModes.TVFLOW:
-            gt = tf_utils.normalize_and_zero_center_tensor(gt_img,
-                                                           max=self._data_max_value,
-                                                           new_max=self._data_norm_value,
-                                                           normalize_std=self._normalize_std)
-        elif self._mode == TrainingModes.SEGMENTATION:
+        if self._mode == TrainingModes.SEGMENTATION:
             gt = tf_utils.to_one_hot(gt_img, depth=self._nr_of_classes)
+        elif self._mode == TrainingModes.TVFLOW_SEGMENTATION:
+            gt_img = tf.reshape(gt_img, [tf.shape(gt_img)[0], tf.shape(gt_img)[1]])
+            gt = tf.one_hot(tf.cast(gt_img, tf.int32), depth=self._nr_of_classes)
+            tv_img = tf_utils.normalize_and_zero_center_tensor(tv_img,
+                                                               max=self._data_max_value,
+                                                               new_max=self._data_norm_value,
+                                                               normalize_std=self._normalize_std)
+
         else:
-            raise ValueError()
+            gt = gt_img
         if self._set_img_size == self._in_img_size:
-            return in_img, gt
+            return in_img, gt, tv_img
 
         resize_in = tf.image.resize_images(in_img, self._set_img_size,
                                            method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
         resize_gt = tf.image.resize_images(gt, self._set_img_size,
                                            method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-        return resize_in, resize_gt
+        return resize_in, resize_gt, resize_tv
 
 
