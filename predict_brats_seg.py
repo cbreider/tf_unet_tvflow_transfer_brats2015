@@ -115,7 +115,7 @@ if __name__ == "__main__":
             net.restore(sess, ckpt.model_checkpoint_path, restore_mode=RestoreMode.COMPLETE_SESSION)
         sess.run(data.init_op)
         if not use_Brats_Testing:
-            for i in range(len(file_paths.test_paths)):
+            for i in range(int(len(file_paths.test_paths)/config.TrainingParams.batch_size_val)):
                 batch_x, batch_y = sess.run(data.next_batch)
 
                 prediction, ce, dc, err, acc = sess.run([net.predicter,
@@ -136,14 +136,14 @@ if __name__ == "__main__":
                     img = dutils.combine_img_prediction(batch_x, batch_y, prediction, mode=0)
                     dutils.save_image(img, os.path.join(out_path, fname))
 
-                print("Test {} of {}  finished".format(idx, len(file_paths.test_paths)))
+                print("Test {} of {}  finished".format(idx, int(len(file_paths.test_paths)/config.TrainingParams.batch_size_val)))
 
                 idx += 1
 
     accuracy /= idx
     error /= idx
     dice /= idx
-    ce /= idx
+    cross_entropy /= idx
 
     outF = open(os.path.join(model_path, "results.txt"), "w")
 
