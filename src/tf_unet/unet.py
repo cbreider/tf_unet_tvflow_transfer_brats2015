@@ -285,15 +285,9 @@ class Unet(object):
                 self.dice = tf.constant(0)
             else:
                 self.predicter = pixel_wise_softmax(logits)
-                if self.n_class == 2:
-                    self.pred_slice = tf.cast(tf.argmax(self.predicter, axis=3), tf.float32)
-                    self.y_slice = tf.cast(tf.argmax(self.y, axis=3), tf.float32)
-                    self.correct_pred = tf.equal(self.pred_slice, self.y_slice)
-                else:
-                    self.pred_slice = tf.argmax(self.predicter, axis=3)
-                    self.pred_slice = tf.one_hot(self.pred_slice, depth=self.n_class)
-                    self.y_slice = self.y
-                    self.correct_pred = tf.equal(tf.argmax(self.pred_slice, axis=3), tf.argmax(self.y_slice, axis=3))
+                self.pred_slice = tf.cast(tf.argmax(self.predicter, axis=3), tf.float32)
+                self.y_slice = tf.cast(tf.argmax(self.y, axis=3), tf.float32)
+                self.correct_pred = tf.equal(self.pred_slice, self.y_slice)
                 self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
                 self.error = tf.constant(1.0) - self.accuracy
                 self.error_rate = tf.math.multiply(self.error, tf.constant(100.0))
