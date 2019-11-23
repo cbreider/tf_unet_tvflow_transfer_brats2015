@@ -1,5 +1,5 @@
 from sklearn.cluster import KMeans
-from sklearn.cluster import MeanShift
+from sklearn.cluster import MeanShift, estimate_bandwidth
 import numpy as np
 from scipy import misc
 from PIL import Image
@@ -9,6 +9,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import src.utils.tf_utils as tfu
 import copy as copy
+
 
 def recreate_image(codebook, labels, w, h):
     """Recreate the (compressed) image from the code book & labels"""
@@ -100,43 +101,61 @@ weight = 0.1
 eps = 0.00001
 m_itr = 200
 
-X = np.array(plt.imread("/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0006_1/VSD.Brain.XX.O.MR_T2.54545/VSD.Brain.XX.O.MR_T2.54545_85.png"))
-#X2 = np.array(plt.imread("/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0006_1/VSD.Brain.XX.O.MR_T1c.54544/VSD.Brain.XX.O.MR_T1c.54544_85.png"))
-#X = np.array([X1, X2])
-X = np.reshape(X, (240, 240, 1))
-t = denoise(copy.deepcopy(X), tau=tau, weight=weight, eps=eps, num_iter_max=m_itr)
-out = t - t.min()
-out = out / out.max()
-img1t = np.array(np.reshape(out, (240, 240)))
-#img2t = np.array(np.reshape(out[1], (240, 240)))
+#x1 = np.array(plt.imread("/home/christian/Projects/LabSS2019/dataset/2d_slices/png/raw/train/HGG/brats_tcia_pat230_0710/VSD.Brain.XX.O.MR_Flair.35788/VSD.Brain.XX.O.MR_Flair.35788_86.png"))
+x1 = np.array(plt.imread("../dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0006_1/VSD.Brain.XX.O.MR_T2.54545/VSD.Brain.XX.O.MR_T2.54545_85.png"))
+Xs = [x1]
+for X in Xs:
 
+    #X2 = np.array(plt.imread("/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0006_1/VSD.Brain.XX.O.MR_T1c.54544/VSD.Brain.XX.O.MR_T1c.54544_85.png"))
+    #X = np.array([X1, X2])
+    X = np.reshape(X, (240, 240, 1))
+    t = denoise(copy.deepcopy(X), tau=tau, weight=weight, eps=eps, num_iter_max=m_itr)
+    out = t - t.min()
+    out = out / out.max()
+    img1t = np.array(np.reshape(out, (240, 240)))
+    tv_flat = img1t.reshape((-1, 1))
+    bandwidth = estimate_bandwidth(tv_flat, quantile=0.15, n_samples=500)
+    ms = MeanShift(bandwidth = bandwidth, bin_seeding=True).fit(tv_flat)
+    labels=ms.labels_
+    img1_clms = np.reshape(labels, (240,240))
 
-pl = tf.placeholder(tf.float32, shape=[240, 240, 1])
-tv_cluster = tfu.get_tv_smoothed_and_clusterd_one_hot(pl, nr_img=2,
-                                                    tv_tau=tau, tv_weight=weight, tv_eps=eps,
-                                                    tv_m_itr=m_itr, km_cluster_n=10,
-                                                                              km_itr_n=100)
-#tv_func = tfu.get_tv_smoothed(pl, tau=tau, weight=weight, eps=eps, m_itr=m_itr)
-#kmeans_cluster, assignments = tfu.get_kmeans(tv_func, 6, iteration_n=300)
+    km = KMeans(n_clusters=7, tol=0.00000001, max_iter=100).fit(tv_flat)
+    km_labels = km.labels_
+    img1km_cl = np.reshape(km_labels, (240,240))
 
-with tf.Session() as sess:
+    #img1_cl = recreate_image(ms.cluster_centers_, cl, 240, 240)
+    plt.matshow(img1t, "tv_cost")
+    plt.matshow(img1_clms, "ms cl")
+    plt.matshow(img1km_cl, "km sk cl")
 
-    tf.global_variables_initializer().run()
-    tv_smoothed, clustering= sess.run(tv_cluster, feed_dict={pl: X})
-    img1_tv = np.array(np.reshape(tv_smoothed, (240, 240)))
-    #img2_tv = np.array(np.reshape(tv_smoothed[1], (240, 240)))
-    img1_cl = np.array(np.reshape(clustering, (240, 240)))
-    #img2_cl = np.array(np.reshape(clustering[1], (240, 240)))
-    print()
-    X = np.reshape(X, (240, 240))
-    plt.matshow(X)
-    plt.matshow(img1_tv)
-    plt.matshow(img1_cl)
-    #plt.matshow(X2)
-    #plt.matshow(img2_tv)
-    #plt.matshow(img2_cl)
-    plt.show()
-    
+    #img2t = np.array(np.reshape(out[1], (240, 240)))
+
+    pl = tf.placeholder(tf.float32, shape=[240, 240, 1])
+    tv_cluster = tfu.get_tv_smoothed_and_clusterd_one_hot(pl, nr_img=2,
+                                                        tv_tau=tau, tv_weight=weight, tv_eps=eps,
+                                                        tv_m_itr=m_itr, km_cluster_n=7,
+                                                                                  km_itr_n=100)
+    #tv_func = tfu.get_tv_smoothed(pl, tau=tau, weight=weight, eps=eps, m_itr=m_itr)
+    #kmeans_cluster, assignments = tfu.get_kmeans(tv_func, 6, iteration_n=300)
+
+    with tf.Session() as sess:
+
+        tf.global_variables_initializer().run()
+        tv_smoothed, clustering= sess.run(tv_cluster, feed_dict={pl: X})
+        img1_tv = np.array(np.reshape(tv_smoothed, (240, 240)))
+        #img2_tv = np.array(np.reshape(tv_smoothed[1], (240, 240)))
+        img1_cl = np.array(np.reshape(clustering, (240, 240)))
+        #img2_cl = np.array(np.reshape(clustering[1], (240, 240)))
+        X = np.reshape(X, (240, 240))
+        plt.matshow(X, "orig")
+        plt.matshow(img1_tv, "tv_tf")
+        plt.matshow(img1_cl, "km tf")
+        #plt.matshow(X2)
+        #plt.matshow(img2_tv)
+        #plt.matshow(img2_cl)
+
+plt.show()
+
 
 '''
 nz = X[np.nonzero(X)]
