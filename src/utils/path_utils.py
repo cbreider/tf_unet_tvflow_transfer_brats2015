@@ -42,11 +42,11 @@ class DataPaths(object):
         self.tf_out_path = "tf_model_output"
         self.mode = mode
 
-    def load_data_paths(self):
+    def load_data_paths(self, mkdirs=True):
         self.project_dir = os.getcwd()  # os.path.dirname(os.path.realpath(__file__))
         self.tf_out_path = os.path.join(self.project_dir, self.tf_out_path)
         if not self.data_dir == "default":
-            self.data_dir = os.path.join(self.data_dir, self.data_dir)
+            self.data_dir = self.data_dir
         else:
             self.data_dir = os.path.join(self.project_dir, "../dataset")
         self.split_path = os.path.join(self.data_dir, self.split_path)
@@ -65,37 +65,38 @@ class DataPaths(object):
 
         self.tf_out_path = os.path.join(self.tf_out_path, tf_out_path_tmp)
 
-        if not os.path.exists(self.data_dir):
-            raise FileNotFoundError()
-        if not os.path.exists(self.brats_train_dir):
-            return FileNotFoundError()
-        if not os.path.exists(self.brats_test_dir):
-            raise FileNotFoundError()
-        if not os.path.exists(self.slice_dir):
-            raise FileNotFoundError()
-        if not os.path.exists(self.png_dir):
-            raise FileNotFoundError()
-        if not os.path.exists(self.split_path):
-            os.makedirs(self.split_path)
-        if not os.path.exists(self.tf_out_path):
-            os.makedirs(self.tf_out_path)
-        if not os.path.exists(self.tv_flow_out_dir):
-            os.makedirs(self.tv_flow_out_dir)
-        if not os.path.exists(self.raw_dir):
-            os.makedirs(self.raw_dir)
-        if not os.path.exists(self.tv_flow_out_dir):
-            os.makedirs(self.tv_flow_out_dir)
-        if not os.path.exists(self.raw_dir):
-            os.makedirs(self.raw_dir)
-        if not os.path.exists(self.raw_test_dir):
-            os.makedirs(self.raw_test_dir)
-        if not os.path.exists(self.raw_train_dir):
-            os.makedirs(self.raw_train_dir)
-        if not os.path.exists(self.tf_out_path):
-            os.makedirs(self.tf_out_path)
-            logging.info("Allocating '{:}'".format(self.tf_out_path))
+        if mkdirs:
+            if not os.path.exists(self.data_dir):
+                raise FileNotFoundError()
+            if not os.path.exists(self.brats_train_dir):
+                return FileNotFoundError()
+            if not os.path.exists(self.brats_test_dir):
+                raise FileNotFoundError()
+            if not os.path.exists(self.slice_dir):
+                raise FileNotFoundError()
+            if not os.path.exists(self.png_dir):
+                raise FileNotFoundError()
+            if not os.path.exists(self.split_path):
+                os.makedirs(self.split_path)
+            if not os.path.exists(self.tf_out_path):
+                os.makedirs(self.tf_out_path)
+            if not os.path.exists(self.tv_flow_out_dir):
+                os.makedirs(self.tv_flow_out_dir)
+            if not os.path.exists(self.raw_dir):
+                os.makedirs(self.raw_dir)
+            if not os.path.exists(self.tv_flow_out_dir):
+                os.makedirs(self.tv_flow_out_dir)
+            if not os.path.exists(self.raw_dir):
+                os.makedirs(self.raw_dir)
+            if not os.path.exists(self.raw_test_dir):
+                os.makedirs(self.raw_test_dir)
+            if not os.path.exists(self.raw_train_dir):
+                os.makedirs(self.raw_train_dir)
+            if not os.path.exists(self.tf_out_path):
+                os.makedirs(self.tf_out_path)
+                logging.info("Allocating '{:}'".format(self.tf_out_path))
 
-        #save config file to out folder
-        copyfile("configuration.py", os.path.join(self.tf_out_path, "configuration.py"))
+            #save config file to out folder
+            copyfile("configuration.py", os.path.join(self.tf_out_path, "configuration.py"))
 
         self.is_loaded = True
