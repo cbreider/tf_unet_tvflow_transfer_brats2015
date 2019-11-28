@@ -98,14 +98,15 @@ class TFTrainingImageDataGenerator(TFImageDataGenerator):
     def _parse_function(self, input, gt):
         # load and preprocess the image
         # if data is given as png path load the data first
-        tv_img = None
-        resize_tv = None
         if self.load_data_from_disk:
             in_img = tf_utils.load_png_image(input, nr_channels=self._nr_channels, img_size=self._in_img_size)
             gt_img = tf_utils.load_png_image(gt, nr_channels=self._nr_channels, img_size=self._in_img_size)
         else:
             in_img = tf.cast(tf.reshape(input, [input.shape[0],  input.shape[1], 1]), tf.float32)
             gt_img = tf.cast(tf.reshape(gt, [gt.shape[0],  gt.shape[1], 1]), tf.float32)
+
+        tv_img = tf.zeros_like(in_img)
+        resize_tv = tf.zeros_like(in_img)
 
         if self._mode == TrainingModes.TVFLOW_REGRESSION:
             gt_img = tf_utils.normalize_and_zero_center_tensor(gt_img,
@@ -187,8 +188,7 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
     def _parse_function(self, input, gt):
         # load and preprocess the image
         # if data is given as png path load the data first
-        tv_img = None
-        resize_tv = None
+
         if self.load_data_from_disk:
             in_img = tf_utils.load_png_image(input, nr_channels=self._nr_channels, img_size=self._in_img_size)
             gt_img = tf_utils.load_png_image(gt, nr_channels=self._nr_channels, img_size=self._in_img_size)
@@ -196,6 +196,8 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
             in_img = tf.cast(tf.reshape(input, [input.shape[0],  input.shape[1], 1]), tf.float32)
             gt_img = tf.cast(tf.reshape(gt, [gt.shape[0],  gt.shape[1], 1]), tf.float32)
 
+        resize_tv = tf.zeros_like(in_img)
+        tv_img = tf.zeros_like(in_img)
         if self._mode == TrainingModes.TVFLOW_REGRESSION:
             gt_img = tf_utils.normalize_and_zero_center_tensor(gt_img,
                                                            max=self._data_max_value,

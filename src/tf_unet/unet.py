@@ -160,6 +160,8 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
             size *= pool_size
             size -= 2 * 2 * (filter_size // 2) # valid conv
 
+    last_feature_map = in_node
+
     # Output Map
     with tf.name_scope("output_map"):
         weight = weight_variable([1, 1, features_root, n_class], stddev, trainable=True)
@@ -208,7 +210,7 @@ def create_conv_net(x, keep_prob, channels, n_class, n_layers=5, features_root=6
         variables.append(b1)
         variables.append(b2)
 
-    return output_map, variables, int(in_size - size), [weight, bias]
+    return output_map, variables, int(in_size - size), [weight, bias], last_feature_map
 
 
 class Unet(object):
@@ -240,7 +242,7 @@ class Unet(object):
         self.y = tf.placeholder("float", shape=[None, None, None, n_class], name="y")
         self.keep_prob = tf.placeholder(tf.float32, name="dropout_probability")  # dropout (keep probability)
 
-        logits, self.variables, self.offset, self.out_vars = create_conv_net(x=self.x,
+        logits, self.variables, self.offset, self.out_vars, lfs = create_conv_net(x=self.x,
                                                               keep_prob=keep_prob,
                                                               channels=n_channels,
                                                               n_class=n_class,
@@ -264,6 +266,7 @@ class Unet(object):
                                    tv_regularizer=tv_regularizer)
 
         self.gradients_node = tf.gradients(self.cost, self.variables)
+        self.last_feature_map = lfs
 
         with tf.name_scope("cross_entropy"):
             if cost_function == Cost.MSE:

@@ -50,8 +50,8 @@ class DataParams:
 
 class ConvNetParams:
     """ ConvNetParams parameters"""
-    num_layers = 5                  # number of encoder layers including bottom layer
-    feat_root = 64                  # number of feature maps/kernels in the first layer
+    num_layers = 3                  # number of encoder layers including bottom layer
+    feat_root = 16                  # number of feature maps/kernels in the first layer
     filter_size = 3                 # kernel size
     pool_size = 2                   # size of max pooling
     keep_prob_dopout = 0.75          # keep prob for dropout

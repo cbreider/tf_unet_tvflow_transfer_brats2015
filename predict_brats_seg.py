@@ -67,7 +67,7 @@ if __name__ == "__main__":
     data = ImageData(data=file_paths.test_paths,
                                 batch_size=config.TrainingParams.batch_size_val,
                                 buffer_size=config.TrainingParams.buffer_size_val,
-                                shuffle=config.DataParams.shuffle,
+                                shuffle=False,
                                 mode=DataModes.VALIDATION,
                                 train_mode=TrainingModes.SEGMENTATION,
                                 in_img_size=config.DataParams.raw_image_size,
@@ -80,7 +80,6 @@ if __name__ == "__main__":
                                 nr_of_classes=config.DataParams.nr_of_classes_seg_mode,
                                 nr_channels=config.DataParams.nr_of_channels)
     data.create()
-
 
     net = unet.Unet(n_channels=config.DataParams.nr_of_channels,
                     n_class=config.DataParams.nr_of_classes_seg_mode,
@@ -112,17 +111,18 @@ if __name__ == "__main__":
         sess.run(tf.global_variables_initializer())
         ckpt = tf.train.get_checkpoint_state(model_path)
         if ckpt and ckpt.model_checkpoint_path:
-            net.restore(sess, ckpt.model_checkpoint_path, restore_mode=RestoreMode.COMPLETE_SESSION)
+            net.restore(sess, ckpt.model_checkpoint_path, restore_mode=RestoreMode.ONLY_BASE_NET)
         sess.run(data.init_op)
         if not use_Brats_Testing:
             for i in range(int(len(file_paths.test_paths)/config.TrainingParams.batch_size_val)):
-                batch_x, batch_y = sess.run(data.next_batch)
+                batch_x, batch_y, __ = sess.run(data.next_batch)
 
-                prediction, ce, dc, err, acc = sess.run([net.predicter,
+                prediction, ce, dc, err, acc, map= sess.run([net.predicter,
                                                          net.cross_entropy,
                                                          net.dice,
                                                          net.error,
-                                                         net.accuracy],
+                                                         net.accuracy,
+                                                         net.last_feature_map],
                                                         feed_dict={net.x: batch_x,
                                                                    net.y: batch_y,
                                                                    net.keep_prob: 1.})
@@ -132,9 +132,15 @@ if __name__ == "__main__":
                 cross_entropy += ce
                 fname = "{}.jpg".format(i)
                 st = randint(1, 100)
-                if st == 100:
+                if st == 100 or save_all_predictions:
                     img = dutils.combine_img_prediction(batch_x, batch_y, prediction, mode=0)
                     dutils.save_image(img, os.path.join(out_path, fname))
+
+                map = dutils.revert_zero_centering(map)
+                for m in range(map.shape[0]):
+                    x = map[0]
+                    x = np.reshape(x, (x.shape[1]*x.shape[3], x.shape[2]*x.shape[3]))
+                    dutils.save_image(x, os.path.join(out_path, "{}_{}.jpg".format(i, m)))
 
                 print("Test {} of {}  finished".format(idx, int(len(file_paths.test_paths)/config.TrainingParams.batch_size_val)))
 
