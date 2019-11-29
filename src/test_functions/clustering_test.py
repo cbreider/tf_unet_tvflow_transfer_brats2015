@@ -10,7 +10,7 @@ from src.utils.path_utils import DataPaths
 from src.utils.split_utilities import TrainingDataset
 import src.utils.enum_params as enp
 import os
-from scipy.spatial import distance
+import src.utils.data_utils as dutils
 
 def recreate_image(codebook, labels, w, h):
     """Recreate the (compressed) image from the code book & labels"""
@@ -29,7 +29,7 @@ tv_weight = 0.1
 tv_eps = 0.00001
 tv_m_itr = 200
 km_m_itr = 100
-n_clusters = 7
+n_clusters = 10
 
 
 def eval_tf_smooth_and_cluster():
@@ -50,9 +50,9 @@ def eval_tf_smooth_and_cluster():
 
     #create tf pipeline for tv smoothing and clustering
     pl = tf.placeholder(tf.float32, shape=[240, 240, 1])
-    tv_cluster = tfu.get_tv_smoothed_and_clusterd_one_hot(pl,
-                                                          nr_img=2, tv_tau=tv_tau, tv_weight=tv_weight, tv_eps=tv_eps,
-                                                          tv_m_itr=tv_m_itr, km_cluster_n=n_clusters, km_itr_n=km_m_itr)
+    tv_cluster = tfu.get_tv_smoothed_and_kmeans_clusterd_one_hot(pl,
+                                                                 nr_img=2, tv_tau=tv_tau, tv_weight=tv_weight, tv_eps=tv_eps,
+                                                                 tv_m_itr=tv_m_itr, km_cluster_n=n_clusters, km_itr_n=km_m_itr)
     # run tf
     with tf.Session() as sess:
 
@@ -70,7 +70,8 @@ def eval_tf_smooth_and_cluster():
 
 
 def compare_clusterings():
-    os.makedirs("test_out")
+    if not os.path.exists("test_out"):
+        os.makedirs("test_out")
     data_paths = DataPaths(data_path="/home/christian/Projects/Lab_SS2019/dataset", mode="TVFLOW")
     data_paths.load_data_paths(mkdirs=False)
     file_paths = TrainingDataset(paths=data_paths,
@@ -92,72 +93,80 @@ def compare_clusterings():
         tv_img = nptv.tv_denoise(copy.deepcopy(img), tau=tv_tau, weight=tv_weight, eps=tv_eps, num_iter_max=tv_m_itr)
         tv_img = np.array(np.reshape(tv_img, (240, 240)))
         all_tvs.append(tv_img)
-        if int(np.random.uniform(1, 10))%3 == 0:
+        if int(np.random.uniform(1, 10))%5 == 0:
             cl_img_flat.append(tv_img.reshape((-1, 1)))
-
+    print("TV done!")
     cl_img_flat = np.array(cl_img_flat)
     cl_img_flat = cl_img_flat.reshape((-1, 1))
     km_def = KMeans(n_clusters=n_clusters, tol=0.00000001,
                     max_iter=km_m_itr, precompute_distances=True, n_jobs=6).fit(cl_img_flat)
-    km_cl_cen = np.sort(km_def.cluster_centers_)
+    km_cl_cen = np.sort(km_def.cluster_centers_.reshape(n_clusters))
     bin_size = 1.0 / float(n_clusters)
-    hard_cl_cen = [(float(c) + 0.5) * bin_size for c in range(0, n_clusters)]
-
+    hard_cl_cen = np.array([(float(c) + 0.5) * bin_size for c in range(0, n_clusters)])
+    hard_cl_cen = hard_cl_cen
+    print("K-means done!")
     for i in range(len(all_tvs)):
+        in_arr = np.repeat(np.expand_dims(all_tvs[i], 2), n_clusters, axis=2)
         # get hard bin assignmnets:
-        dist = np.subtract(all_tvs[i], hard_cl_cen)
-        dist = np.sqrt(dist)
-        hard_assign = np.argmin(dist)
+        dist = np.subtract(in_arr, hard_cl_cen)
+        dist = np.square(dist)
+        hard_assign = np.argmin(dist, axis=2)
 
         #get pr-clustered k-means assignments
-        dist = np.subtract(all_tvs[i], km_cl_cen)
-        dist = np.sqrt(dist)
-        km_assign = np.argmin(dist)
+        dist = np.subtract(in_arr, km_cl_cen)
+        dist = np.square(dist)
+        km_assign = np.argmin(dist, axis=2)
 
         tv_flat = all_tvs[i].reshape((-1, 1))
 
         #get new km assignmnets
         km_new_def = KMeans(n_clusters=n_clusters, tol=0.00000001,
                         max_iter=km_m_itr, precompute_distances=True, n_jobs=6).fit(tv_flat)
-        km_new_cl_cen = np.sort(km_new_def.cluster_centers_)
-        dist = np.subtract(all_tvs[i], km_new_cl_cen)
-        dist = np.sqrt(dist)
-        km_new_assign = np.argmin(dist)
+        km_new_cl_cen = np.sort(km_new_def.cluster_centers_.reshape(n_clusters))
+        dist = np.subtract(in_arr, km_new_cl_cen)
+        dist = np.square(dist)
+        km_new_assign = np.argmin(dist, axis=2)
 
         #get mean shift clusteirng
-        bandwidth = estimate_bandwidth(tv_flat, quantile=0.1, n_samples=500)
+        bandwidth = estimate_bandwidth(tv_flat, quantile=0.05, n_samples=500)
         ms_def = MeanShift(bandwidth=bandwidth, bin_seeding=True).fit(tv_flat)
-        ms_clusters = np.sort(ms_def.cluster_centers_)
+        ms_clusters = ms_def.cluster_centers_.reshape(ms_def.cluster_centers_.shape[0])
+        ms_clusters = np.sort(ms_clusters)
         if ms_clusters.shape[0] != n_clusters:
             ms_clusters = np.insert(ms_clusters, 0, 0.0)
             ms_clusters = np.insert(ms_clusters, ms_clusters.shape[0], 1.0)
             # if number of clusters is greater than it should be delete elements with smallest distance to its neighbor
-            if ms_clusters.shape[0] > n_clusters:
-                while not (ms_clusters.shape[0] == n_clusters):
+            if ms_clusters.shape[0] > n_clusters+2:
+                while not (ms_clusters.shape[0] == n_clusters+2):
                     # get for each elememnt its distance to ist neighbor
                     diffs = np.ediff1d(ms_clusters)
                     m_idx = np.argmin(diffs)
                     ms_clusters = np.delete(ms_clusters, m_idx + 1)
 
-            elif ms_clusters.shape[0] < n_clusters:
-                while not (ms_clusters.shape[0] == n_clusters):
+            elif ms_clusters.shape[0] < n_clusters+2:
+                while not (ms_clusters.shape[0] == n_clusters+2):
                     diffs = np.ediff1d(ms_clusters)
                     m_idx = np.argmax(diffs)
                     ms_clusters = np.insert(ms_clusters, m_idx + 1, -100.0)
+            ms_clusters = ms_clusters[1:-1]
         else:
             ms_clusters = ms_clusters
 
-        dist = np.subtract(all_tvs[i], ms_clusters)
-        dist = np.sqrt(dist)
-        ms_assign = np.argmin(dist)
+        dist = np.subtract(in_arr, ms_clusters)
+        dist = np.square(dist)
+        ms_assign = np.argmin(dist, axis=2)
 
-        img = np.concatenate((all_imgs[i],
-                              all_tvs[i],
-                              hard_assign,
-                              km_assign,
-                              km_new_assign,
-                              ms_assign),
+        img = np.concatenate((all_imgs[i].astype(np.float) / all_imgs[i].max() * 255.0,
+                              all_tvs[i].astype(np.float) / all_tvs[i].max() * 255.0,
+                              hard_assign.astype(np.float) / float(n_clusters) * 255.0,
+                              km_assign.astype(np.float) / float(n_clusters) * 255.0,
+                              km_new_assign.astype(np.float) / float(n_clusters) * 255.0,
+                              ms_assign.astype(np.float) / float(n_clusters) * 255.0),
                              axis=1)
+        dutils.save_image(img, "test_out/{}.jpg".format(i))
+        print("Clustered {} of {}".format(i, len(all_tvs)))
+
+
 
 
 
