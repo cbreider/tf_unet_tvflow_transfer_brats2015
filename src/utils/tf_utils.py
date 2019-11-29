@@ -103,13 +103,26 @@ def load_png_image(filename, nr_channels, img_size, data_type=tf.float32):
         print("type error: " + str(e) + str(filename))
 
 
-def get_tv_smoothed_and_clusterd_one_hot(image, nr_img, tv_tau, tv_weight, tv_eps, tv_m_itr, km_cluster_n, km_itr_n):
-    inimg = image - tf.reduce_min(image)
-    mean, var = tf.nn.moments(inimg, axes=[0, 1, 2])
-    inimg = tf.math.divide((inimg), tf.math.sqrt(var))
-    inimg = inimg / tf.reduce_max(inimg)
+def get_tv_smoothed_and_meanshift_clusterd_one_hot(image, tv_tau, tv_weight, tv_eps, tv_m_itr, ms_itr=-1, win_r=0.05):
 
-    tv_sm = get_tv_smoothed(inimg, tv_tau, tv_weight, tv_eps, tv_m_itr)
+    tv_sm = get_tv_smoothed(image, tv_tau, tv_weight, tv_eps, tv_m_itr)
+    tv_sm = tv_sm - tf.reduce_min(tv_sm)
+    mean, var = tf.nn.moments(tv_sm, axes=[0, 1, 2])
+    tv_sm = tf.math.divide((tv_sm), tf.math.sqrt(var))
+    tv_sm = tv_sm / tf.reduce_max(tv_sm)
+
+    c, __ = mean_shift(input_x=tv_sm.reshape(-1, 1), init_c=tv_sm.reshape(-1, 1), n_updates=ms_itr, window_radius=win_r)
+    centroids_expanded = tf.expand_dims(c, 1)
+    centroids_expanded = tf.transpose(centroids_expanded)
+    centroids_expanded = tf.expand_dims(centroids_expanded, 0)
+    distances = tf.square(tf.subtract(image, centroids_expanded))
+    assignments = tf.argmin(distances, axis=2, output_type=tf.int32)
+    return tv_sm, assignments
+
+
+def get_tv_smoothed_and_kmeans_clusterd_one_hot(image, nr_img, tv_tau, tv_weight, tv_eps, tv_m_itr, km_cluster_n, km_itr_n):
+
+    tv_sm = get_tv_smoothed(image, tv_tau, tv_weight, tv_eps, tv_m_itr)
     tv_sm = tv_sm - tf.reduce_min(tv_sm)
     mean, var = tf.nn.moments(tv_sm, axes=[0, 1, 2])
     tv_sm = tf.math.divide((tv_sm), tf.math.sqrt(var))
@@ -122,18 +135,23 @@ def get_tv_smoothed_and_clusterd_one_hot(image, nr_img, tv_tau, tv_weight, tv_ep
 
 
 def get_tv_smoothed(img, tau, weight, eps, m_itr):
-    u = tf.zeros_like(img)
-    px = tf.zeros_like(img)
-    py = tf.zeros_like(img)
+    inimg = img - tf.reduce_min(img)
+    mean, var = tf.nn.moments(inimg, axes=[0, 1, 2])
+    inimg = tf.math.divide((inimg), tf.math.sqrt(var))
+    inimg = inimg / tf.reduce_max(inimg)
+
+    u = tf.zeros_like(inimg)
+    px = tf.zeros_like(inimg)
+    py = tf.zeros_like(inimg)
     nm = tf.cast(tf.shape(img)[0] * tf.shape(img)[1] * tf.shape(img)[2], tf.float32)
     error = tf.constant(0.0)
     err_prev = tf.constant(eps)
     err_init = tf.constant(0.0)
     i = tf.constant(0)
-    img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr = tf.while_loop(
+    inimg, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr = tf.while_loop(
         tv_cond,
         tv_body,
-        [img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr])
+        [inimg, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr])
 
     return u
 
@@ -166,6 +184,46 @@ def tv_body(img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, 
     err_init = tf.cond(tf.equal(i, tf.constant(0)), lambda : error, lambda : err_init)
     i = tf.math.add(i, tf.constant(1))
     return [img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr]
+
+
+def mean_shift(input_x, init_c, n_updates=-1, window_radius=0.05):
+    x1 = tf.expand_dims(tf.transpose(input_x), 0)
+    x2 = tf.expand_dims(input_x, 0)
+    c = init_c
+
+    sbs_c = tf.TensorArray(dtype=tf.float32, size=10000, infer_shape=False)
+    sbs_c = sbs_c.write(0, init_c)
+
+    def _mean_shift_step(c):
+        c = tf.expand_dims(c, 2)
+        Y = tf.reduce_sum(tf.pow((c - x1) / window_radius, 2), axis=1)
+        gY = tf.exp(-Y)
+        num = tf.reduce_sum(tf.expand_dims(gY, 2) * x2, axis=1)
+        denom = tf.reduce_sum(gY, axis=1, keep_dims=True)
+        c = num / denom
+        return c
+
+    if n_updates > 0:
+        for i in range(n_updates):
+            c = _mean_shift_step(c)
+            sbs_c = sbs_c.write(i + 1, c)
+    else:
+        def _mean_shift(i, c, sbs_c, max_diff):
+            new_c = _mean_shift_step(c)
+            max_diff = tf.reshape(tf.reduce_max(tf.sqrt(tf.reduce_sum(tf.pow(new_c - c, 2), axis=1))), [])
+            sbs_c = sbs_c.write(i + 1, new_c)
+            return i + 1, new_c, sbs_c, max_diff
+
+        def _cond(i, c, sbs_c, max_diff):
+            return max_diff > 1e-5
+
+        n_updates, c, sbs_c, _ = tf.while_loop(cond=_cond,
+                                               body=_mean_shift,
+                                               loop_vars=(tf.constant(0), c, sbs_c, tf.constant(1e10)))
+
+        n_updates = tf.Print(n_updates, [n_updates])
+
+    return c, sbs_c.gather(tf.range(n_updates + 1))
 
 
 def get_kmeans(img, clusters_n, iteration_n):

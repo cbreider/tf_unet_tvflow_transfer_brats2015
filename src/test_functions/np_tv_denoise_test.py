@@ -2,23 +2,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-arr_compare = np.zeros((8*240,8*240), dtype=np.float)
-for i in range(8):
-    for j in range(8):
-        arr_compare[i*240:(i+1)*240, j*240:(j+1)*240] = np.ones((240,240), dtype=np.float) * (float(i)*8.0+float(j)) / (64.0)
+def test_reshape():
+    arr_compare = np.zeros((8*240,8*240), dtype=np.float)
+    for i in range(8):
+        for j in range(8):
+            arr_compare[i*240:(i+1)*240, j*240:(j+1)*240] = np.ones((240,240), dtype=np.float) * (float(i)*8.0+float(j)) / (64.0)
 
 
-arr = np.zeros((240,240, 64), dtype=np.float)
-for i in range(64):
-    arr[:, :, i] = np.ones((240,240), dtype=np.float) * (float(i)) / (64.0)
+    arr = np.zeros((240,240, 64), dtype=np.float)
+    for i in range(64):
+        arr[:, :, i] = np.ones((240,240), dtype=np.float) * (float(i)) / (64.0)
 
-BSZ = [8,8] # Block size
-p,q = BSZ
-arr = arr.reshape(240,240,8,8).transpose(2,0,3,1).reshape(8*240,8*240)
+    BSZ = [8,8] # Block size
+    p,q = BSZ
+    arr = arr.reshape(240,240,8,8).transpose(2,0,3,1).reshape(8*240,8*240)
 
-plt.matshow(arr_compare)
-plt.matshow(arr)
-plt.show()
+    plt.matshow(arr_compare)
+    plt.matshow(arr)
+    plt.show()
 
 
 def tv_denoise(img, weight=0.1, tau=0.125, eps=1e-3, num_iter_max=200, ):

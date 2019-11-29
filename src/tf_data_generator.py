@@ -115,14 +115,14 @@ class TFTrainingImageDataGenerator(TFImageDataGenerator):
                                                            normalize_std=self._normalize_std)
 
         if self._mode == TrainingModes.TVFLOW_SEGMENTATION:
-            tv_img, gt_img = tf_utils.get_tv_smoothed_and_clusterd_one_hot(image=in_img,
-                                                                   nr_img=self._batch_size,
-                                                                   tv_tau=self.tv_tau,
-                                                                   tv_weight=self.tv_weight,
-                                                                   tv_eps=self.tv_eps,
-                                                                   tv_m_itr=self.tv_nr_itr,
-                                                                   km_cluster_n=self._nr_of_classes,
-                                                                   km_itr_n=self.kmeans_n_itr)
+            tv_img, gt_img = tf_utils.get_tv_smoothed_and_kmeans_clusterd_one_hot(image=in_img,
+                                                                                  nr_img=self._batch_size,
+                                                                                  tv_tau=self.tv_tau,
+                                                                                  tv_weight=self.tv_weight,
+                                                                                  tv_eps=self.tv_eps,
+                                                                                  tv_m_itr=self.tv_nr_itr,
+                                                                                  km_cluster_n=self._nr_of_classes,
+                                                                                  km_itr_n=self.kmeans_n_itr)
 
         if self._crop_to_non_zero:
             in_img, gt_img, tv_img = tf_utils.crop_images_to_to_non_zero(scan=in_img, ground_truth=gt_img,
@@ -205,14 +205,14 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
                                                            normalize_std=self._normalize_std)
 
         if self._mode == TrainingModes.TVFLOW_SEGMENTATION:
-            tv_img, gt_img = tf_utils.get_tv_smoothed_and_clusterd_one_hot(image=in_img,
-                                                                             nr_img=self._batch_size,
-                                                                             tv_tau=self.tv_tau,
-                                                                             tv_weight=self.tv_weight,
-                                                                             tv_eps=self.tv_eps,
-                                                                             tv_m_itr=self.tv_nr_itr,
-                                                                             km_cluster_n=self._nr_of_classes,
-                                                                             km_itr_n=self.kmeans_n_itr)
+            tv_img, gt_img = tf_utils.get_tv_smoothed_and_kmeans_clusterd_one_hot(image=in_img,
+                                                                                  nr_img=self._batch_size,
+                                                                                  tv_tau=self.tv_tau,
+                                                                                  tv_weight=self.tv_weight,
+                                                                                  tv_eps=self.tv_eps,
+                                                                                  tv_m_itr=self.tv_nr_itr,
+                                                                                  km_cluster_n=self._nr_of_classes,
+                                                                                  km_itr_n=self.kmeans_n_itr)
 
         if self._crop_to_non_zero:
             in_img, gt_img, tv_img = tf_utils.crop_images_to_to_non_zero(scan=in_img, ground_truth=gt_img,
