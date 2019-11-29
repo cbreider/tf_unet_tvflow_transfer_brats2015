@@ -30,12 +30,15 @@ if __name__ == "__main__":
                         help='Number of cuda device to use (optional)')
     parser.add_argument('--save_all_predictions', action='store_true',
                         help='save all predictions as mha to model_path')
+    parser.add_argument('--save_feature_maps', action='store_true',
+                        help='saves the feature maps of the last CNN layer')
 
     args = parser.parse_args()
 
     model_path = None
     use_Brats_Testing = False
     save_all_predictions = False
+    save_fmaps = False
     if args.model_path is not None:
         model_path = args.model_path
     else:
@@ -46,6 +49,8 @@ if __name__ == "__main__":
         exit(1)
     if args.save_all_predictions:
         save_all_predictions = True
+    if args.save_feature_maps:
+        save_fmaps = True
     if args.cuda_device >= 0:
         cuda_selector.set_cuda_gpu(args.cuda_device)
 
@@ -117,7 +122,7 @@ if __name__ == "__main__":
             for i in range(int(len(file_paths.test_paths)/config.TrainingParams.batch_size_val)):
                 batch_x, batch_y, __ = sess.run(data.next_batch)
 
-                prediction, ce, dc, err, acc, map= sess.run([net.predicter,
+                prediction, ce, dc, err, acc, fmaps = sess.run([net.predicter,
                                                          net.cross_entropy,
                                                          net.dice,
                                                          net.error,
@@ -135,12 +140,17 @@ if __name__ == "__main__":
                 if st == 100 or save_all_predictions:
                     img = dutils.combine_img_prediction(batch_x, batch_y, prediction, mode=0)
                     dutils.save_image(img, os.path.join(out_path, fname))
-
-                map = dutils.revert_zero_centering(map)
-                for m in range(map.shape[0]):
-                    x = map[0]
-                    x = np.reshape(x, (x.shape[1]*x.shape[3], x.shape[2]*x.shape[3]))
-                    dutils.save_image(x, os.path.join(out_path, "{}_{}.jpg".format(i, m)))
+                if save_fmaps:
+                    size = [8, 8]
+                    map_s = [fmaps.shape[1], fmaps.shape[2]]
+                    fmaps = dutils.revert_zero_centering(fmaps)
+                    for m in range(fmaps.shape[0]):
+                        fmap = fmaps[0]
+                        im = fmap.reshape(map_s[0], map_s[0],
+                                          size[0], size[1]).transpose(2, 0,
+                                                                      3, 1).reshape(size[0]*map_s[0],
+                                                                                    size[1]*map_s[1])
+                        dutils.save_image(im, os.path.join(out_path, "{}_{}.jpg".format(i, m)))
 
                 print("Test {} of {}  finished".format(idx, int(len(file_paths.test_paths)/config.TrainingParams.batch_size_val)))
 
