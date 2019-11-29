@@ -101,8 +101,8 @@ def search_file_in_folder_list(folder_list, file_name):
 def load_2d_volume_as_array(filename):
     if npy_ext in filename:
         data = load_npy_file_as_array(filename=filename)
-    elif nrrd_ext in filename:
-        data = load_nrrd_file_as_array(filename=filename, include_header=False)
+    #elif nrrd_ext in filename:
+    #    data = load_nrrd_file_as_array(filename=filename, include_header=False)
     else:
         raise ValueError('{0:} unsupported file format'.format(filename))
     if len(data.shape) != 2:
@@ -113,8 +113,8 @@ def load_2d_volume_as_array(filename):
 def load_3d_volume_as_array(filename):
     if mha_ext in filename:
         data = load_mha_volume_as_array(filename)
-    elif nrrd_ext in filename:
-        data = load_nrrd_file_as_array(filename=filename, include_header=False)
+    #elif nrrd_ext in filename:
+        #data = load_nrrd_file_as_array(filename=filename, include_header=False)
     elif npy_ext in filename:
         data = load_npy_file_as_array(filename=filename)
     else:
@@ -125,6 +125,7 @@ def load_3d_volume_as_array(filename):
     return data
 
 
+"""
 def load_nrrd_file_as_array(filename, include_header=False):
     if not (nrrd_ext in filename):
         raise ValueError('{0:} unsupported file format'.format(filename))
@@ -133,6 +134,7 @@ def load_nrrd_file_as_array(filename, include_header=False):
         return np.array(readdata), header
     else:
         return np.array(readdata)
+"""
 
 
 def load_npy_file_as_array(filename):
