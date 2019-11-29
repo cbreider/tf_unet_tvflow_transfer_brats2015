@@ -11,7 +11,7 @@ import numpy as np
 import random
 from scipy import ndimage
 import SimpleITK as sitk
-import nrrd
+#import nrrd
 from PIL import Image
 import copy
 
