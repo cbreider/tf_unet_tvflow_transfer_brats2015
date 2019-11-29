@@ -36,22 +36,22 @@ class DataParams:
     shuffle = True                  # Set true to extra Shuffle Trining Data. Note dict.items() is allready random
     do_image_augmentation = True    # Set True to augment training images random crapp, flip, rotation
     do_image_augmentation_val = False  # Set True to augment training images random crapp, flip, rotation for validation
-    split_train_val_ratio = [0.7, 0.3] # [0.6, 0.2 0.2]     # Ration of Nr Training images to Val images (optioanl test)
+    split_train_val_ratio = [0.7, 0.2, 0.1] # [0.6, 0.2 0.2]     # Ration of Nr Training images to Val images (optioanl test)
     use_scale_image_as_gt = False   # choose if you want to use tv scale image instead of smoothed (only tv training)
     crop_to_non_zero = True         # Choose True to alway crop Training images to region of non zero values
     crop_to_non_zero_val = True    # Choose True to alway crop Training images to region of non zero values for validation
     norm_image_value = 1.0          # Values which Images should be normed to during pre processing
     data_max_value = 255.0          # Max value of inout images (uint8)
     normailze_std = True            # normalize standard deviation for images during pre processing
-    load_only_middle_scans = False   # load only slice 40 - 120
+    load_only_middle_scans = True   # load only slice 40 - 120
     nr_of_samples = 0               # use only a subset of images. if 0 all data is used
     use_modalities = ["mr_flair", "mr_t1", "mr_t1c", "mr_t2"]  # modalities used for training
 
 
 class ConvNetParams:
     """ ConvNetParams parameters"""
-    num_layers = 3                  # number of encoder layers including bottom layer
-    feat_root = 16                  # number of feature maps/kernels in the first layer
+    num_layers = 5                  # number of encoder layers including bottom layer
+    feat_root = 64                  # number of feature maps/kernels in the first layer
     filter_size = 3                 # kernel size
     pool_size = 2                   # size of max pooling
     keep_prob_dopout = 0.75          # keep prob for dropout
