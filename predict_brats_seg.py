@@ -145,7 +145,7 @@ if __name__ == "__main__":
                     map_s = [fmaps.shape[1], fmaps.shape[2]]
                     fmaps = dutils.revert_zero_centering(fmaps)
                     for m in range(fmaps.shape[0]):
-                        fmap = fmaps[0]
+                        fmap = fmaps[m]
                         im = fmap.reshape(map_s[0], map_s[0],
                                           size[0], size[1]).transpose(2, 0,
                                                                       3, 1).reshape(size[0]*map_s[0],
