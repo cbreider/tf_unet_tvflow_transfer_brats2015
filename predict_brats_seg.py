@@ -150,6 +150,8 @@ if __name__ == "__main__":
                                           size[0], size[1]).transpose(2, 0,
                                                                       3, 1).reshape(size[0]*map_s[0],
                                                                                     size[1]*map_s[1])
+                        # histogram normalization
+                        im = dutils.image_histogram_equalization(im)[0]
                         dutils.save_image(im, os.path.join(out_path, "{}_{}.jpg".format(i, m)))
 
                 print("Test {} of {}  finished".format(idx, int(len(file_paths.test_paths)/config.TrainingParams.batch_size_val)))
