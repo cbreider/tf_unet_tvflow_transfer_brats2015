@@ -103,8 +103,18 @@ def load_png_image(filename, nr_channels, img_size, data_type=tf.float32):
         print("type error: " + str(e) + str(filename))
 
 
-def get_tv_smoothed_and_meanshift_clusterd_one_hot(image, tv_tau, tv_weight, tv_eps, tv_m_itr, ms_itr=-1, win_r=0.02,
-                                                   n_clusters=10):
+def get_tv_smoothed_and_fixed_bin_clustering(image, tv_tau, tv_weight, tv_eps, tv_m_itr, n_bins=10):
+
+    tv_sm = get_tv_smoothed(image, tv_tau, tv_weight, tv_eps, tv_m_itr)
+
+    val_range = [tf.reduce_min(tv_sm), tf.reduce_max(tv_sm)]
+    assignments = tf.histogram_fixed_width_bins(values=tv_sm, value_range=val_range, nbins=n_bins)
+
+    return tv_sm, tf.cast(assignments, tf.float32)
+
+
+def get_tv_smoothed_and_meanshift_clustering(image, tv_tau, tv_weight, tv_eps, tv_m_itr, ms_itr=-1, win_r=0.02,
+                                             n_clusters=10):
 
     tv_sm = get_tv_smoothed(image, tv_tau, tv_weight, tv_eps, tv_m_itr)
 
@@ -119,7 +129,7 @@ def get_tv_smoothed_and_meanshift_clusterd_one_hot(image, tv_tau, tv_weight, tv_
     return tv_sm, assignments
 
 
-def get_tv_smoothed_and_kmeans_clusterd_one_hot(image, nr_img, tv_tau, tv_weight, tv_eps, tv_m_itr, km_cluster_n, km_itr_n):
+def get_tv_smoothed_and_kmeans_clustering(image, nr_img, tv_tau, tv_weight, tv_eps, tv_m_itr, km_cluster_n, km_itr_n):
 
     tv_sm = get_tv_smoothed(image, tv_tau, tv_weight, tv_eps, tv_m_itr)
     clustered = get_kmeans(tv_sm, clusters_n=km_cluster_n, iteration_n=km_itr_n)

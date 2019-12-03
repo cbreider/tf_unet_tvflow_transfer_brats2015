@@ -56,7 +56,7 @@ class ConvNetParams:
     filter_size = 3                 # kernel size
     pool_size = 2                   # size of max pooling
     keep_prob_dopout = 0.75          # keep prob for dropout
-    cost_function = Cost.MSE        # Cost function to use. Choose from class Cost(Enum)
+    cost_function = Cost.CROSS_ENTROPY        # Cost function to use. Choose from class Cost(Enum)
     padding = True                  # Use padding to preserve feature map size and prevent downscaling
     batch_normalization = True      # Use Batchnormalization Yes/No
     class_weights = None            # weight for each individual class # TODO ?

@@ -13,8 +13,8 @@ bins = tfu.bin_tensor(tv_r, window_s=0.02)
 
 ms_r = tfu.mean_shift(tv_r)
 #op = tfu.reshape_clusters_to_cluster_number(ms_r, 10)
-op = tfu.get_tv_smoothed_and_meanshift_clusterd_one_hot(image=img, tv_tau=0.125, tv_weight=0.1, tv_eps=0.00001, tv_m_itr=200, ms_itr=-1, win_r=0.02,
-                                                   n_clusters=10)
+op = tfu.get_tv_smoothed_and_meanshift_clustering(image=img, tv_tau=0.125, tv_weight=0.1, tv_eps=0.00001, tv_m_itr=200, ms_itr=-1, win_r=0.02,
+                                                  n_clusters=10)
 with tf.Session() as sess:
     t, tr, b, ms = sess.run([tv, tv_r, bins, ms_r], feed_dict={pl: img})
     s = sess.run(tf.shape(ms)[0])

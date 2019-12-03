@@ -126,7 +126,7 @@ if __name__ == "__main__":
     validation_data.create()
 
     net = unet.Unet(n_channels=config.DataParams.nr_of_channels,
-                    n_class=config.DataParams.nr_of_classes_tv_flow_mode,
+                    n_class=config.DataParams.nr_of_classes_tv_seg_mode,
                     cost_function=config.ConvNetParams.cost_function,
                     summaries=create_summaries,
                     class_weights=config.ConvNetParams.class_weights,

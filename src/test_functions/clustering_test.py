@@ -50,9 +50,9 @@ def eval_tf_smooth_and_cluster():
 
     #create tf pipeline for tv smoothing and clustering
     pl = tf.placeholder(tf.float32, shape=[240, 240, 1])
-    tv_cluster = tfu.get_tv_smoothed_and_kmeans_clusterd_one_hot(pl,
-                                                                 nr_img=2, tv_tau=tv_tau, tv_weight=tv_weight, tv_eps=tv_eps,
-                                                                 tv_m_itr=tv_m_itr, km_cluster_n=n_clusters, km_itr_n=km_m_itr)
+    tv_cluster = tfu.get_tv_smoothed_and_kmeans_clustering(pl,
+                                                           nr_img=2, tv_tau=tv_tau, tv_weight=tv_weight, tv_eps=tv_eps,
+                                                           tv_m_itr=tv_m_itr, km_cluster_n=n_clusters, km_itr_n=km_m_itr)
     # run tf
     with tf.Session() as sess:
 
