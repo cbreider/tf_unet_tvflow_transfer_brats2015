@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import time
 
 n_samples = 57000 # sample size
-n_centroids = 6 # number of centroids
+n_centroids = 20 # number of centroids
 n_updates = -1 # 50 # number of updates
 
 n_gaussians = 6 # 'true' number of clusters
@@ -39,8 +39,7 @@ def create_data(n_points, n_components):
 
 
 def mean_shift(n_updates=-1):
-    X1 = tf.expand_dims(tf.transpose(input_X), 0)
-    X2 = tf.expand_dims(input_X, 0)
+    XT = tf.transpose(input_X)
     C = init_C
 
     sbs_C = tf.TensorArray(dtype=tf.float32, size=10000, infer_shape=False)
@@ -48,9 +47,13 @@ def mean_shift(n_updates=-1):
 
     def _mean_shift_step(C):
         C = tf.expand_dims(C, 2)
-        Y = tf.reduce_sum(tf.pow((C - X1) / window_radius, 2), axis=1)
+        b = (C - XT)
+        b1 = tf.pow(b / window_radius, 2)
+        Y = tf.reduce_sum(b1, axis=1)
         gY = tf.exp(-Y)
-        num = tf.reduce_sum(tf.expand_dims(gY, 2) * X2, axis=1)
+        a = tf.expand_dims(gY, 2)
+        a2 = a * input_X
+        num = tf.reduce_sum(a2, axis=1)
         denom = tf.reduce_sum(gY, axis=1, keep_dims=True)
         C = num / denom
         return C
@@ -94,11 +97,7 @@ def plot(X, C, sbs_C):
 if __name__ == "__main__":
     X = create_data(n_samples, n_gaussians)
     stacked_X = np.vstack(X)
-    range_x = [stacked_X.min(axis=0), stacked_X.max(axis=0)]
-    range_y = [stacked_X.min(axis=1), stacked_X.max(axis=1)]
-    C = stacked_X.max(axis=0)
-    r = np.random.randint(stacked_X.shape[0], size=n_centroids)
-    C = stacked_X[, :]
+    C = stacked_X[np.random.randint(stacked_X.shape[0], size=n_centroids), :]
     #C = stacked_X
     ms_C, sbs_ms_C = mean_shift(n_updates)
 

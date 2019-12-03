@@ -86,7 +86,7 @@ class TFTrainingImageDataGenerator(TFImageDataGenerator):
 
         # create dataset
         tmp_data = tf.data.Dataset.from_tensor_slices((self._input_data, self._gt_data))
-        tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=1)
+        tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=8)
         # shuffle the first `buffer_size` elements of the dataset
         tmp_data = tmp_data.prefetch(buffer_size=self._buffer_size)
         if self._shuffle:
@@ -174,7 +174,7 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
 
         # create dataset
         tmp_data = tf.data.Dataset.from_tensor_slices((self._input_data, self._gt_data))
-        tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=1)
+        tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=8)
         tmp_data = tmp_data.prefetch(buffer_size=self._buffer_size)
         # shuffle the first `buffer_size` elements of the dataset
         if self._shuffle:

@@ -1,5 +1,24 @@
 import tensorflow as tf
 import  numpy as np
+import src.utils.tf_utils as tfu
+import matplotlib.pyplot as plt
+
+img = np.array(plt.imread(
+    "/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0003_1/VSD.Brain.XX.O.MR_Flair.54524/VSD.Brain.XX.O.MR_Flair.54524_100.png"))
+img = np.reshape(img, (240, 240, 1))
+pl = tf.placeholder(tf.float32, shape=[240, 240, 1])
+tv = tfu.get_tv_smoothed(pl, tau=0.125, weight=0.1, eps=0.00001, m_itr=200)
+tv_r = tf.reshape(tv, (-1, 1))
+bins = tfu.bin_tensor(tv_r, window_s=0.02)
+
+ms_r = tfu.mean_shift(tv_r)
+#op = tfu.reshape_clusters_to_cluster_number(ms_r, 10)
+op = tfu.get_tv_smoothed_and_meanshift_clusterd_one_hot(image=img, tv_tau=0.125, tv_weight=0.1, tv_eps=0.00001, tv_m_itr=200, ms_itr=-1, win_r=0.02,
+                                                   n_clusters=10)
+with tf.Session() as sess:
+    t, tr, b, ms = sess.run([tv, tv_r, bins, ms_r], feed_dict={pl: img})
+    s = sess.run(tf.shape(ms)[0])
+    op= sess.run(op, feed_dict={ms_r: ms})
 
 S = tf.placeholder(dtype=tf.float32, shape=[11])
 DIFF = S[1:]-S[:-1]
@@ -10,8 +29,6 @@ s11 = S[:IDX_MIN+1]
 s12 = S[IDX_MIN+2:]
 s21 = S[:IDX_MAX+1]
 s22 = S[IDX_MAX+1:]
-if tf.shape(s11)[0]>1:
-    x = 0
 S1 = tf.concat([s11, s12], axis=0)
 S2 = tf.concat([s21, tf.convert_to_tensor([-100.0]), s22], axis=0)
 with tf.Session() as sess:

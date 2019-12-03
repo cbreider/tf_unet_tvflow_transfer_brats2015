@@ -37,7 +37,7 @@ class DataParams:
     shuffle = True                  # Set true to extra Shuffle Trining Data. Note dict.items() is allready random
     do_image_augmentation = True    # Set True to augment training images random crapp, flip, rotation
     do_image_augmentation_val = False  # Set True to augment training images random crapp, flip, rotation for validation
-    split_train_val_ratio = [0.7, 0.2, 0.1] # [0.6, 0.2 0.2]     # Ration of Nr Training images to Val images (optioanl test)
+    split_train_val_ratio = [0.7, 0.2] # [0.6, 0.2 0.2]     # Ration of Nr Training images to Val images (optioanl test)
     use_scale_image_as_gt = False   # choose if you want to use tv scale image instead of smoothed (only tv training)
     crop_to_non_zero = True         # Choose True to alway crop Training images to region of non zero values
     crop_to_non_zero_val = True    # Choose True to alway crop Training images to region of non zero values for validation
@@ -75,8 +75,8 @@ class TrainingParams:
     optimizer = Optimizer.ADAM      # Optimizer to use. Choose from class Optimizer(Enum):
     batch_size_train = 2            # batch size used for training
     batch_size_val = 32             # batch size used for validation
-    buffer_size_train = 50         # buffer size for tf training data pipeline (only used for tv training)
-    buffer_size_val = 50           # buffer size for tf validation data pipeline (only used for tv training)
+    buffer_size_train = 100         # buffer size for tf training data pipeline (only used for tv training)
+    buffer_size_val = 100           # buffer size for tf validation data pipeline (only used for tv training)
     norm_grads = False              # norm gradients in summary
     training_iters = 1000           # iterations per epoch
     display_step = 200              # number of iterations between

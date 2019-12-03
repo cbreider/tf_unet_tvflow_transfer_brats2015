@@ -169,7 +169,7 @@ class Trainer(object):
             summary_writer_validation = tf.summary.FileWriter(val_summary_path,
                                                             graph=sess.graph)
 
-            test_x, test_y, test_tv, = sess.run(data_provider_val.next_batch)
+            test_x, test_y, test_tv = sess.run(data_provider_val.next_batch)
             pred_shape = self.store_prediction(sess, test_x, test_y, "_init", summary_writer_validation, 0, 0, test_tv)
             logging.info("Start optimization")
 
