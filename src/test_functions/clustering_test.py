@@ -139,15 +139,15 @@ def compare_clusterings():
             if ms_clusters.shape[0] > n_clusters+2:
                 while not (ms_clusters.shape[0] == n_clusters+2):
                     # get for each elememnt its distance to ist neighbor
-                    diffs = np.ediff1d(ms_clusters)
+                    diffs = ms_clusters[2:] - ms_clusters[:-2]
                     m_idx = np.argmin(diffs)
-                    ms_clusters = np.delete(ms_clusters, m_idx + 1)
+                    ms_clusters = np.concatenate([ms_clusters[:m_idx + 1], ms_clusters[m_idx + 2:]])#np.delete(ms_clusters, m_idx + 1)
 
             elif ms_clusters.shape[0] < n_clusters+2:
                 while not (ms_clusters.shape[0] == n_clusters+2):
-                    diffs = np.ediff1d(ms_clusters)
+                    diffs = ms_clusters[1:] - ms_clusters[:-1]
                     m_idx = np.argmax(diffs)
-                    ms_clusters = np.insert(ms_clusters, m_idx + 1, -100.0)
+                    ms_clusters = np.concatenate([ms_clusters[:m_idx + 1], [-100.0], ms_clusters[m_idx + 1:]])#np.insert(ms_clusters, m_idx + 1, -100.0)
             ms_clusters = ms_clusters[1:-1]
         else:
             ms_clusters = ms_clusters
@@ -165,14 +165,6 @@ def compare_clusterings():
                              axis=1)
         dutils.save_image(img, "test_out/{}.jpg".format(i))
         print("Clustered {} of {}".format(i, len(all_tvs)))
-
-
-
-
-
-
-
-
 
 
 
