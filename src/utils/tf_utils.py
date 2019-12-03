@@ -116,7 +116,7 @@ def get_tv_smoothed_and_meanshift_clusterd_one_hot(image, tv_tau, tv_weight, tv_
     centroids_expanded = tf.expand_dims(centroids_expanded, 0)
     distances = tf.square(tf.subtract(image, centroids_expanded))
     assignments = tf.cast(tf.expand_dims(tf.argmin(distances, axis=2, output_type=tf.int32), 2), tf.float32)
-    return tv_sm, assignments, c
+    return tv_sm, assignments
 
 
 def get_tv_smoothed_and_kmeans_clusterd_one_hot(image, nr_img, tv_tau, tv_weight, tv_eps, tv_m_itr, km_cluster_n, km_itr_n):
