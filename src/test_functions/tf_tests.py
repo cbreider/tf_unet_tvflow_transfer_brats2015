@@ -1,5 +1,27 @@
 import tensorflow as tf
 import  numpy as np
+
+S = tf.placeholder(dtype=tf.float32, shape=[11])
+DIFF = S[1:]-S[:-1]
+DIFF2 = S[2:]-S[:-2]
+IDX_MIN = tf.argmin(DIFF2)
+IDX_MAX = tf.argmax(DIFF)
+s11 = S[:IDX_MIN+1]
+s12 = S[IDX_MIN+2:]
+s21 = S[:IDX_MAX+1]
+s22 = S[IDX_MAX+1:]
+if tf.shape(s11)[0]>1:
+    x = 0
+S1 = tf.concat([s11, s12], axis=0)
+S2 = tf.concat([s21, tf.convert_to_tensor([-100.0]), s22], axis=0)
+with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer())
+    s, diff, diff2,  idx_min, idx_max, s1, s2 = sess.run([S, DIFF, DIFF2, IDX_MIN, IDX_MAX, S1, S2],
+                                                 feed_dict={S: np.array([0.0, 1.0, 3.0, 6.0, 7.0, 7.5, 9.0, 11.0, 14.2, 14.5, 15.0])})
+    a = 0
+
+
+S1 = tf.stack(S[:4-1])
 A = tf.convert_to_tensor([[0, 0, 1, 2, 0, 0],
      [0, 0, 1, 2, 5, 0],
      [0, 3, 1, 2, 0, 0],
