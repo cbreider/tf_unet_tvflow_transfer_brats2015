@@ -18,6 +18,7 @@ import tensorflow as tf
 from datetime import datetime
 from src.utils.enum_params import Cost, Activation_Func, RestoreMode
 from collections import OrderedDict
+import src.utils.tf_utils as tfu
 from src.tf_unet.layers import (weight_variable, weight_variable_devonc, bias_variable,
                                 conv2d, deconv2d, max_pool, crop_and_concat, pixel_wise_softmax,
                                 cross_entropy)
@@ -294,10 +295,7 @@ class Unet(object):
                 self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
                 self.error = tf.constant(1.0) - self.accuracy
                 self.error_rate = tf.math.multiply(self.error, tf.constant(100.0))
-                eps = 1e-5
-                intersection = tf.reduce_sum(self.pred_slice * self.y_slice)
-                union = eps + tf.reduce_sum(self.pred_slice) + tf.reduce_sum(self.y_slice)
-                self.dice = (2 * intersection / union)
+                self.dice = tfu.get_dice_score(logits=logits, y=self.y, eps=1e-7)
 
     def _get_cost(self, logits, cost_function, class_weights=None, regularizer=None, tv_regularizer=0.01):
         """
