@@ -48,6 +48,17 @@ class DataParams:
     nr_of_samples = 0               # use only a subset of images. if 0 all data is used
     use_modalities = ["mr_flair", "mr_t1", "mr_t1c", "mr_t2"]  # modalities used for training
 
+    tv_smooth_params = dict(weight=0.1,
+                            eps=0.00001,
+                            tau=0.125,
+                            m_itr=200)
+
+    k_means_params = dict(m_itr=100)
+
+    mean_shift_params = dict(m_itr=-1,
+                             window_size=0.01,
+                             bin_seeding=True)
+
 
 class ConvNetParams:
     """ ConvNetParams parameters"""
