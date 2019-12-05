@@ -62,7 +62,7 @@ if __name__ == "__main__":
     tf.reset_default_graph()
 
     data_paths = DataPaths(data_path="default", mode="SEGMENTATION")
-    data_paths.load_data_paths()
+    data_paths.load_data_paths(mkdirs=False, restore_dir=restore_path if restore_mode == 1 else None)
 
     outF = open(os.path.join(data_paths.tf_out_path, "args.txt"), "w")
     outF.write("create_new_split: {}".format(create_new_training_split))
