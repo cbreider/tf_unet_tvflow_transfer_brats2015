@@ -62,3 +62,13 @@ class RestoreMode(Enum):
     COMPLETE_SESSION = 1    # complete session including hyper params
     ONLY_BASE_NET = 2       # only base net without out put cov and variables for chnaged from tv to segmenation
     COMPLETE_NET = 3
+
+
+class TV_clustering_method(Enum):
+    """
+    modes for clustering tv smoothed images
+    """
+    STATIC_BINNING = 1
+    STATIC_CLUSTERS = 2
+    K_MEANS = 3
+    MEAN_SHIFT = 4

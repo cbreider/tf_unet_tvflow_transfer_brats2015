@@ -8,7 +8,7 @@ created on June 2019
 
 
 import src.utils.path_utils as p_util
-from src.utils.enum_params import Optimizer, Cost, Activation_Func
+from src.utils.enum_params import Optimizer, Cost, Activation_Func, TV_clustering_method
 
 
 class DataParams:
@@ -48,14 +48,19 @@ class DataParams:
     nr_of_samples = 0               # use only a subset of images. if 0 all data is used
     use_modalities = ["mr_flair", "mr_t1", "mr_t1c", "mr_t2"]  # modalities used for training
 
-    tv_smooth_params = dict(weight=0.1,
+    clustering_method = TV_clustering_method.STATIC_BINNING
+    
+    k_means_pre_cluster = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # TODO
+
+    tv_smooth_params = dict(weight=0.1,     # params for tv smoothing
                             eps=0.00001,
                             tau=0.125,
                             m_itr=200)
 
-    k_means_params = dict(m_itr=100)
+    k_means_params = dict(m_itr=100)        # params for kmeans clustering nr of clusters = nr of classes.Only used im tv
+                                            # clustering with kmeans
 
-    mean_shift_params = dict(m_itr=-1,
+    mean_shift_params = dict(m_itr=-1,          # params for mean shift clustering used in tv training
                              window_size=0.01,
                              bin_seeding=True)
 
