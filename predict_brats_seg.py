@@ -1,6 +1,17 @@
+"""
+Master Thesis
+and
+Lab Visualisation & Medical Image Analysis SS2019
+
+Institute of Computer Science II
+
+Author: Christian Breiderhoff
+2019
+"""
+
 from src.utils.path_utils import DataPaths
 from src.utils.split_utilities import TrainingDataset
-from src.tf_unet import unet
+from src.tf_convnet.tf_convnet import ConvNetModel
 import src.utils.data_utils as dutils
 import src.utils.gpu_selector as cuda_selector
 import argparse
@@ -8,7 +19,6 @@ import os
 import configuration as config
 import tensorflow as tf
 import logging
-import numpy as np
 from random import *
 from src.utils.enum_params import TrainingModes, DataModes, Optimizer, RestoreMode
 from src.tf_data_pipeline_wrapper import ImageData
@@ -63,47 +73,20 @@ if __name__ == "__main__":
     if not use_Brats_Testing:
         file_paths = TrainingDataset(paths=data_paths,
                                      mode=TrainingModes.SEGMENTATION,
-                                     load_test_paths_only=True)
+                                     data_config=config.DataParams,
+                                     load_test_paths_only=True,
+                                     new_split=False)
 
     out_path = os.path.join(model_path, "predictions")
     if not os.path.exists(out_path):
         os.makedirs(out_path)
 
-    data = ImageData(data=file_paths.test_paths,
-                                batch_size=config.TrainingParams.batch_size_val,
-                                buffer_size=config.TrainingParams.buffer_size_val,
-                                shuffle=False,
-                                mode=DataModes.VALIDATION,
-                                train_mode=TrainingModes.SEGMENTATION,
-                                in_img_size=config.DataParams.raw_image_size,
-                                set_img_size=config.DataParams.set_image_size,
-                                data_max_value=config.DataParams.data_max_value,
-                                data_norm_value=config.DataParams.norm_image_value,
-                                crop_to_non_zero=config.DataParams.crop_to_non_zero_val,
-                                do_augmentation=config.DataParams.do_image_augmentation_val,
-                                normalize_std=config.DataParams.normailze_std,
-                                nr_of_classes=config.DataParams.nr_of_classes_seg_mode,
-                                nr_channels=config.DataParams.nr_of_channels)
+    data = ImageData(data=file_paths.test_paths, mode=DataModes.VALIDATION, train_mode=TrainingModes.SEGMENTATION,
+                     data_config=config.DataParams)
+
     data.create()
 
-    net = unet.Unet(n_channels=config.DataParams.nr_of_channels,
-                    n_class=config.DataParams.nr_of_classes_seg_mode,
-                    cost_function=config.ConvNetParams.cost_function,
-                    summaries=True,
-                    class_weights=config.ConvNetParams.class_weights,
-                    regularizer=config.ConvNetParams.regularizer,
-                    n_layers=config.ConvNetParams.num_layers,
-                    keep_prob=config.ConvNetParams.keep_prob_dopout,
-                    features_root=config.ConvNetParams.feat_root,
-                    filter_size=config.ConvNetParams.filter_size,
-                    pool_size=config.ConvNetParams.pool_size,
-                    freeze_down_layers=config.ConvNetParams.freeze_down_layers,
-                    freeze_up_layers=config.ConvNetParams.freeze_up_layers,
-                    use_padding=config.ConvNetParams.padding,
-                    batch_norm=config.ConvNetParams.batch_normalization,
-                    add_residual_layer=config.ConvNetParams.add_residual_layer,
-                    use_scale_image_as_gt=config.DataParams.use_scale_image_as_gt,
-                    act_func_out=config.ConvNetParams.activation_func_out)
+    net = ConvNetModel(convnet_config=config.ConvNetParams, create_summaries=True)
 
     idx = 0
     accuracy = 0

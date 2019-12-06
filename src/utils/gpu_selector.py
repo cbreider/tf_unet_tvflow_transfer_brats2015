@@ -1,9 +1,12 @@
 """
+Master Thesis
+and
 Lab Visualisation & Medical Image Analysis SS2019
+
 Institute of Computer Science II
 
 Author: Christian Breiderhoff
-created on June 2019
+2019
 """
 
 

@@ -1,9 +1,12 @@
 """
+Master Thesis
+and
 Lab Visualisation & Medical Image Analysis SS2019
+
 Institute of Computer Science II
 
 Author: Christian Breiderhoff
-created on June 2019
+2019
 """
 
 
@@ -77,7 +80,7 @@ class ConvNetParams:
     cost_function = Cost.CROSS_ENTROPY        # Cost function to use. Choose from class Cost(Enum)
     padding = True                  # Use padding to preserve feature map size and prevent downscaling
     batch_normalization = True      # Use Batchnormalization Yes/No
-    class_weights = [1.0, 5.0]            # weight for each individual class # TODO ?
+    class_weights = [1.0, 3.0]            # weight for each individual class # TODO ?
     regularizer = 0.0000001           # lambda value for l2 regualizer
     tv_regularizer = 0.01            # tv regularize for TV loss. oly used if Cost funcion is TV
     add_residual_layer = False       # Add residual layer/skip layer at the end output = input + last_layer
