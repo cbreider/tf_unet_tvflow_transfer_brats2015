@@ -1,14 +1,16 @@
 """
+Master Thesis
+and
 Lab Visualisation & Medical Image Analysis SS2019
+
 Institute of Computer Science II
 
 Author: Christian Breiderhoff
-created on June 2019
+2019
 """
 
 import tensorflow as tf
 import numpy as np
-from tensorflow.python.framework import dtypes
 from tensorflow.python.framework.ops import convert_to_tensor
 from abc import abstractmethod
 import src.utils.tf_utils as tf_utils
