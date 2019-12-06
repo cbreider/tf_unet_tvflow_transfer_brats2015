@@ -65,13 +65,13 @@ if __name__ == "__main__":
     data_paths.load_data_paths(mkdirs=False, restore_dir=restore_path if restore_mode == 1 else None)
 
     outF = open(os.path.join(data_paths.tf_out_path, "args.txt"), "w")
-    outF.write("create_new_split: {}".format(create_new_training_split))
+    outF.write("Create_new_split: {}".format(create_new_training_split))
     outF.write("\n")
-    outF.write("restore_path: {}".format(restore_path))
+    outF.write("Restore_path: {}".format(restore_path))
     outF.write("\n")
-    outF.write("caffemodel_path: {}".format(caffemodel_path))
+    outF.write("Caffemodel_path: {}".format(caffemodel_path))
     outF.write("\n")
-    outF.write("restore_mode: {}".format(restore_mode))
+    outF.write("Restore_mode: {}".format(restore_mode))
     outF.write("\n")
     outF.close()
 
@@ -99,7 +99,7 @@ if __name__ == "__main__":
                               crop_to_non_zero=config.DataParams.crop_to_non_zero,
                               do_augmentation=config.DataParams.do_image_augmentation,
                               normalize_std=config.DataParams.normailze_std,
-                              nr_of_classes=config.DataParams.nr_of_classes_seg_mode,
+                              nr_of_classes=config.DataParams.nr_of_classes,
                               nr_channels=config.DataParams.nr_of_channels)
 
     #validation_set = dutil.load_dataset_from_mha_files(file_paths.validation_paths)
@@ -116,14 +116,14 @@ if __name__ == "__main__":
                                 crop_to_non_zero=config.DataParams.crop_to_non_zero_val,
                                 do_augmentation=config.DataParams.do_image_augmentation_val,
                                 normalize_std=config.DataParams.normailze_std,
-                                nr_of_classes=config.DataParams.nr_of_classes_seg_mode,
+                                nr_of_classes=config.DataParams.nr_of_classes,
                                 nr_channels=config.DataParams.nr_of_channels)
 
     training_data.create()
     validation_data.create()
 
     net = unet.Unet(n_channels=config.DataParams.nr_of_channels,
-                    n_class=config.DataParams.nr_of_classes_seg_mode,
+                    n_class=config.DataParams.nr_of_classes,
                     cost_function=config.ConvNetParams.cost_function,
                     summaries=create_summaries,
                     class_weights=config.ConvNetParams.class_weights,

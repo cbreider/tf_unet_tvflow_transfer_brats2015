@@ -174,46 +174,66 @@ class Trainer(object):
             logging.info("Start optimization")
 
             avg_gradients = None
-            for epoch in range(epochs):
-                total_loss = 0
+
+            # load epoch and step count from prev run if exists
+            step_file = os.path.join(save_path, "epoch.txt")
+            init_step = 0
+            epoch = 0
+            total_loss = 0
+            if os.path.isfile(step_file):
+                f = open(step_file, "w")
+                fl = f.readlines()
+                init_step = fl[0]
+                epoch = fl[1]
+
+            for step in range(init_step, epochs*training_iters):
 
                 # renitialze dataprovider if looped through a hole epoch
                 sess.run(data_provider_train.init_op)
+                # renitialze dataprovider if looped through a hole dataset
+                if step * data_provider_train.batch_size % data_provider_train.size == 0:
+                    sess.run(data_provider_train.init_op)
 
-                for step in range((epoch * training_iters), ((epoch + 1) * training_iters)):
-                    # renitialze dataprovider if looped through a hole dataset
-                    if step * data_provider_train.batch_size % data_provider_train.size == 0:
-                        sess.run(data_provider_train.init_op)
+                batch_x, batch_y, __ = sess.run(data_provider_train.next_batch)
 
-                    batch_x, batch_y, __ = sess.run(data_provider_train.next_batch)
+                # Run optimization op (backprop)
+                if step == 0:
+                    self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
+                                                util.crop_to_shape(batch_y, pred_shape))
+                _, loss, lr, gradients = sess.run(
+                    (self.optimizer, self.net.cost, self.learning_rate_node, self.net.gradients_node),
+                    feed_dict={self.net.x: batch_x,
+                                self.net.y: util.crop_to_shape(batch_y, pred_shape),
+                                self.net.keep_prob: dropout})
 
-                    # Run optimization op (backprop)
-                    if step == 0:
-                        self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
-                                                    util.crop_to_shape(batch_y, pred_shape))
-                    _, loss, lr, gradients = sess.run(
-                        (self.optimizer, self.net.cost, self.learning_rate_node, self.net.gradients_node),
-                        feed_dict={self.net.x: batch_x,
-                                    self.net.y: util.crop_to_shape(batch_y, pred_shape),
-                                    self.net.keep_prob: dropout})
+                if self.net.summaries and self.norm_grads:
+                    avg_gradients = _update_avg_gradients(avg_gradients, gradients, step)
+                    norm_gradients = [np.linalg.norm(gradient) for gradient in avg_gradients]
+                    self.norm_gradients_node.assign(norm_gradients).eval()
 
-                    if self.net.summaries and self.norm_grads:
-                        avg_gradients = _update_avg_gradients(avg_gradients, gradients, step)
-                        norm_gradients = [np.linalg.norm(gradient) for gradient in avg_gradients]
-                        self.norm_gradients_node.assign(norm_gradients).eval()
+                total_loss += loss
 
-                    if step % display_step == 0 and step != 0:
-                        self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
-                                                    util.crop_to_shape(batch_y, pred_shape))
+                if step % display_step == 0 and step != 0:
+                    self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
+                                                util.crop_to_shape(batch_y, pred_shape))
 
-                    total_loss += loss
-
-                test_x, test_y, test_tv = sess.run(data_provider_val.next_batch)
-                self.output_epoch_stats(epoch, total_loss, training_iters, lr)
-                self.store_prediction(sess, test_x, util.crop_to_shape(test_y, pred_shape),
+                if step % training_iters == 0 and step != 0:
+                    test_x, test_y, test_tv = sess.run(data_provider_val.next_batch)
+                    self.output_epoch_stats(epoch, total_loss, training_iters, lr)
+                    self.store_prediction(sess, test_x, util.crop_to_shape(test_y, pred_shape),
                                       "epoch_%s" % epoch, summary_writer_validation, step, epoch, test_tv)
+                    total_loss = 0
+                    save_path = self.net.save(sess, save_path)
+                    # save epoch and step
+                    outF = open(step_file, "w")
+                    outF.write("{}".format(step+1))
+                    outF.write("\n")
+                    outF.write("{}".format(epoch+1))
+                    outF.close()
+                    epoch += 1
+                    if step * data_provider_val.batch_size % data_provider_val.size == 0:
+                        sess.run(data_provider_val.init_op)
 
-                save_path = self.net.save(sess, save_path)
             logging.info("Optimization Finished!")
 
             return save_path
@@ -229,7 +249,7 @@ class Trainer(object):
             img = util.combine_img_prediction_tvclustering(data=batch_x, gt=batch_y, tv=batch_tv, pred=prediction)
         else:
             img = util.combine_img_prediction(batch_x, batch_y, prediction,
-                                          mode=1 if self.net.cost_function == Cost.MSE else 0)
+                                              mode=1 if self.net.cost_function == Cost.MSE else 0)
         util.save_image(img, "%s/%s.jpg" % (self.out_path, name))
 
         return pred_shape
@@ -247,16 +267,13 @@ class Trainer(object):
 
     def run_summary(self, sess, summary_writer, step, batch_x, batch_y):
         # Calculate batch loss and accuracy
-        summary_str, loss, acc, err, predictions, dice, ce = sess.run([self.summary_op,
-                                                        self.net.cost,
-                                                        self.net.accuracy,
-                                                        self.net.error_rate,
-                                                        self.net.predicter,
-                                                        self.net.dice,
-                                                        self.net.cross_entropy],
-                                                        feed_dict={self.net.x: batch_x,
-                                                                    self.net.y: batch_y,
-                                                                    self.net.keep_prob: 1.})
+        summary_str, loss, acc, err, predictions, dice, ce = sess.run([self.summary_op, self.net.cost,
+                                                                       self.net.accuracy, self.net.error_rate,
+                                                                       self.net.predicter, self.net.dice,
+                                                                       self.net.cross_entropy],
+                                                                      feed_dict={self.net.x: batch_x,
+                                                                                 self.net.y: batch_y,
+                                                                                 self.net.keep_prob: 1.})
         summary_writer.add_summary(summary_str, step)
         summary_writer.flush()
 

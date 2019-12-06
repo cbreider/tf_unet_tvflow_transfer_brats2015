@@ -58,7 +58,7 @@ if __name__ == "__main__":
     tf.reset_default_graph()
     out_path=model_path
     data_paths = DataPaths(data_path="default", mode="SEGMENTATION_TEST")
-    data_paths.load_data_paths(mkdirs=False, restore_dir=restore_path if restore_mode == 1 else None)
+    data_paths.load_data_paths(mkdirs=False)
     file_paths = None
     if not use_Brats_Testing:
         file_paths = TrainingDataset(paths=data_paths,
