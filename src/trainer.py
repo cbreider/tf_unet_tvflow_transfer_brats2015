@@ -180,7 +180,7 @@ class Trainer(object):
             avg_gradients = None
 
             # load epoch and step count from prev run if exists
-            step_file = os.path.join(save_path, "epoch.txt")
+            step_file = os.path.join(self.output_path, "epoch.txt")
             init_step = 0
             epoch = 0
             total_loss = 0
@@ -189,6 +189,8 @@ class Trainer(object):
                 fl = f.readlines()
                 init_step = fl[0]
                 epoch = fl[1]
+            if init_step != 0 and self._restore_path is not None:
+                logging.info("Resuming Training at epoch {} and total step {}". format(epoch, init_step))
 
             for step in range(init_step, self._n_epochs*self._training_iters):
 
