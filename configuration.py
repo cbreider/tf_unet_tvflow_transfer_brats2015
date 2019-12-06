@@ -36,7 +36,7 @@ class DataParams:
     set_image_size = [set_data_height,
                       set_data_width]  # size which the images should be reszied to for training
     nr_of_channels = 1              # number of channles of in/out images (grayscale)
-    nr_of_classes = 10
+    nr_of_classes = 2
     shuffle = True                  # Set true to extra Shuffle Trining Data. Note dict.items() is allready random
     do_image_augmentation_train = True    # Set True to augment training images random crapp, flip, rotation
     do_image_augmentation_val = False  # Set True to augment training images random crapp, flip, rotation for validation
@@ -93,8 +93,8 @@ class ConvNetParams:
 class TrainingParams:
     """ Training parameters"""
     num_epochs = 100000             # number of training epochs
-    training_iters = 1000           # iterations per epoch
-    display_step = 200              # number of iterations between
+    training_iters = 200           # iterations per epoch
+    display_step = 100              # number of iterations between
     label_smothing = 0              # smooth label values int gt to confuse network # TODO ?
     optimizer = Optimizer.ADAM      # Optimizer to use. Choose from class Optimizer(Enum):
     batch_size_train = DataParams.batch_size_train            # batch size used for training
