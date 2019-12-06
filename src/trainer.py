@@ -173,11 +173,6 @@ class Trainer(object):
             summary_writer_validation = tf.summary.FileWriter(val_summary_path,
                                                               graph=sess.graph)
 
-            test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
-            pred_shape = self.store_prediction(sess, test_x, test_y, "_init", summary_writer_validation, 0, 0, test_tv)
-
-            avg_gradients = None
-
             # load epoch and step count from prev run if exists
             step_file = os.path.join(self.output_path, "epoch.txt")
             init_step = 0
@@ -188,6 +183,13 @@ class Trainer(object):
                 fl = f.readlines()
                 init_step = int(fl[0])
                 epoch = int(fl[1])
+
+            test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
+            pred_shape = self.store_prediction(sess, test_x, test_y, "_init", summary_writer_validation, 0, 0, test_tv,
+                                               write=False if init_step != 0 else True)
+
+            avg_gradients = None
+
             if init_step != 0 and self._restore_path is not None:
                 logging.info("Resuming Training at epoch {} and total step {}". format(epoch, init_step))
 
@@ -223,12 +225,6 @@ class Trainer(object):
                 if step % self._display_step == 0 and step != 0:
                     self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
                                                 util.crop_to_shape(batch_y, pred_shape))
-
-                if step % self._training_iters == 0 and step != 0:
-                    test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
-                    self.output_epoch_stats(epoch, total_loss, self._training_iters, lr)
-                    self.store_prediction(sess, test_x, util.crop_to_shape(test_y, pred_shape),
-                                      "epoch_%s" % epoch, summary_writer_validation, step, epoch, test_tv)
                     total_loss = 0
                     save_path = self.net.save(sess, save_path)
                     # save epoch and step
@@ -237,16 +233,25 @@ class Trainer(object):
                     outF.write("\n")
                     outF.write("{}".format(epoch+1))
                     outF.close()
-                    epoch += 1
+
+                if step % self._training_iters == 0 and step != 0:
+                    test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
+                    self.output_epoch_stats(epoch, total_loss, self._training_iters, lr)
+                    self.store_prediction(sess, test_x, util.crop_to_shape(test_y, pred_shape),
+                                      "epoch_%s" % epoch, summary_writer_validation, step, epoch, test_tv)
+
                     if (step * self.config.batch_size_val) % self.data_provider_val.size == 0:
                         sess.run(self.data_provider_val.init_op)
+
+                    epoch += 1
+
 
             logging.info("Optimization Finished!")
 
             return save_path
 
-    def store_prediction(self, sess, batch_x, batch_y, name, summary_writer, step, epoch, batch_tv):
-        loss, acc, err, prediction, dice, ce = self.run_summary(sess, summary_writer, step, batch_x, batch_y)
+    def store_prediction(self, sess, batch_x, batch_y, name, summary_writer, step, epoch, batch_tv, write=True):
+        loss, acc, err, prediction, dice, ce = self.run_summary(sess, summary_writer, step, batch_x, batch_y, write=write)
 
         pred_shape = prediction.shape
 
@@ -272,7 +277,7 @@ class Trainer(object):
             "Iter {:}, Minibatch Loss= {:.4f}, Training Accuracy= {:.4f}, "
             "Minibatch error= {:.1f}%, Dice= {:.4f}, cross entropy = {:.4f}".format(step, loss, acc, err, dice, ce))
 
-    def run_summary(self, sess, summary_writer, step, batch_x, batch_y):
+    def run_summary(self, sess, summary_writer, step, batch_x, batch_y, write=True):
         # Calculate batch loss and accuracy
         summary_str, loss, acc, err, predictions, dice, ce = sess.run([self.summary_op, self.net.cost,
                                                                        self.net.accuracy, self.net.error_rate,
@@ -281,8 +286,9 @@ class Trainer(object):
                                                                       feed_dict={self.net.x: batch_x,
                                                                                  self.net.y: batch_y,
                                                                                  self.net.keep_prob: 1.})
-        summary_writer.add_summary(summary_str, step)
-        summary_writer.flush()
+        if write:
+            summary_writer.add_summary(summary_str, step)
+            summary_writer.flush()
 
         return loss, acc, err, predictions, dice, ce
 
