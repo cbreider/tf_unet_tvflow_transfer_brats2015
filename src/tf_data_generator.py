@@ -14,6 +14,7 @@ from abc import abstractmethod
 import src.utils.tf_utils as tf_utils
 import logging
 from src.utils.enum_params import TrainingModes, TV_clustering_method
+from configuration import DataParams
 
 
 class TFImageDataGenerator:
@@ -22,41 +23,41 @@ class TFImageDataGenerator:
     Requires TensorFlow >= version 1.12rc0
     """
 
-    def __init__(self, data, in_img_size, set_img_size, data_max_value=255.0, data_norm_value=1.0, batch_size=32,
-                 buffer_size=800, crop_to_non_zero=True, shuffle=False, do_augmentation=False, mode=TrainingModes.TVFLOW_REGRESSION,
-                 normalize_std=False, nr_of_classes=1.0, nr_channels=1, load_tv_from_file=False,
-                 clustering_method=TV_clustering_method.STATIC_BINNING, tv_clustering_params=None):
+    def __init__(self, data, data_config, mode=TrainingModes.TVFLOW_REGRESSION):
 
-        self._in_img_size = in_img_size
-        self._set_img_size = set_img_size
-        self._data_max_value = data_max_value
-        self._data_norm_value = data_norm_value
+        self._data_config = data_config  # type: DataParams
+        self._in_img_size = self._data_config.raw_image_size
+        self._set_img_size = self._data_config.set_image_size
+        self._data_max_value = self._data_config.data_max_value
+        self._data_norm_value = self._data_config.norm_image_value
         self._raw_data = data
-        self._batch_size = batch_size
-        self._buffer_size = buffer_size
-        self._shuffle = shuffle
-        self._do_augmentation = do_augmentation
+        self._shuffle = self._data_config.shuffle
         self._mode = mode
-        self._crop_to_non_zero = crop_to_non_zero
-        self._nr_of_classes = nr_of_classes
-        self._normalize_std=normalize_std
-        self._nr_channels = nr_channels
+
+        self._nr_of_classes = self._data_config.nr_of_classes
+        self._normalize_std = self._data_config.normailze_std
+        self._nr_channels = self._data_config.nr_of_channels
         self._input_data = None
         self._gt_data = None
         self.data = None
         self.load_data_from_disk = False
-        self._load_tv_from_file = load_tv_from_file
-        self.clustering_method = clustering_method
+        self._load_tv_from_file = self._data_config.load_tv_from_file
+        self.clustering_method = self._data_config.clustering_method
 
-        self.tv_tau = tv_clustering_params.pop("tv_tau", 0.125)
-        self.tv_weight = tv_clustering_params.pop("tv_weight", 10000)
-        self.tv_eps = tv_clustering_params.pop("tv_eps", 0.00001)
-        self.tv_nr_itr = tv_clustering_params.pop("tv_m_itr", 100)
-        self.km_nr_itr = tv_clustering_params.pop("km_m_itr", 100)
-        self.mean_shift_n_itr = tv_clustering_params.pop("ms_m_itr", -1)  # till convergence
-        self.mean_shift_win_size = tv_clustering_params.pop("window_size", 0.01)
-        self.mean_shift_bin_seeding = tv_clustering_params.pop("bin_seeding", True)
-        self.static_cluster_center = tv_clustering_params.pop("k_means_pre_cluster", [])
+        self._batch_size = None
+        self._buffer_size = None
+        self._do_augmentation = None
+        self._crop_to_non_zero = None
+
+        self.tv_tau = self._data_config.tv_and_clustering_params["tv_tau"]
+        self.tv_weight = self._data_config.tv_and_clustering_params["tv_weight"]
+        self.tv_eps = self._data_config.tv_and_clustering_params["tv_eps"]
+        self.tv_nr_itr = self._data_config.tv_and_clustering_params["tv_m_itr"]
+        self.km_nr_itr = self._data_config.tv_and_clustering_params["km_m_itr"]
+        self.mean_shift_n_itr = self._data_config.tv_and_clustering_params["ms_m_itr"] # till convergence
+        self.mean_shift_win_size = self._data_config.tv_and_clustering_params["window_size"]
+        self.mean_shift_bin_seeding = self._data_config.tv_and_clustering_params["bin_seeding"]
+        self.static_cluster_center = self._data_config.tv_and_clustering_params["k_means_pre_cluster"]
 
         # check if file
         el = next(iter(data))
@@ -80,7 +81,7 @@ class TFImageDataGenerator:
     def _default_parse_func(self, input_ob, gt_ob):
         # load and preprocess the image
         # if data is given as png path load the data first
-        in_img = tf.zeros(self._in_img_size, dtype=tf.float32)
+        in_img = tf.expand_dims(tf.zeros(self._in_img_size, dtype=tf.float32), 2)
         tv_img = tf.zeros_like(in_img)
         gt_img = tf.zeros_like(in_img)
 
@@ -156,6 +157,11 @@ class TFImageDataGenerator:
 class TFTrainingImageDataGenerator(TFImageDataGenerator):
 
     def initialize(self):
+        self._batch_size = self._data_config.batch_size_train
+        self._buffer_size = self._data_config.buffer_size_train
+        self._do_augmentation = self._data_config.do_image_augmentation_train
+        self._crop_to_non_zero = self._data_config.crop_to_non_zero_train
+
         logging.info("Train buffer size {}, batch size {}".format(self._buffer_size, self._batch_size))
         tv_data = convert_to_tensor(1)
         # convert lists to TF tensor
@@ -188,6 +194,11 @@ class TFTrainingImageDataGenerator(TFImageDataGenerator):
 class TFValidationImageDataGenerator(TFImageDataGenerator):
 
     def initialize(self):
+        self._batch_size = self._data_config.batch_size_val
+        self._buffer_size = self._data_config.buffer_size_val
+        self._do_augmentation = self._data_config.do_image_augmentation_val
+        self._crop_to_non_zero = self._data_config.do_image_augmentation_train
+
         logging.info("Validation buffer size {}, batch size {}".format(self._buffer_size, self._batch_size))
         # convert lists to TF tensor
         tv_data = convert_to_tensor(1)

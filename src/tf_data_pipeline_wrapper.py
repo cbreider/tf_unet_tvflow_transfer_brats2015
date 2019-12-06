@@ -18,11 +18,7 @@ class ImageData(object):
     Requires Tensorflow >= version 1.12rc0
     """
 
-    def __init__(self, data, in_img_size, set_img_size, data_max_value=255.0, data_norm_value=1.0,
-                 crop_to_non_zero=False, do_augmentation=False, normalize_std=False, nr_of_classes=1.0,
-                 nr_channels=1, batch_size=128, buffer_size=800, shuffle=False,
-                 mode=DataModes.TRAINING, train_mode=TrainingModes.TVFLOW_REGRESSION,
-                 tv_clustering_method=TV_clustering_method.STATIC_BINNING, clustering_params=None):
+    def __init__(self, data, data_config, mode=DataModes.TRAINING, train_mode=TrainingModes.TVFLOW_REGRESSION):
         """
         Inits a Tensorflow data pipeline
 
@@ -34,25 +30,12 @@ class ImageData(object):
         :param mode: mode either training,validtation or testing
         """
         self._data = data
-        self.batch_size = batch_size
         self._mode = mode
-        self._buffer_size = buffer_size
-        self._shuffle = shuffle
-        self._in_img_size = in_img_size
-        self._set_img_size = set_img_size
-        self._data_max_value = data_max_value
-        self._data_norm_value = data_norm_value
-        self._crop_to_non_zero = crop_to_non_zero
-        self._do_augmentation = do_augmentation
-        self._normalize_std = normalize_std
-        self._nr_of_classes = nr_of_classes
-        self._nr_channels = nr_channels
+        self._data_config = data_config
         self.data_generator = None
         self.init_op = None
         self.next_batch = None
         self.train_mode = train_mode
-        self.clustering_method = tv_clustering_method
-        self.clustering_params = clustering_params
         self.size = len(self._data)
         if not (mode == DataModes.TRAINING or
                 mode == DataModes.VALIDATION or
@@ -75,39 +58,13 @@ class ImageData(object):
             with graph.as_default():
                 if self._mode == DataModes.TRAINING:
                     self.data_generator = TFTrainingImageDataGenerator(data=self._data,
-                                                                       batch_size=self.batch_size,
-                                                                       buffer_size=self._buffer_size,
-                                                                       shuffle=self._shuffle,
                                                                        mode=self.train_mode,
-                                                                       in_img_size=self._in_img_size,
-                                                                       set_img_size=self._set_img_size,
-                                                                       data_max_value=self._data_max_value,
-                                                                       data_norm_value=self._data_norm_value,
-                                                                       crop_to_non_zero=self._crop_to_non_zero,
-                                                                       do_augmentation=self._do_augmentation,
-                                                                       normalize_std=self._normalize_std,
-                                                                       nr_of_classes=self._nr_of_classes,
-                                                                       nr_channels=self._nr_channels,
-                                                                       clustering_method=self.clustering_method,
-                                                                       clustering_params=self.clustering_params)
+                                                                       data_config=self._data_config)
 
                 elif self._mode == DataModes.VALIDATION:
                     self.data_generator = TFValidationImageDataGenerator(data=self._data,
-                                                                         batch_size=self.batch_size,
-                                                                         buffer_size=self._buffer_size,
-                                                                         shuffle=self._shuffle,
                                                                          mode=self.train_mode,
-                                                                         in_img_size=self._in_img_size,
-                                                                         set_img_size=self._set_img_size,
-                                                                         data_max_value=self._data_max_value,
-                                                                         data_norm_value=self._data_norm_value,
-                                                                         crop_to_non_zero=self._crop_to_non_zero,
-                                                                         do_augmentation=self._do_augmentation,
-                                                                         normalize_std=self._normalize_std,
-                                                                         nr_of_classes=self._nr_of_classes,
-                                                                         nr_channels=self._nr_channels,
-                                                                         clustering_method=self.clustering_method,
-                                                                         clustering_params=self.clustering_params)
+                                                                         data_config=self._data_config)
                 else:
                     raise ValueError("Invalid mode {}".format(self._mode))
                 self.data_generator.initialize()

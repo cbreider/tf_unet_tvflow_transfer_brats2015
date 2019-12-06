@@ -11,7 +11,7 @@ import tensorflow as tf
 from datetime import datetime
 
 """
-This dictionary provides a mapping from the original caffe model to the tf mpdel defined in unet.py
+This dictionary provides a mapping from the original caffe model to the tf mpdel defined in tf_convnet.py
 It maps the covoltion valriables of the caffe model to the layer in tf model.
 Each caffe layer consists of weights and bias  while in tf weights and bias variables are independent
 This function works like this only for the original trained caffe model https://lmb.informatik.uni-freiburg.de/resources/opensource/unet/.

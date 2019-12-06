@@ -9,6 +9,12 @@ created on June 2019
 from enum import Enum
 
 
+class ConvNetType(Enum):
+    """
+    cost functions
+    """
+    U_NET_2D = 1       # Choose to use Cross Entropy Cost (Segmentation)
+
 class Cost(Enum):
     """
     cost functions
@@ -33,8 +39,8 @@ class TrainingModes(Enum):
     training modes
     """
     TVFLOW_REGRESSION = 1
-    SEGMENTATION = 2
-    TVFLOW_SEGMENTATION = 3
+    TVFLOW_SEGMENTATION = 2
+    SEGMENTATION = 3
 
 
 class Optimizer(Enum):

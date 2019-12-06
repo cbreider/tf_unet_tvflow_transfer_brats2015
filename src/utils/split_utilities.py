@@ -12,6 +12,8 @@ import json
 import logging
 from src.utils.enum_params import TrainingModes
 from random import shuffle
+from configuration import DataParams
+
 
 class TestFilePaths(object):
     # TODO
@@ -45,8 +47,8 @@ class TrainingDataset(object):
         return self
 
     """Constructor"""
-    def __init__(self, paths, mode=TrainingModes.TVFLOW_REGRESSION, use_mha=False, new_split=True, split_ratio=[0.7, 0.3], nr_of_samples=0,
-                 use_scale_as_gt=False, load_only_mid_scans=False, use_modalities=[], load_test_paths_only=False):
+    def __init__(self, paths, data_config, mode=TrainingModes.TVFLOW_REGRESSION,
+                 load_test_paths_only=False, new_split=True):
         """
         Inits a Dataset of training and validation images- Either creates it by reading files from a specific folder
         declared in "paths" or read a existing split form a .txt
@@ -54,30 +56,29 @@ class TrainingDataset(object):
         :param paths: instance of DataPaths, which holds all necessary paths
         :param mode: depending on the training mode.
         :param new_split: Flag indicating whether a new split should be created or an old one should be loaded
-        :param split_ratio: ratio of training : validation data
-        :param nr_of_samples: use only a specific number of training images. 0 if use all
-        :param use_scale_as_gt: use sclae images from tv as gt
-        :param load_only_mid_scans: use only slices from the middle of mha scan
         :param use_mha: use mha files istead of pngs. Only for SEGMENTATION MODE
 
         """
-        self.use_scale = use_scale_as_gt
-        self.load_only_mid_scans = load_only_mid_scans
         self._paths = paths
         self._new_split = new_split
         self._mode = mode
-        self._split_ratio = split_ratio
-        self._nr_of_samples = nr_of_samples
+        self._data_config = data_config  # type: DataParams
+        self._use_scale = self._data_config.use_scale_image_as_gt
+        self._load_only_mid_scans = self._data_config.load_only_middle_scans
+        self._split_ratio = self._data_config.split_train_val_ratio
+        self._nr_of_samples = self._data_config.nr_of_samples
+        self._use_mha = self._data_config.use_mha_files_instead
+        self._use_modalities = self._data_config.use_modalities
+        self._load_tv_from_file = self._data_config.load_tv_from_file
         self.split_name = ""
         self._split_file_extension = '.txt'
         self._base_name = '_split'
         self._tvflow_mode = "tvflow"
         self._seg_mode = "seg"
-        self.validation_paths = None
-        self.train_paths = None
-        self.train_paths = None
-        self._use_mha = use_mha
-        self._use_modalities = use_modalities
+        self.validation_paths = dict()
+        self.train_paths = dict()
+        self.test_paths = dict()
+
         if self._mode == TrainingModes.TVFLOW_REGRESSION:
             self.split_name = self._tvflow_mode
         elif self._mode == TrainingModes.SEGMENTATION:
@@ -109,8 +110,8 @@ class TrainingDataset(object):
         validation_split = dict()
         test_split = dict()
         # mode
-        if self._mode == TrainingModes.TVFLOW_REGRESSION:
-            split = self._get_raw_to_tvflow_file_paths_dict(use_scale=self.use_scale)
+        if self._mode == TrainingModes.TVFLOW_REGRESSION or self._mode == TrainingModes.TVFLOW_SEGMENTATION:
+            split = self._get_raw_to_tvflow_file_paths_dict(use_scale=self._use_scale)
             # random.shuffle(split) # Not in use dict.items() is random
             total = self._nr_of_samples
             if self._nr_of_samples == 0:
@@ -162,7 +163,7 @@ class TrainingDataset(object):
             tv_flow_ext = "_tvflow_scale.png"
 
         keep_out = []
-        if self.load_only_mid_scans:
+        if self._load_only_mid_scans:
             keep_out.extend(["_{}.".format(i) for i in range(40)])
             keep_out.extend(["_{}.".format(i) for i in range(120, 150)])
 
@@ -208,7 +209,7 @@ class TrainingDataset(object):
         train_split, validation_split, test_split = self._split_patients(patient_paths=patient_paths)
 
         keep_out = []
-        if self.load_only_mid_scans and not self._use_mha:
+        if self._load_only_mid_scans and not self._use_mha:
             keep_out.extend(["_{}.".format(i) for i in range(40)])
             keep_out.extend(["_{}.".format(i) for i in range(120, 150)])
 
@@ -255,7 +256,8 @@ class TrainingDataset(object):
         file_folders = [[os.path.join(path, tmp_path) for tmp_path in os.listdir(path)] for path in patient_paths]
         flat_list_flat = [item for sublist in file_folders for item in sublist]
         for path in flat_list_flat:
-            if without_gt and self._paths.ground_truth_path_identifier in path.lower():
+            if without_gt and (self._paths.ground_truth_path_identifier[0] in path.lower() or
+                               self._paths.ground_truth_path_identifier[1] in path.lower()):
                 continue
             out_path = path.replace(base_path_key, base_path_value)
             if not os.path.exists(out_path):
@@ -278,7 +280,7 @@ class TrainingDataset(object):
                         continue
                     file_path_val = file_path_key.replace(base_path_key, base_path_value)
                     file_path_val = file_path_val.replace(ext_key, ext_val)
-                    if not os.path.exists(file_path_val):
+                    if self._load_tv_from_file and not os.path.exists(file_path_val):
                         continue
                     file_dict[file_path_key] = file_path_val
         return file_dict
@@ -298,9 +300,10 @@ class TrainingDataset(object):
         for patient_path in patient_paths:
             file_paths = os.listdir(patient_path)
             file_paths = sorted(file_paths, reverse=True)
+            file_path_gt = [f for f in file_paths if (self._paths.ground_truth_path_identifier[0] in f.lower() or
+                                                      self._paths.ground_truth_path_identifier[1] in f.lower())][0]
             for file_path in file_paths:
-                if self._paths.ground_truth_path_identifier in file_path.lower():
-                    file_path_gt = file_path
+                if self._paths.ground_truth_path_identifier[0] in file_path.lower() or self._paths.ground_truth_path_identifier[1] in file_path.lower():
                     continue
                 file_path_in = file_path
                 file_path_full = os.path.join(patient_path, file_path)

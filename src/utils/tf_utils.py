@@ -406,3 +406,20 @@ def get_dice_score(logits, y, eps=1e-7):
     denominator = tf.reduce_sum(weights * denominator)
     return 1.0 - 2.0 * (numerator + eps) / (denominator + eps)
 
+
+def get_image_summary(img, idx=0):
+    """
+    Make an image summary for 4d tensor image with index idx
+    """
+
+    V = tf.slice(img, (0, 0, 0, idx), (1, -1, -1, 1))
+    V -= tf.reduce_min(V)
+    V /= tf.reduce_max(V)
+    V *= 255
+
+    img_w = tf.shape(img)[1]
+    img_h = tf.shape(img)[2]
+    V = tf.reshape(V, tf.stack((img_w, img_h, 1)))
+    V = tf.transpose(V, (2, 0, 1))
+    V = tf.reshape(V, tf.stack((-1, img_w, img_h, 1)))
+    return V

@@ -14,34 +14,52 @@ import logging
 import os
 import src.utils.data_utils as util
 import numpy as np
-from src.tf_unet.caffe2tensorflow_mapping import load_pre_trained_caffe_variables
-from src.utils.enum_params import DataModes, Cost, TrainingModes, Optimizer, RestoreMode
-import matplotlib.pyplot as plt
+from src.tf_convnet.caffe2tensorflow_mapping import load_pre_trained_caffe_variables
+from src.utils.enum_params import Cost, Optimizer, RestoreMode
+from src.tf_data_pipeline_wrapper import  ImageData
+from configuration import TrainingParams
 
 
 class Trainer(object):
-    """
-    Trains a unet instance
 
-    :param net: the unet instance to train
-    :param norm_grads: (optional) true if normalized gradients should be added to the summaries
-    :param optimizer: (optional) name of the optimizer to use (momentum or adam)
-    :param opt_kwargs: (optional) kwargs passed to the learning rate (momentum opt) and to the optimizer
+    def __init__(self, net, data_provider_train, data_provider_val, out_path, train_config, restore_path=None,
+                 caffemodel_path=None, restore_mode=RestoreMode.COMPLETE_SESSION):
 
-    """
+        """
+        Trains a convnet instance
 
-    def __init__(self, net, norm_grads=False, optimizer=Optimizer.MOMENTUM, opt_kwargs={}):
+        :param net: the unet instance to train
+        :param data_provider_train: callable returning training and verification data
+        :param data_provider_val: callable returning training and verification data
+        :param out_path: path to store summaries and checkpoints
+        :param train_config: parameters for  training # type: TrainingParams
+        :param restore_path: (optional) checkpoint path to restore a tf checkpoint
+        :param caffemodel_path: (optional) path to a unet caffemodel if you want to restore one
+        :param restore_mode: (optional) mode how to restore a tf checkpoint
+        """
+
         self.net = net
-        self.norm_grads = norm_grads
-        self.optimizer_name = optimizer
-        self.opt_kwargs = opt_kwargs
+        self.config = train_config  # type: TrainingParams
+        self.data_provider_train = data_provider_train # type: ImageData
+        self.data_provider_val = data_provider_val  # type: ImageData
+        self.output_path = out_path
+        self._norm_grads = self.config.norm_grads
+        self.optimizer_name = self.config.optimizer
+        self._n_epochs = self.config.num_epochs
+        self._training_iters = self.config.training_iters
+        self._dropout = self.config.keep_prob_dopout
+        self._write_graph = self.config.write_graph
+        self._caffemodel_path = caffemodel_path
+        self._restore_path = restore_path
+        self._restore_mode = restore_mode
+        self._display_step = self.config.display_step
 
     def _get_optimizer(self, global_step):
         if self.optimizer_name == Optimizer.MOMENTUM:
-            learning_rate = self.opt_kwargs.pop("learning_rate", 0.2)
-            decay_rate = self.opt_kwargs.pop("decay_rate", 0.95)
-            momentum = self.opt_kwargs.pop("momentum", 0.2)
-            decay_steps = self.opt_kwargs.pop("decay_steps", 10000)
+            learning_rate = self.config.momentum_args.pop("learning_rate", 0.2)
+            decay_rate = self.config.momentum_args.pop("decay_rate", 0.95)
+            momentum = self.config.momentum_args.pop("momentum", 0.2)
+            decay_steps = self.config.momentum_args.pop("decay_steps", 10000)
             self.learning_rate_node = tf.train.exponential_decay(learning_rate=learning_rate,
                                                                  global_step=global_step,
                                                                  decay_steps=decay_steps,
@@ -49,46 +67,44 @@ class Trainer(object):
                                                                  staircase=True)
 
             optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate_node, momentum=momentum,
-                                                    **self.opt_kwargs).minimize(self.net.cost,
-                                                                                global_step=global_step)
+                                                   **self.config.momentum_args).minimize(self.net.cost,
+                                                                                         global_step=global_step)
 
         elif self.optimizer_name == Optimizer.ADAM:
-            learning_rate = self.opt_kwargs.pop("learning_rate", 0.001)
-            decay_rate = self.opt_kwargs.pop("decay_rate", 0.95)
-            decay_steps = self.opt_kwargs.pop("decay_steps", 10000)
+            learning_rate = self.config.adam_args.pop("learning_rate", 0.001)
+            decay_rate = self.config.adam_args.pop("decay_rate", 0.95)
+            decay_steps = self.config.adam_args.pop("decay_steps", 10000)
             self.learning_rate_node = tf.train.exponential_decay(learning_rate=learning_rate,
-                                                                global_step=global_step,
-                                                                decay_steps=decay_steps,
-                                                                decay_rate=decay_rate,
-                                                                staircase=True)
+                                                                 global_step=global_step,
+                                                                 decay_steps=decay_steps,
+                                                                 decay_rate=decay_rate,
+                                                                 staircase=True)
             optimizer = tf.train.AdamOptimizer(
                 learning_rate=self.learning_rate_node,
-                **self.opt_kwargs).minimize(
-                                            self.net.cost,
-                                            global_step=global_step)
+                **self.config.adam_args).minimize(self.net.cost,
+                                                  global_step=global_step)
+
         elif self.optimizer_name == Optimizer.ADAGRAD:
-            learning_rate = self.opt_kwargs.pop("learning_rate", 0.001)
+            learning_rate = self.config.adagrad_args.pop("learning_rate", 0.001)
             self.learning_rate_node = tf.Variable(learning_rate, name="learning_rate")
 
             optimizer = tf.train.AdamOptimizer(
                                                 learning_rate=self.learning_rate_node,
-                                                **self.opt_kwargs).minimize(
-                                                                            self.net.cost,
-                                                                            global_step=global_step)
+                                                **self.config.adagrad_args).minimize(self.net.cost,
+                                                                                     global_step=global_step)
 
         else:
             raise ValueError()
 
         return optimizer
 
-    def _initialize(self, training_iters, output_path):
+    def _initialize(self):
 
         global_step = tf.Variable(0, name="global_step")
-        self.out_path = output_path
         self.norm_gradients_node = tf.Variable(tf.constant(0.0, shape=[len(self.net.gradients_node)]),
-                                                name="norm_gradients")
+                                               name="norm_gradients")
 
-        if self.net.summaries and self.norm_grads:
+        if self.net.summaries and self._norm_grads:
             tf.summary.histogram('norm_grads', self.norm_gradients_node)
 
         tf.summary.scalar('loss', self.net.cost)
@@ -107,58 +123,45 @@ class Trainer(object):
 
         return init
 
-    def train(self, data_provider_train, data_provider_val, out_path, training_iters=10, epochs=100, dropout=0.75,
-              display_step=1, write_graph=False, restore_path=None, caffemodel_path=None,
-              restore_mode=RestoreMode.COMPLETE_SESSION):
+    def train(self):
         """
         Lauches the training process
 
-        :param data_provider_train: callable returning training and verification data
-        :param data_provider_val: callable returning training and verification data
-        :param training_iters: number of training mini batch iteration
-        :param epochs: number of epochs
-        :param dropout: dropout probability
-        :param display_step: number of steps till outputting stats
-        :param restore_path: Flag if previous model should be restored
-        :param write_graph: Flag if the computation graph should be written as protobuf file to the output path
-        :param out_path: path where to save
-        :param restore_mode: selct mode to restore. Only used if restore path is set
-        :param caffemodel_path: Set path to lad pretrained caffe model
-
         """
+
         logging.info(
             "Start optimizing model with,"
             "Optimizer: {}, "
             "Nr of Epochs: {}, "
             "Nr of Training Iters: {},"
-            "Keep prob {}".format(self.optimizer_name, epochs, training_iters, dropout))
+            "Keep prob {}".format(self.optimizer_name, self._n_epochs, self._training_iters, self._dropout))
 
-        init = self._initialize(training_iters=training_iters, output_path=out_path)
+        init = self._initialize()
 
-        save_path = os.path.join(self.out_path, "model.ckpt")
-        if epochs == 0:
+        save_path = os.path.join(self.output_path, "model.ckpt")
+        if self._n_epochs == 0:
             return save_path
 
         with tf.Session() as sess:
-            if write_graph:
-                tf.train.write_graph(sess.graph_def, self.out_path, "graph.pb", False)
+            if self._write_graph:
+                tf.train.write_graph(sess.graph_def, self.output_path, "graph.pb", False)
 
             sess.run(init)
-            sess.run(data_provider_val.init_op)
+            sess.run(self.data_provider_val.init_op)
 
-            if caffemodel_path and restore_path:
+            if self._caffemodel_path and self._restore_path:
                 raise ValueError("Could not load both: Caffemodel and tf checkpoint")
 
-            if restore_path:
-                ckpt = tf.train.get_checkpoint_state(restore_path)
+            if self._restore_path:
+                ckpt = tf.train.get_checkpoint_state(self._restore_path)
                 if ckpt and ckpt.model_checkpoint_path:
-                    self.net.restore(sess, ckpt.model_checkpoint_path, restore_mode=restore_mode)
+                    self.net.restore(sess, ckpt.model_checkpoint_path, restore_mode=self._restore_mode)
 
-            if caffemodel_path:
-                load_pre_trained_caffe_variables(session=sess, file_path=caffemodel_path)
+            if self._caffemodel_path:
+                load_pre_trained_caffe_variables(session=sess, file_path=self._caffemodel_path)
 
-            train_summary_path = os.path.join(self.out_path, "training_summary")
-            val_summary_path = os.path.join(self.out_path, "validation_summary")
+            train_summary_path = os.path.join(self.output_path, "training_summary")
+            val_summary_path = os.path.join(self.output_path, "validation_summary")
 
             if not os.path.exists(train_summary_path):
                 os.makedirs(train_summary_path)
@@ -167,9 +170,9 @@ class Trainer(object):
             summary_writer_training = tf.summary.FileWriter(train_summary_path,
                                                             graph=sess.graph)
             summary_writer_validation = tf.summary.FileWriter(val_summary_path,
-                                                            graph=sess.graph)
+                                                              graph=sess.graph)
 
-            test_x, test_y, test_tv = sess.run(data_provider_val.next_batch)
+            test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
             pred_shape = self.store_prediction(sess, test_x, test_y, "_init", summary_writer_validation, 0, 0, test_tv)
             logging.info("Start optimization")
 
@@ -186,15 +189,15 @@ class Trainer(object):
                 init_step = fl[0]
                 epoch = fl[1]
 
-            for step in range(init_step, epochs*training_iters):
+            for step in range(init_step, self._n_epochs*self._training_iters):
 
-                # renitialze dataprovider if looped through a hole epoch
-                sess.run(data_provider_train.init_op)
+                # reinitialze dataprovider if looped through a hole epoch
+                sess.run(self.data_provider_train.init_op)
                 # renitialze dataprovider if looped through a hole dataset
-                if step * data_provider_train.batch_size % data_provider_train.size == 0:
-                    sess.run(data_provider_train.init_op)
+                if (step * self.config.batch_size_train) % self.data_provider_train.size == 0:
+                    sess.run(self.data_provider_train.init_op)
 
-                batch_x, batch_y, __ = sess.run(data_provider_train.next_batch)
+                batch_x, batch_y, __ = sess.run(self.data_provider_train.next_batch)
 
                 # Run optimization op (backprop)
                 if step == 0:
@@ -203,23 +206,23 @@ class Trainer(object):
                 _, loss, lr, gradients = sess.run(
                     (self.optimizer, self.net.cost, self.learning_rate_node, self.net.gradients_node),
                     feed_dict={self.net.x: batch_x,
-                                self.net.y: util.crop_to_shape(batch_y, pred_shape),
-                                self.net.keep_prob: dropout})
+                               self.net.y: util.crop_to_shape(batch_y, pred_shape),
+                               self.net.keep_prob: self._dropout})
 
-                if self.net.summaries and self.norm_grads:
+                if self.net.summaries and self._norm_grads:
                     avg_gradients = _update_avg_gradients(avg_gradients, gradients, step)
                     norm_gradients = [np.linalg.norm(gradient) for gradient in avg_gradients]
                     self.norm_gradients_node.assign(norm_gradients).eval()
 
                 total_loss += loss
 
-                if step % display_step == 0 and step != 0:
+                if step % self._display_step == 0 and step != 0:
                     self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
                                                 util.crop_to_shape(batch_y, pred_shape))
 
-                if step % training_iters == 0 and step != 0:
-                    test_x, test_y, test_tv = sess.run(data_provider_val.next_batch)
-                    self.output_epoch_stats(epoch, total_loss, training_iters, lr)
+                if step % self._training_iters == 0 and step != 0:
+                    test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
+                    self.output_epoch_stats(epoch, total_loss, self._training_iters, lr)
                     self.store_prediction(sess, test_x, util.crop_to_shape(test_y, pred_shape),
                                       "epoch_%s" % epoch, summary_writer_validation, step, epoch, test_tv)
                     total_loss = 0
@@ -231,8 +234,8 @@ class Trainer(object):
                     outF.write("{}".format(epoch+1))
                     outF.close()
                     epoch += 1
-                    if step * data_provider_val.batch_size % data_provider_val.size == 0:
-                        sess.run(data_provider_val.init_op)
+                    if (step * self.config.batch_size_val) % self.data_provider_val.size == 0:
+                        sess.run(self.data_provider_val.init_op)
 
             logging.info("Optimization Finished!")
 
@@ -250,7 +253,7 @@ class Trainer(object):
         else:
             img = util.combine_img_prediction(batch_x, batch_y, prediction,
                                               mode=1 if self.net.cost_function == Cost.MSE else 0)
-        util.save_image(img, "%s/%s.jpg" % (self.out_path, name))
+        util.save_image(img, "%s/%s.jpg" % (self.output_path, name))
 
         return pred_shape
 
