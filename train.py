@@ -115,7 +115,7 @@ if __name__ == "__main__":
     trainer = trainer.Trainer(net=net, data_provider_train=training_data, data_provider_val=validation_data,
                               out_path=data_paths.tf_out_path, train_config=config.TrainingParams,
                               restore_path=restore_path, caffemodel_path=caffemodel_path,
-                              restore_mode=restore_mode)
+                              restore_mode=restore_mode, mode=train_mode)
 
     path = trainer.train()
 
