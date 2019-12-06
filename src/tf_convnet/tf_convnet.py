@@ -81,14 +81,14 @@ class ConvNetModel(object):
         self.last_feature_map = lfs
 
         with tf.name_scope("cross_entropy"):
-            if self._cost_function == Cost.MSE:
+            if self.cost_function == Cost.MSE:
                 self.cross_entropy = tf.constant(0) # cross entropy for regression useless
             else:
                 self.cross_entropy = cross_entropy(tf.reshape(self.y, [-1, self._n_class]),
                                                    tf.reshape(pixel_wise_softmax(self.logits), [-1, self._n_class]))
 
         with tf.name_scope("results"):
-            if self._cost_function == Cost.MSE:
+            if self.cost_function == Cost.MSE:
                 self.correct_pred = tf.constant(0)  # makes no sense for regression
                 self.predicter = self.logits
                 self.error = tf.math.divide(tf.math.reduce_sum(tf.math.squared_difference(self.predicter, self.y)),
@@ -115,7 +115,7 @@ class ConvNetModel(object):
         with tf.name_scope("cost"):
             flat_logits = tf.reshape(self.logits, [-1, self._n_class])
             flat_labels = tf.reshape(self.y, [-1, self._n_class])
-            if self._cost_function == Cost.CROSS_ENTROPY:
+            if self.cost_function == Cost.CROSS_ENTROPY:
 
                 if self._class_weights is not None:
                     class_weights = tf.constant(np.array(self._class_weights, dtype=np.float32))
@@ -132,18 +132,18 @@ class ConvNetModel(object):
                 else:
                     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=flat_logits,
                                                                                      labels=flat_labels))
-            elif self._cost_function == Cost.DICE_COEFFICIENT:
+            elif self.cost_function == Cost.DICE_COEFFICIENT:
                 loss = tfu.get_dice_score(self.logits, self.y, eps=1e-7)
 
-            elif self._cost_function == Cost.MSE:
+            elif self.cost_function == Cost.MSE:
                 loss = tf.losses.mean_squared_error(flat_logits, flat_labels)
 
-            elif self._cost_function == Cost.TV:
+            elif self.cost_function == Cost.TV:
                 loss = tf.losses.mean_squared_error(flat_logits, flat_labels)
                 tv = tf.reduce_sum(tf.image.total_variation(self.logits))
                 loss += self._tv_regularizer * tv
             else:
-                raise ValueError("Unknown cost function: " % self._cost_function.name)
+                raise ValueError("Unknown cost function: " % self.cost_function.name)
 
             if self._regularizer is not None:
                 regularizers = sum([tf.nn.l2_loss(variable) for variable in self.variables])
