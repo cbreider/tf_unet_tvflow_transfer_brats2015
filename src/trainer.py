@@ -185,8 +185,8 @@ class Trainer(object):
                 epoch = int(fl[1])
 
             test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
-            pred_shape = self.store_prediction(sess, test_x, test_y, "_init", summary_writer_validation, 0, 0, test_tv,
-                                               write=False if init_step != 0 else True)
+            pred_shape = self.store_prediction(sess, test_x, test_y, "_init", summary_writer_validation, init_step,
+                                               epoch, test_tv, write=False if init_step != 0 else True)
 
             avg_gradients = None
 
@@ -244,7 +244,6 @@ class Trainer(object):
                         sess.run(self.data_provider_val.init_op)
 
                     epoch += 1
-
 
             logging.info("Optimization Finished!")
 
