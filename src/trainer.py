@@ -175,7 +175,6 @@ class Trainer(object):
 
             test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
             pred_shape = self.store_prediction(sess, test_x, test_y, "_init", summary_writer_validation, 0, 0, test_tv)
-            logging.info("Start optimization")
 
             avg_gradients = None
 
@@ -184,13 +183,15 @@ class Trainer(object):
             init_step = 0
             epoch = 0
             total_loss = 0
-            if os.path.isfile(step_file):
-                f = open(step_file, "w")
+            if os.path.isfile(step_file) and self._restore_mode == RestoreMode.COMPLETE_SESSION:
+                f = open(step_file, "r")
                 fl = f.readlines()
-                init_step = fl[0]
-                epoch = fl[1]
+                init_step = int(fl[0])
+                epoch = int(fl[1])
             if init_step != 0 and self._restore_path is not None:
                 logging.info("Resuming Training at epoch {} and total step {}". format(epoch, init_step))
+
+            logging.info("Start optimization...")
 
             for step in range(init_step, self._n_epochs*self._training_iters):
 
