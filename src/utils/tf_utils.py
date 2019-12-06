@@ -103,39 +103,35 @@ def load_png_image(filename, nr_channels, img_size, data_type=tf.float32):
         print("type error: " + str(e) + str(filename))
 
 
-def get_tv_smoothed_and_fixed_bin_clustering(image, tv_tau, tv_weight, tv_eps, tv_m_itr, n_bins=10):
+def get_fixed_bin_clustering(image, n_bins=10):
 
-    tv_sm = get_tv_smoothed(image, tv_tau, tv_weight, tv_eps, tv_m_itr)
-
-    val_range = [tf.reduce_min(tv_sm), tf.reduce_max(tv_sm)]
-    assignments = tf.histogram_fixed_width_bins(values=tv_sm, value_range=val_range, nbins=n_bins)
-
-    return tv_sm, tf.cast(assignments, tf.float32)
+    val_range = [tf.reduce_min(image), tf.reduce_max(image)]
+    assignments = tf.histogram_fixed_width_bins(values=image, value_range=val_range, nbins=n_bins)
+    return tf.cast(assignments, tf.float32)
 
 
-def get_tv_smoothed_and_meanshift_clustering(image, tv_tau, tv_weight, tv_eps, tv_m_itr, ms_itr=-1, win_r=0.02,
-                                             n_clusters=10):
+def get_meanshift_clustering(image, ms_itr=-1, win_r=0.02, n_clusters=10, bin_seeding=True):
 
-    tv_sm = get_tv_smoothed(image, tv_tau, tv_weight, tv_eps, tv_m_itr)
-
-    c = mean_shift(input_x=tf.reshape(tv_sm, (-1, 1)), bin_seed=True, n_updates=ms_itr, window_radius=win_r)
-
+    c = mean_shift(input_x=tf.reshape(image, (-1, 1)), n_updates=ms_itr, window_radius=win_r, bin_seed=bin_seeding)
     c = reshape_clusters_to_cluster_number(c, n_clusters)
-    centroids_expanded = tf.expand_dims(c, 1)
+    assignments = get_static_clustering(image=image, cluster_centers=c)
+    return assignments
+
+
+def get_kmeans_clustering(image, km_cluster_n, km_itr_n):
+
+    clustered = get_kmeans(image, clusters_n=km_cluster_n, iteration_n=km_itr_n)
+    clustered = tf.expand_dims(clustered, 2)
+    return clustered
+
+
+def get_static_clustering(image, cluster_centers):
+    centroids_expanded = tf.expand_dims(cluster_centers, 1)
     centroids_expanded = tf.transpose(centroids_expanded)
     centroids_expanded = tf.expand_dims(centroids_expanded, 0)
     distances = tf.square(tf.subtract(image, centroids_expanded))
     assignments = tf.cast(tf.expand_dims(tf.argmin(distances, axis=2, output_type=tf.int32), 2), tf.float32)
-    return tv_sm, assignments
-
-
-def get_tv_smoothed_and_kmeans_clustering(image, nr_img, tv_tau, tv_weight, tv_eps, tv_m_itr, km_cluster_n, km_itr_n):
-
-    tv_sm = get_tv_smoothed(image, tv_tau, tv_weight, tv_eps, tv_m_itr)
-    clustered = get_kmeans(tv_sm, clusters_n=km_cluster_n, iteration_n=km_itr_n)
-    #tv_sm = tf.expand_dims(tv_sm, 2)
-    clustered = tf.expand_dims(clustered, 2)
-    return tv_sm, clustered
+    return assignments
 
 
 def get_tv_smoothed(img, tau, weight, eps, m_itr):
@@ -347,7 +343,7 @@ def convert_8bit_image_to_one_hot(image, depth=255):
     return one_hot
 
 
-def to_one_hot(image, depth):
+def to_one_hot_custom(image, depth):
     """
     Creates a one hot tensor of a given image
 

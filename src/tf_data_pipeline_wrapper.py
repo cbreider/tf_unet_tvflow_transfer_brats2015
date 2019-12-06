@@ -9,7 +9,7 @@ created on June 2019
 from src.tf_data_generator import TFTrainingImageDataGenerator, TFValidationImageDataGenerator
 import tensorflow as tf
 import tensorflow.data as tf_data
-from src.utils.enum_params import TrainingModes, DataModes
+from src.utils.enum_params import TrainingModes, DataModes, TV_clustering_method
 
 
 class ImageData(object):
@@ -21,7 +21,8 @@ class ImageData(object):
     def __init__(self, data, in_img_size, set_img_size, data_max_value=255.0, data_norm_value=1.0,
                  crop_to_non_zero=False, do_augmentation=False, normalize_std=False, nr_of_classes=1.0,
                  nr_channels=1, batch_size=128, buffer_size=800, shuffle=False,
-                 mode=DataModes.TRAINING, train_mode=TrainingModes.TVFLOW_REGRESSION):
+                 mode=DataModes.TRAINING, train_mode=TrainingModes.TVFLOW_REGRESSION,
+                 tv_clustering_method=TV_clustering_method.STATIC_BINNING, clustering_params=None):
         """
         Inits a Tensorflow data pipeline
 
@@ -50,6 +51,8 @@ class ImageData(object):
         self.init_op = None
         self.next_batch = None
         self.train_mode = train_mode
+        self.clustering_method = tv_clustering_method
+        self.clustering_params = clustering_params
         self.size = len(self._data)
         if not (mode == DataModes.TRAINING or
                 mode == DataModes.VALIDATION or
@@ -84,7 +87,9 @@ class ImageData(object):
                                                                        do_augmentation=self._do_augmentation,
                                                                        normalize_std=self._normalize_std,
                                                                        nr_of_classes=self._nr_of_classes,
-                                                                       nr_channels=self._nr_channels)
+                                                                       nr_channels=self._nr_channels,
+                                                                       clustering_method=self.clustering_method,
+                                                                       clustering_params=self.clustering_params)
 
                 elif self._mode == DataModes.VALIDATION:
                     self.data_generator = TFValidationImageDataGenerator(data=self._data,
@@ -100,7 +105,9 @@ class ImageData(object):
                                                                          do_augmentation=self._do_augmentation,
                                                                          normalize_std=self._normalize_std,
                                                                          nr_of_classes=self._nr_of_classes,
-                                                                         nr_channels=self._nr_channels)
+                                                                         nr_channels=self._nr_channels,
+                                                                         clustering_method=self.clustering_method,
+                                                                         clustering_params=self.clustering_params)
                 else:
                     raise ValueError("Invalid mode {}".format(self._mode))
                 self.data_generator.initialize()

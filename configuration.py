@@ -31,9 +31,7 @@ class DataParams:
     set_image_size = [set_data_height,
                       set_data_width]  # size which the images should be reszied to for training
     nr_of_channels = 1              # number of channles of in/out images (grayscale)
-    nr_of_classes_seg_mode = 2
-    nr_of_classes_tv_flow_mode = 1  # one class for each channel of 8bit image
-    nr_of_classes_tv_seg_mode = 10
+    nr_of_classes = 10
     shuffle = True                  # Set true to extra Shuffle Trining Data. Note dict.items() is allready random
     do_image_augmentation = True    # Set True to augment training images random crapp, flip, rotation
     do_image_augmentation_val = False  # Set True to augment training images random crapp, flip, rotation for validation
@@ -49,18 +47,18 @@ class DataParams:
     use_modalities = ["mr_flair", "mr_t1", "mr_t1c", "mr_t2"]  # modalities used for training
 
     clustering_method = TV_clustering_method.STATIC_BINNING
-    
-    k_means_pre_cluster = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # TODO
 
-    tv_smooth_params = dict(weight=0.1,     # params for tv smoothing
-                            eps=0.00001,
-                            tau=0.125,
-                            m_itr=200)
+    static_cluster_params = dict(k_means_pre_cluster=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]) # TODO
 
-    k_means_params = dict(m_itr=100)        # params for kmeans clustering nr of clusters = nr of classes.Only used im tv
+    tv_smooth_params = dict(tv_weight=0.1,     # params for tv smoothing
+                            tv_eps=0.00001,
+                            tv_tau=0.125,
+                            tv_m_itr=200)
+
+    k_means_params = dict(km_m_itr=100)        # params for kmeans clustering nr of clusters = nr of classes.Only used im tv
                                             # clustering with kmeans
 
-    mean_shift_params = dict(m_itr=-1,          # params for mean shift clustering used in tv training
+    mean_shift_params = dict(ms_m_itr=-1,          # params for mean shift clustering used in tv training
                              window_size=0.01,
                              bin_seeding=True)
 
@@ -82,6 +80,8 @@ class ConvNetParams:
     freeze_down_layers = False       # freeze encoder layers during training
     freeze_up_layers = False        # freeze decoder layers during training
     activation_func_out = Activation_Func.RELU  # Act func for output map # noe for regression
+    nr_input_channels = DataParams.nr_of_channels
+    nr_of_classes = DataParams.nr_of_classes
 
 
 class TrainingParams:
