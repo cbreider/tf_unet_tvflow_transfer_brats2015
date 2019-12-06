@@ -244,7 +244,7 @@ class Unet(object):
         self.keep_prob = tf.placeholder(tf.float32, name="dropout_probability")  # dropout (keep probability)
 
         logits, self.variables, self.offset, self.out_vars, lfs = create_conv_net(x=self.x,
-                                                              keep_prob=keep_prob,
+                                                              keep_prob=self.keep_prob,
                                                               channels=n_channels,
                                                               n_class=n_class,
                                                               n_layers=n_layers,
@@ -328,22 +328,7 @@ class Unet(object):
                     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=flat_logits,
                                                                                      labels=flat_labels))
             elif cost_function == Cost.DICE_COEFFICIENT:
-                #eps = 1e-5
-                #prediction = pixel_wise_softmax(logits)
-                #intersection = tf.reduce_sum(prediction * self.y)
-                #union = eps + tf.reduce_sum(prediction) + tf.reduce_sum(self.y)
-                #loss = -(2 * intersection / (union))
-                smooth = 1e-17
-                logits = tf.nn.softmax(logits)
-                weights = 1.0 / (tf.reduce_sum(self.y))
-
-                numerator = tf.reduce_sum(self.y * logits)
-                numerator = tf.reduce_sum(weights * numerator)
-
-                denominator = tf.reduce_sum(self.y + logits, axis=[0, 1, 2])
-                denominator = tf.reduce_sum(weights * denominator)
-
-                loss = 1.0 - 2.0 * (numerator + smooth) / (denominator + smooth)
+                loss = tfu.get_dice_score(logits, self.y, eps=1e-7)
 
             elif cost_function == Cost.MSE:
                 loss = tf.losses.mean_squared_error(flat_logits, flat_labels)
