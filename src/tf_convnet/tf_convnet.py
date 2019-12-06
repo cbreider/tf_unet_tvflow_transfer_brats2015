@@ -37,7 +37,7 @@ class ConvNetModel(object):
         self._n_class = self._convnet_config.nr_of_classes
         self._n_channels = self._convnet_config.nr_input_channels
         self.summaries = create_summaries
-        self._cost_function = self._convnet_config.cost_function
+        self.cost_function = self._convnet_config.cost_function
         self._n_layers = self._convnet_config.num_layers
         self._features_root = self._convnet_config.feat_root
         self._filter_size = self._convnet_config.filter_size
