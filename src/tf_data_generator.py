@@ -23,7 +23,7 @@ class TFImageDataGenerator:
     Requires TensorFlow >= version 1.12rc0
     """
 
-    def __init__(self, data, data_config, mode=TrainingModes.TVFLOW_REGRESSION):
+    def __init__(self, data, data_config, mode):
 
         self._data_config = data_config  # type: DataParams
         self._in_img_size = self._data_config.raw_image_size
@@ -32,7 +32,7 @@ class TFImageDataGenerator:
         self._data_norm_value = self._data_config.norm_image_value
         self._raw_data = data
         self._shuffle = self._data_config.shuffle
-        self._mode = mode
+        self._mode = mode  # type: TrainingModes
 
         self._nr_of_classes = self._data_config.nr_of_classes
         self._normalize_std = self._data_config.normailze_std

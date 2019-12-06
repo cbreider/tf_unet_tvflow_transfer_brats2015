@@ -18,7 +18,7 @@ class ImageData(object):
     Requires Tensorflow >= version 1.12rc0
     """
 
-    def __init__(self, data, data_config, mode=DataModes.TRAINING, train_mode=TrainingModes.TVFLOW_REGRESSION):
+    def __init__(self, data, data_config,  train_mode, mode=DataModes.TRAINING):
         """
         Inits a Tensorflow data pipeline
 
@@ -35,7 +35,7 @@ class ImageData(object):
         self.data_generator = None
         self.init_op = None
         self.next_batch = None
-        self.train_mode = train_mode
+        self.train_mode = train_mode  # type: TrainingModes
         self.size = len(self._data)
         if not (mode == DataModes.TRAINING or
                 mode == DataModes.VALIDATION or

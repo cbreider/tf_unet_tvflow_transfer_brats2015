@@ -47,7 +47,7 @@ class TrainingDataset(object):
         return self
 
     """Constructor"""
-    def __init__(self, paths, data_config, mode=TrainingModes.TVFLOW_REGRESSION,
+    def __init__(self, paths, data_config, mode,
                  load_test_paths_only=False, new_split=True):
         """
         Inits a Dataset of training and validation images- Either creates it by reading files from a specific folder
@@ -61,7 +61,7 @@ class TrainingDataset(object):
         """
         self._paths = paths
         self._new_split = new_split
-        self._mode = mode
+        self._mode = mode  # type: TrainingModes
         self._data_config = data_config  # type: DataParams
         self._use_scale = self._data_config.use_scale_image_as_gt
         self._load_only_mid_scans = self._data_config.load_only_middle_scans

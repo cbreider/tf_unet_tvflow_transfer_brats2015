@@ -15,14 +15,14 @@ import os
 import src.utils.data_utils as util
 import numpy as np
 from src.tf_convnet.caffe2tensorflow_mapping import load_pre_trained_caffe_variables
-from src.utils.enum_params import Cost, Optimizer, RestoreMode
+from src.utils.enum_params import Cost, Optimizer, RestoreMode, TrainingModes
 from src.tf_data_pipeline_wrapper import  ImageData
 from configuration import TrainingParams
 
 
 class Trainer(object):
 
-    def __init__(self, net, data_provider_train, data_provider_val, out_path, train_config, restore_path=None,
+    def __init__(self, net, data_provider_train, data_provider_val, out_path, train_config, mode,  restore_path=None,
                  caffemodel_path=None, restore_mode=RestoreMode.COMPLETE_SESSION):
 
         """
@@ -39,6 +39,7 @@ class Trainer(object):
         """
 
         self.net = net
+        self.mode = mode  # type: TrainingModes
         self.config = train_config  # type: TrainingParams
         self.data_provider_train = data_provider_train # type: ImageData
         self.data_provider_val = data_provider_val  # type: ImageData
@@ -248,7 +249,7 @@ class Trainer(object):
 
         logging.info("EPOCH {}: Verification error= {:.1f}%, loss= {:.6f}, Dice= {:.4f}, cross entropy = {:.4f}".format(
             epoch, err, loss, dice, ce))
-        if batch_tv is not None:
+        if self.mode == TrainingModes.TVFLOW_SEGMENTATION:
             img = util.combine_img_prediction_tvclustering(data=batch_x, gt=batch_y, tv=batch_tv, pred=prediction)
         else:
             img = util.combine_img_prediction(batch_x, batch_y, prediction,
