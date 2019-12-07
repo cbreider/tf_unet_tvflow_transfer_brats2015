@@ -33,11 +33,11 @@ def preprocess_images(scan, ground_truth):
                                                          tf.constant(2.0)), tf.int32),
                              maxval=image_shape[0],
                              dtype=tf.int32)
-    if tf.random.uniform(()) > 0.5:
-        combined_crop = tf.random_crop(value=combined,
-                                       size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0))
-    else:
-        combined_crop = combined
+    combined_crop = tf.cond(tf.random.uniform(()) > 0.5,
+                            lambda: tf.random_crop(value=combined,
+                                       size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0)),
+                            lambda: combined)
+
     combined_flip = tf.image.random_flip_left_right(combined_crop)
     im = tf.image.resize_images(combined_flip[:, :, :last_image_dim], size=[image_shape[0], image_shape[1]])
     gt = tf.image.resize_images(combined_flip[:, :, last_image_dim:], size=[image_shape[0], image_shape[1]])
