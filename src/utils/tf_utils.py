@@ -403,8 +403,8 @@ def normalize_and_zero_center_tensor(tensor, max, new_max, normalize_std):
 
 
 def get_dice_score(logits, y, eps=1e-7):
-    numerator = 2 * tf.reduce_sum(y * logits, axis=-1)
-    denominator = eps + tf.reduce_sum(y + logits, axis=-1)
+    numerator = 2 * tf.reduce_sum(y * logits)
+    denominator = eps + tf.reduce_sum(y + logits)
 
     return (numerator + 1) / (denominator + 1)
     """
