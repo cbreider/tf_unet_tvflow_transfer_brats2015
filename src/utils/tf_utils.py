@@ -187,11 +187,6 @@ def get_tv_smoothed(img, tau, weight, eps, m_itr):
         _tv_body,
         [inimg, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr])
 
-    u = u - tf.reduce_min(u)
-    mean, var = tf.nn.moments(u, axes=[0, 1, 2])
-    u = tf.math.divide((u), tf.math.sqrt(var))
-    u = u / tf.reduce_max(u)
-
     return u
 
 
