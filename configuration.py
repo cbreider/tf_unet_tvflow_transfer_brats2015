@@ -39,7 +39,7 @@ class DataParams:
     set_image_size = [set_data_height,
                       set_data_width]  # size which the images should be reszied to for training
     nr_of_channels = 1              # number of channles of in/out images (grayscale)
-    nr_of_classes = 6
+    nr_of_classes = 10
     shuffle = True                  # Set true to extra Shuffle Trining Data. Note dict.items() is allready random
     do_image_augmentation_train = True    # Set True to augment training images random crapp, flip, rotation
     do_image_augmentation_val = True  # Set True to augment training images random crapp, flip, rotation for validation
@@ -59,7 +59,7 @@ class DataParams:
     clustering_method = TV_clustering_method.STATIC_BINNING
 
     tv_and_clustering_params = dict(k_means_pre_cluster=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                                    tv_weight=0.15,   #params for tv smoothing
+                                    tv_weight=0.1,   #params for tv smoothing
                                     tv_eps=0.00001,
                                     tv_tau=0.125,
                                     tv_m_itr=30,
