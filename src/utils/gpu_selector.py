@@ -19,7 +19,7 @@ cuda_device = ''
 def set_cuda_gpu(cuda_gpu):
 
     global cuda_device
-    cuda_device = cuda_gpu
+    cuda_device = str(cuda_gpu)
     os.environ["CUDA_VISIBLE_DEVICES"] = cuda_device
     print('Setting Cuda GPU /{}'.format(cuda_device))
 
