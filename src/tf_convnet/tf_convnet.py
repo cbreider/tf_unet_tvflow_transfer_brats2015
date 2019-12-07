@@ -132,7 +132,7 @@ class ConvNetModel(object):
                     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=flat_logits,
                                                                                      labels=flat_labels))
             elif self.cost_function == Cost.DICE_COEFFICIENT:
-                loss = tfu.get_dice_score(self.logits, self.y, eps=1e-7)
+                loss = 1 - tfu.get_dice_score(self.logits, self.y, eps=1e-7)
 
             elif self.cost_function == Cost.MSE:
                 loss = tf.losses.mean_squared_error(flat_logits, flat_labels)

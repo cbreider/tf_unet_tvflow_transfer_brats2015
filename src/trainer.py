@@ -225,7 +225,6 @@ class Trainer(object):
                 if step % self._display_step == 0 and step != 0:
                     self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
                                                 util.crop_to_shape(batch_y, pred_shape))
-                    total_loss = 0
                     save_path = self.net.save(sess, save_path)
                     # save epoch and step
                     outF = open(step_file, "w")
@@ -242,7 +241,8 @@ class Trainer(object):
 
                     if (step * self.config.batch_size_val) % self.data_provider_val.size == 0:
                         sess.run(self.data_provider_val.init_op)
-
+                        
+                    total_loss = 0
                     epoch += 1
 
             logging.info("Optimization Finished!")

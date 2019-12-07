@@ -76,7 +76,9 @@ if __name__ == "__main__":
     tf.reset_default_graph()
 
     data_paths = DataPaths(data_path="default", mode=train_mode.name)
-    data_paths.load_data_paths(mkdirs=True, restore_dir=restore_path if restore_mode == RestoreMode.COMPLETE_SESSION else None)
+    data_paths.load_data_paths(mkdirs=True, restore_dir=restore_path if (restore_mode == RestoreMode.COMPLETE_SESSION
+                                                                         or restore_mode == RestoreMode.COMPLETE_NET)
+                                                                    else None)
 
     outF = open(os.path.join(data_paths.tf_out_path, "args.txt"), "w")
     outF.write("create_new_split: {}".format(create_new_training_split))
