@@ -105,7 +105,7 @@ class ConvNetModel(object):
                 self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
                 self.error = tf.constant(1.0) - self.accuracy
                 self.error_rate = tf.math.multiply(self.error, tf.constant(100.0))
-                self.dice = tfu.get_dice_score(logits=self.logits, y=self.y, eps=1e-7)
+                self.dice = tfu.get_dice_score(logits=self.pred_slice, y=self.y_slice, eps=1e-7)
 
     def _get_cost(self):
         """
@@ -132,7 +132,7 @@ class ConvNetModel(object):
                     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=flat_logits,
                                                                                      labels=flat_labels))
             elif self.cost_function == Cost.DICE_COEFFICIENT:
-                loss = 1 - tfu.get_dice_score(self.logits, self.y, eps=1e-7)
+                loss = 1 - tfu.get_dice_score(flat_logits, flat_labels, eps=1e-7)
 
             elif self.cost_function == Cost.MSE:
                 loss = tf.losses.mean_squared_error(flat_logits, flat_labels)

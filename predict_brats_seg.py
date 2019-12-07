@@ -48,7 +48,7 @@ if __name__ == "__main__":
     model_path = None
     use_Brats_Testing = False
     save_all_predictions = False
-    save_fmaps = False
+    save_fmaps = True
     if args.model_path is not None:
         model_path = args.model_path
     else:
