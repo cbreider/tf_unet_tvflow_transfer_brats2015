@@ -56,7 +56,7 @@ class ImageData(object):
         creates a Tensorflow data pipeline based on a data generator
         """
         # load and preprocess the data on the cpu
-        with tf.device('/cpu:0'):
+        with tf.device('/gpu:1'):
             graph = tf.get_default_graph()
             with graph.as_default():
                 if self._mode == DataModes.TRAINING:

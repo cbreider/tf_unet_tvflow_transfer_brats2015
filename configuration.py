@@ -18,7 +18,7 @@ class DataParams:
     """ Data parameters"""
     batch_size_train = 2            # batch size used for training
     batch_size_val = 32             # batch size used for validation
-    buffer_size_train = 100         # buffer size for tf training data pipeline (only used for tv training)
+    buffer_size_train = 1000         # buffer size for tf training data pipeline (only used for tv training)
     buffer_size_val = 100           # buffer size for tf validation data pipeline (only used for tv training)
 
     # label values of BRATS2015 gt
@@ -39,7 +39,7 @@ class DataParams:
     set_image_size = [set_data_height,
                       set_data_width]  # size which the images should be reszied to for training
     nr_of_channels = 1              # number of channles of in/out images (grayscale)
-    nr_of_classes = 2
+    nr_of_classes = 6
     shuffle = True                  # Set true to extra Shuffle Trining Data. Note dict.items() is allready random
     do_image_augmentation_train = True    # Set True to augment training images random crapp, flip, rotation
     do_image_augmentation_val = True  # Set True to augment training images random crapp, flip, rotation for validation
@@ -59,10 +59,10 @@ class DataParams:
     clustering_method = TV_clustering_method.STATIC_BINNING
 
     tv_and_clustering_params = dict(k_means_pre_cluster=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                                    tv_weight=0.1,   #params for tv smoothing
+                                    tv_weight=0.15,   #params for tv smoothing
                                     tv_eps=0.00001,
                                     tv_tau=0.125,
-                                    tv_m_itr=200,
+                                    tv_m_itr=30,
                                     km_m_itr=100, # params for kmeans clustering nr of clusters = nr of classes.Only used im tv
                                                     # clustering with kmeans)
                                     ms_m_itr=-1,  # params for mean shift clustering used in tv training
@@ -106,7 +106,7 @@ class TrainingParams:
     buffer_size_val = DataParams.buffer_size_val # buffer size for tf validation data pipeline (only used for tv training)
     norm_grads = False              # norm gradients in summary
     write_graph = True              # write graph in tf summary
-    keep_prob_dopout = 0.75          # keep prob for dropout
+    keep_prob_dopout = 0.5          # keep prob for dropout
 
     adam_args = dict(learning_rate=0.0001,  # Hyperparameters for Adam optimzer
                      beta1=0.9,

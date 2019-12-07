@@ -142,112 +142,112 @@ class Trainer(object):
         save_path = os.path.join(self.output_path, "model.ckpt")
         if self._n_epochs == 0:
             return save_path
+        with tf.device('/gpu:0'):
+            with tf.Session() as sess:
+                if self._write_graph:
+                    tf.train.write_graph(sess.graph_def, self.output_path, "graph.pb", False)
 
-        with tf.Session() as sess:
-            if self._write_graph:
-                tf.train.write_graph(sess.graph_def, self.output_path, "graph.pb", False)
+                sess.run(init)
+                sess.run(self.data_provider_val.init_op)
 
-            sess.run(init)
-            sess.run(self.data_provider_val.init_op)
+                if self._caffemodel_path and self._restore_path:
+                    raise ValueError("Could not load both: Caffemodel and tf checkpoint")
 
-            if self._caffemodel_path and self._restore_path:
-                raise ValueError("Could not load both: Caffemodel and tf checkpoint")
+                if self._restore_path:
+                    ckpt = tf.train.get_checkpoint_state(self._restore_path)
+                    if ckpt and ckpt.model_checkpoint_path:
+                        self.net.restore(sess, ckpt.model_checkpoint_path, restore_mode=self._restore_mode)
 
-            if self._restore_path:
-                ckpt = tf.train.get_checkpoint_state(self._restore_path)
-                if ckpt and ckpt.model_checkpoint_path:
-                    self.net.restore(sess, ckpt.model_checkpoint_path, restore_mode=self._restore_mode)
+                if self._caffemodel_path:
+                    load_pre_trained_caffe_variables(session=sess, file_path=self._caffemodel_path)
 
-            if self._caffemodel_path:
-                load_pre_trained_caffe_variables(session=sess, file_path=self._caffemodel_path)
+                train_summary_path = os.path.join(self.output_path, "training_summary")
+                val_summary_path = os.path.join(self.output_path, "validation_summary")
 
-            train_summary_path = os.path.join(self.output_path, "training_summary")
-            val_summary_path = os.path.join(self.output_path, "validation_summary")
+                if not os.path.exists(train_summary_path):
+                    os.makedirs(train_summary_path)
+                if not os.path.exists(val_summary_path):
+                    os.makedirs(val_summary_path)
+                summary_writer_training = tf.summary.FileWriter(train_summary_path,
+                                                                graph=sess.graph)
+                summary_writer_validation = tf.summary.FileWriter(val_summary_path,
+                                                                  graph=sess.graph)
 
-            if not os.path.exists(train_summary_path):
-                os.makedirs(train_summary_path)
-            if not os.path.exists(val_summary_path):
-                os.makedirs(val_summary_path)
-            summary_writer_training = tf.summary.FileWriter(train_summary_path,
-                                                            graph=sess.graph)
-            summary_writer_validation = tf.summary.FileWriter(val_summary_path,
-                                                              graph=sess.graph)
+                # load epoch and step count from prev run if exists
+                step_file = os.path.join(self.output_path, "epoch.txt")
+                init_step = 0
+                epoch = 0
+                total_loss = 0
+                if os.path.isfile(step_file) and self._restore_mode == RestoreMode.COMPLETE_SESSION:
+                    f = open(step_file, "r")
+                    fl = f.readlines()
+                    init_step = int(fl[0])
+                    epoch = int(fl[1])
 
-            # load epoch and step count from prev run if exists
-            step_file = os.path.join(self.output_path, "epoch.txt")
-            init_step = 0
-            epoch = 0
-            total_loss = 0
-            if os.path.isfile(step_file) and self._restore_mode == RestoreMode.COMPLETE_SESSION:
-                f = open(step_file, "r")
-                fl = f.readlines()
-                init_step = int(fl[0])
-                epoch = int(fl[1])
+                test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
+                pred_shape = self.store_prediction(sess, test_x, test_y, "_init", summary_writer_validation, init_step,
+                                                   epoch, test_tv, write=False if init_step != 0 else True)
 
-            test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
-            pred_shape = self.store_prediction(sess, test_x, test_y, "_init", summary_writer_validation, init_step,
-                                               epoch, test_tv, write=False if init_step != 0 else True)
+                avg_gradients = None
 
-            avg_gradients = None
+                if init_step != 0 and self._restore_path is not None:
+                    logging.info("Resuming Training at epoch {} and total step {}". format(epoch, init_step))
 
-            if init_step != 0 and self._restore_path is not None:
-                logging.info("Resuming Training at epoch {} and total step {}". format(epoch, init_step))
+                logging.info("Start optimization...")
 
-            logging.info("Start optimization...")
+                for step in range(init_step, self._n_epochs*self._training_iters):
 
-            for step in range(init_step, self._n_epochs*self._training_iters):
-
-                # reinitialze dataprovider if looped through a hole epoch
-                sess.run(self.data_provider_train.init_op)
-                # renitialze dataprovider if looped through a hole dataset
-                if (step * self.config.batch_size_train) % self.data_provider_train.size == 0:
+                    # reinitialze dataprovider if looped through a hole epoch
                     sess.run(self.data_provider_train.init_op)
+                    # renitialze dataprovider if looped through a hole dataset
+                    if (step * self.config.batch_size_train) % self.data_provider_train.size == 0:
+                        sess.run(self.data_provider_train.init_op)
 
-                batch_x, batch_y, __ = sess.run(self.data_provider_train.next_batch)
+                    batch_x, batch_y, __ = sess.run(self.data_provider_train.next_batch)
 
-                # Run optimization op (backprop)
-                if step == 0:
-                    self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
-                                                util.crop_to_shape(batch_y, pred_shape))
-                _, loss, lr, gradients = sess.run(
-                    (self.optimizer, self.net.cost, self.learning_rate_node, self.net.gradients_node),
-                    feed_dict={self.net.x: batch_x,
-                               self.net.y: util.crop_to_shape(batch_y, pred_shape),
-                               self.net.keep_prob: self._dropout})
+                    # Run optimization op (backprop)
+                    if step == 0:
+                        self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
+                                                    util.crop_to_shape(batch_y, pred_shape))
+                    _, loss, lr, gradients = sess.run(
+                        (self.optimizer, self.net.cost, self.learning_rate_node, self.net.gradients_node),
+                        feed_dict={self.net.x: batch_x,
+                                   self.net.y: util.crop_to_shape(batch_y, pred_shape),
+                                   self.net.keep_prob: self._dropout})
 
-                if self.net.summaries and self._norm_grads:
-                    avg_gradients = _update_avg_gradients(avg_gradients, gradients, step)
-                    norm_gradients = [np.linalg.norm(gradient) for gradient in avg_gradients]
-                    self.norm_gradients_node.assign(norm_gradients).eval()
+                    if self.net.summaries and self._norm_grads:
+                        avg_gradients = _update_avg_gradients(avg_gradients, gradients, step)
+                        norm_gradients = [np.linalg.norm(gradient) for gradient in avg_gradients]
+                        self.norm_gradients_node.assign(norm_gradients).eval()
 
-                total_loss += loss
+                    total_loss += loss
 
-                if step % self._display_step == 0 and step != 0:
-                    self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
-                                                util.crop_to_shape(batch_y, pred_shape))
-                    save_path = self.net.save(sess, save_path)
-                    # save epoch and step
-                    outF = open(step_file, "w")
-                    outF.write("{}".format(step+1))
-                    outF.write("\n")
-                    outF.write("{}".format(epoch+1))
-                    outF.close()
+                    if step % self._display_step == 0 and step != 0:
+                        self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
+                                                    util.crop_to_shape(batch_y, pred_shape))
+                        save_path = self.net.save(sess, save_path)
+                        # save epoch and step
+                        outF = open(step_file, "w")
+                        outF.write("{}".format(step+1))
+                        outF.write("\n")
+                        outF.write("{}".format(epoch+1))
+                        outF.close()
 
-                if step % self._training_iters == 0 and step != 0:
-                    test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
-                    self.output_epoch_stats(epoch, total_loss, self._training_iters, lr)
-                    self.store_prediction(sess, test_x, util.crop_to_shape(test_y, pred_shape),
-                                      "epoch_%s" % epoch, summary_writer_validation, step, epoch, test_tv)
+                    if step % self._training_iters == 0 and step != 0:
+                        test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
+                        self.output_epoch_stats(epoch, total_loss, self._training_iters, lr)
+                        self.store_prediction(sess, test_x, util.crop_to_shape(test_y, pred_shape),
+                                          "epoch_%s" % epoch, summary_writer_validation, step, epoch, test_tv)
 
-                    if (step * self.config.batch_size_val) % self.data_provider_val.size == 0:
-                        sess.run(self.data_provider_val.init_op)
-                        
-                    total_loss = 0
-                    epoch += 1
+                        if (step * self.config.batch_size_val) % self.data_provider_val.size == 0:
+                            sess.run(self.data_provider_val.init_op)
 
-            logging.info("Optimization Finished!")
+                        total_loss = 0
+                        epoch += 1
 
-            return save_path
+                logging.info("Optimization Finished!")
+
+                return save_path
 
     def store_prediction(self, sess, batch_x, batch_y, name, summary_writer, step, epoch, batch_tv, write=True):
         loss, acc, err, prediction, dice, ce = self.run_summary(sess, summary_writer, step, batch_x, batch_y, write=write)
