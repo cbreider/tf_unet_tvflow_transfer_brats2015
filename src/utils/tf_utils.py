@@ -397,20 +397,20 @@ def normalize_and_zero_center_tensor(tensor, max, new_max, normalize_std):
     return out
 
 
-def get_dice_score(logits, y, eps=1e-7):
-    numerator = 2 * tf.reduce_sum(y * logits)
-    denominator = eps + tf.reduce_sum(y + logits)
+def get_dice_score(pred, y, eps=1e-7):
+    """
+    numerator = 2 * tf.reduce_sum(y * pred)
+    denominator = eps + tf.reduce_sum(y + pred)
 
     return (numerator + 1) / (denominator + 1)
     """
-    logits = tf.nn.softmax(logits)
     weights = 1.0 / (tf.reduce_sum(y))
-    numerator = tf.reduce_sum(y * logits)
+    numerator = tf.reduce_sum(y * pred)
     numerator = tf.reduce_sum(weights * numerator)
-    denominator = tf.reduce_sum(y + logits, axis=[0, 1, 2])
+    denominator = tf.reduce_sum(y + pred, axis=[0, 1, 2])
     denominator = tf.reduce_sum(weights * denominator)
     return 2.0 * (numerator + eps) / (denominator + eps)
-    """
+
 
 
 def get_image_summary(img, idx=0):
