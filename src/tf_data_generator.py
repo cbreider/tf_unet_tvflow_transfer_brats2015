@@ -199,7 +199,7 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
         self._batch_size = self._data_config.batch_size_val
         self._buffer_size = self._data_config.buffer_size_val
         self._do_augmentation = self._data_config.do_image_augmentation_val
-        self._crop_to_non_zero = self._data_config.do_image_augmentation_train
+        self._crop_to_non_zero = self._data_config.crop_to_non_zero_val
 
         logging.info("Validation buffer size {}, batch size {}".format(self._buffer_size, self._batch_size))
         # convert lists to TF tensor
