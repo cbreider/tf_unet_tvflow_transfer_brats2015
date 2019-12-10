@@ -760,13 +760,10 @@ def combine_img_prediction_tvclustering(data, tv, gt, pred):
     tv = tv.reshape(-1, tv.shape[2], ch)
     tv_rgb = to_rgb(tv)
 
-    gt_resized = np.array(Image.fromarray(gt_rgb).resize(data_size, Image.NEAREST))
-    pred_resized = np.array(Image.fromarray(pred_rgb).resize(data_size, Image.NEAREST))
-    tv_resized = np.array(Image.fromarray(tv_rgb).resize(data_size, Image.NEAREST))
     img = np.concatenate((data_rgb,
-                          tv_resized,
-                          gt_resized,
-                          pred_resized),
+                          tv_rgb,
+                          gt_rgb,
+                          pred_rgb),
                           axis=1)
     return img
 
