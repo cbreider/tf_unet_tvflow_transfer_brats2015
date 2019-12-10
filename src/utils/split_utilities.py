@@ -15,6 +15,7 @@ import logging
 from src.utils.enum_params import TrainingModes
 from random import shuffle
 from configuration import DataParams
+import random
 
 
 class TestFilePaths(object):
@@ -118,7 +119,7 @@ class TrainingDataset(object):
         if (self._mode == TrainingModes.TVFLOW_REGRESSION or self._mode == TrainingModes.TVFLOW_SEGMENTATION) \
                 and self._load_tv_from_file:
             split = self._get_raw_to_tvflow_file_paths_dict(use_scale=self._use_scale)
-            random.shuffle(split) # Not in use dict.items() is random
+            #random.shuffle(split) # Not in use dict.items() is random
             total = self._nr_of_samples
             if self._nr_of_samples == 0:
                 total = len(split)
@@ -231,10 +232,18 @@ class TrainingDataset(object):
         test_dict.update(self._get_paths_dict_seg_single(patient_paths=test_split,
                                                           ext_key=ext,
                                                           keep_out=keep_out))
+        train_k = list(train_dict.keys())
+        val_k = list(val_dict.keys())
+        random.shuffle(train_k)
+        random.shuffle(val_k)
+        rand_train_dict = dict()
+        for key in train_k:
+            rand_train_dict.update({key: train_dict[key]})
+        rand_val_dict = dict()
+        for key in val_k:
+            rand_val_dict.update({key: val_dict[key]})
 
-
-
-        return random.shuffle(train_dict), random.shuffle(val_dict), test_dict
+        return rand_train_dict, rand_val_dict, test_dict
 
     def _get_patient_folders(self, base_path, gg="HGG"):
         gg_path = os.path.join(base_path, gg)
