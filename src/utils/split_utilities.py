@@ -77,6 +77,7 @@ class TrainingDataset(object):
         self._base_name = '_split'
         self._tvflow_mode = "tvflow"
         self._seg_mode = "seg"
+        self._tvseg_mode ="tv_seg"
         self.validation_paths = dict()
         self.train_paths = dict()
         self.test_paths = dict()
@@ -85,6 +86,8 @@ class TrainingDataset(object):
             self.split_name = self._tvflow_mode
         elif self._mode == TrainingModes.SEGMENTATION:
             self.split_name = self._seg_mode
+        elif self._mode == self._mode == TrainingModes.TVFLOW_SEGMENTATION:
+            self.split_name = self._tvseg_mode
         if load_test_paths_only:
             self._read_test_split_only()
             return
@@ -112,9 +115,10 @@ class TrainingDataset(object):
         validation_split = dict()
         test_split = dict()
         # mode
-        if self._mode == TrainingModes.TVFLOW_REGRESSION or self._mode == TrainingModes.TVFLOW_SEGMENTATION:
+        if (self._mode == TrainingModes.TVFLOW_REGRESSION or self._mode == TrainingModes.TVFLOW_SEGMENTATION) \
+                and self._load_tv_from_file:
             split = self._get_raw_to_tvflow_file_paths_dict(use_scale=self._use_scale)
-            # random.shuffle(split) # Not in use dict.items() is random
+            random.shuffle(split) # Not in use dict.items() is random
             total = self._nr_of_samples
             if self._nr_of_samples == 0:
                 total = len(split)
@@ -136,7 +140,7 @@ class TrainingDataset(object):
                     test_split[k] = v
                 i += 1
 
-        elif self._mode == TrainingModes.SEGMENTATION:
+        elif self._mode == TrainingModes.SEGMENTATION or not self._load_tv_from_file:
             train_split, validation_split, test_split = self._get_raw_to_seg_file_paths_dict()
         else:
             raise ValueError("Invalid mode '%s'." % self._mode)

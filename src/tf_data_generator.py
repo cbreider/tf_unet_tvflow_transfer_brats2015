@@ -165,7 +165,6 @@ class TFTrainingImageDataGenerator(TFImageDataGenerator):
         self._crop_to_non_zero = self._data_config.crop_to_non_zero_train
 
         logging.info("Train buffer size {}, batch size {}".format(self._buffer_size, self._batch_size))
-        tv_data = convert_to_tensor(1)
         # convert lists to TF tensor
         if self.load_data_from_disk:
             gt = list(self._raw_data.values())
@@ -178,7 +177,7 @@ class TFTrainingImageDataGenerator(TFImageDataGenerator):
 
         # create dataset
         tmp_data = tf.data.Dataset.from_tensor_slices((self._input_data, self._gt_data))
-        tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=3)
+        tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=5)
         # shuffle the first `buffer_size` elements of the dataset
         tmp_data = tmp_data.prefetch(buffer_size=self._buffer_size)
         if self._shuffle:
@@ -203,7 +202,6 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
 
         logging.info("Validation buffer size {}, batch size {}".format(self._buffer_size, self._batch_size))
         # convert lists to TF tensor
-        tv_data = convert_to_tensor(1)
         if self.load_data_from_disk:
             gt = list(self._raw_data.values())
             input_val = list(self._raw_data.keys())
@@ -215,7 +213,7 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
 
         # create dataset
         tmp_data = tf.data.Dataset.from_tensor_slices((self._input_data, self._gt_data))
-        tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=3)
+        tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=1)
         tmp_data = tmp_data.prefetch(buffer_size=self._buffer_size)
         # shuffle the first `buffer_size` elements of the dataset
         if self._shuffle:
