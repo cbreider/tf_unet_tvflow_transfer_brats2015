@@ -778,7 +778,7 @@ def revert_zero_centering(data):
         img = data[i]
         min = np.amin(img)
         img = img - min
-        img = img / np.amax(data)
+        img = img / np.amax(img)
         img *= 255.0
         images.append(img)
     return np.array(images)

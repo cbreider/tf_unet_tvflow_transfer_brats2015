@@ -394,6 +394,8 @@ def normalize_and_zero_center_tensor(tensor, max, new_max, normalize_std):
     #where_zero = tf.equal(out, zero)
     #out = tf.where(where_zero > 0, tf.random_uniform(out.shape, -0.5, 0.5, dtype=tf.float32, seed=0), out)
     #out = tf.math.divide(tensor, tf.reduce_max(out))
+    out = tf.math.divide(out, tf.reduce_max(out))
+
     return out
 
 
