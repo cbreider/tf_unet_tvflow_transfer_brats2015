@@ -232,7 +232,9 @@ class TrainingDataset(object):
                                                           ext_key=ext,
                                                           keep_out=keep_out))
 
-        return train_dict, val_dict, test_dict
+
+
+        return random.shuffle(train_dict), random.shuffle(val_dict), test_dict
 
     def _get_patient_folders(self, base_path, gg="HGG"):
         gg_path = os.path.join(base_path, gg)
