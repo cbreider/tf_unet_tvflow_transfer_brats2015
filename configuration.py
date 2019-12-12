@@ -16,7 +16,7 @@ from src.utils.enum_params import Optimizer, Cost, Activation_Func, TV_clusterin
 
 class DataParams:
     """ Data parameters"""
-    batch_size_train = 4            # batch size used for training
+    batch_size_train = 8            # batch size used for training
     batch_size_val = 64             # batch size used for validation
     buffer_size_train = 20         # buffer size for tf training data pipeline (only used for tv training)
     buffer_size_val = 64           # buffer size for tf validation data pipeline (only used for tv training)
@@ -49,7 +49,7 @@ class DataParams:
     crop_to_non_zero_val = True    # Choose True to alway crop Training images to region of non zero values for validation
     norm_image_value = 1.0          # Values which Images should be normed to during pre processing
     data_max_value = 255.0          # Max value of inout images (uint8)
-    normailze_std = False            # normalize standard deviation for images during pre processing
+    normailze_std = True            # normalize standard deviation for images during pre processing
     load_only_middle_scans = False   # load only slice 40 - 120
     nr_of_samples = 0               # use only a subset of images. if 0 all data is used
     use_modalities = ["mr_flair", "mr_t1", "mr_t1c", "mr_t2"]  # modalities used for training

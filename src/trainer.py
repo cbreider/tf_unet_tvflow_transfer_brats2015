@@ -178,7 +178,7 @@ class Trainer(object):
             init_step = 0
             epoch = 0
             total_loss = 0
-            if os.path.isfile(step_file) and self._restore_mode == RestoreMode.COMPLETE_SESSION:
+            if os.path.isfile(step_file) and self._restore_mode != RestoreMode.ONLY_BASE_NET:
                 f = open(step_file, "r")
                 fl = f.readlines()
                 init_step = int(fl[0])

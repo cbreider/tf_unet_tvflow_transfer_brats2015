@@ -399,20 +399,16 @@ def normalize_and_zero_center_tensor(tensor, max, new_max, normalize_std):
     return out
 
 
-def get_dice_score(pred, y, eps=1e-7):
-    """
-    numerator = 2 * tf.reduce_sum(y * pred)
-    denominator = eps + tf.reduce_sum(y + pred)
+def get_dice_score(pred, y, eps=1e-7, weight=False):
 
-    return (numerator + 1) / (denominator + 1)
-    """
-    weights = 1.0 / (tf.reduce_sum(y))
     numerator = tf.reduce_sum(y * pred)
-    numerator = tf.reduce_sum(weights * numerator)
-    denominator = tf.reduce_sum(y + pred, axis=[0, 1, 2])
-    denominator = tf.reduce_sum(weights * denominator)
-    return 2.0 * (numerator + eps) / (denominator + eps)
+    denominator = tf.reduce_sum(y + pred)
+    if weight:
+        weights = 1.0 / (tf.reduce_sum(y))
+        numerator = tf.reduce_sum(weights * numerator)
+        denominator = tf.reduce_sum(weights * denominator)
 
+    return (2 * numerator) / (denominator + eps)
 
 
 def get_image_summary(img, idx=0):
