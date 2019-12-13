@@ -69,6 +69,37 @@ def eval_tf_smooth_and_cluster():
         plt.show()
 
 
+def eval_binning_and_meanshift():
+    img = np.array(plt.imread(
+        "/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0003_1/VSD.Brain.XX.O.MR_Flair.54524/VSD.Brain.XX.O.MR_Flair.54524_100.png"))
+    # img = np.array(plt.imread("../../../dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0006_1/VSD.Brain.XX.O.MR_T2.54545/VSD.Brain.XX.O.MR_T2.54545_85.png"))
+    img = np.reshape(img, (240, 240, 1))
+
+
+    # run sklearn k-means clustering
+
+    #create tf pipeline for tv smoothing and clustering
+    pl = tf.placeholder(tf.float32, shape=[240, 240, 1])
+    tv = tfu.get_tv_smoothed(pl, tau=tv_tau, weight=tv_weight, eps=tv_eps, m_itr=tv_m_itr)
+    tv = tfu.normalize_and_zero_center_tensor(tv, max=255.0, new_max=1.0, normalize_std=True)
+    binned = tfu.get_fixed_bin_clustering(image=tv, n_bins=10)
+    ms = tfu.get_meanshift_clustering(image=tv, ms_itr=200, win_r=0.02, n_clusters=10, bin_seeding=True)
+    # run tf
+    with tf.Session() as sess:
+
+        tf.global_variables_initializer().run()
+        tv_smoothed, binning, ms_clustering = sess.run([tv, binned, ms], feed_dict={pl: img})
+        img_tv_tf = np.array(np.reshape(tv_smoothed, (240, 240)))
+        img_bn = np.array(np.reshape(binning, (240, 240)))
+        img_ms = np.array(np.reshape(ms_clustering, (240, 240)))
+        X = np.reshape(img, (240, 240))
+        plt.matshow(X, "orig")
+        plt.matshow(img_tv_tf, "img_tv")
+        plt.matshow(img_bn, "imh_bn")
+        plt.matshow(img_ms, "img_ms")
+        plt.show()
+
+
 def compare_clusterings():
     if not os.path.exists("test_out"):
         os.makedirs("test_out")
@@ -171,4 +202,5 @@ def compare_clusterings():
 
 if __name__ == "__main__":
     #eval_tf_smooth_and_cluster()
-    compare_clusterings()
+    #compare_clusterings()
+    eval_binning_and_meanshift()

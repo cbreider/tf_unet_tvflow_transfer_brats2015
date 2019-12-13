@@ -207,8 +207,9 @@ def mean_shift(input_x, n_updates=-1, window_radius=0.02, bin_seed=True):
         return c
 
     if n_updates > 0:
+        c = init_c
         for i in range(n_updates):
-            c = _mean_shift_step(init_c)
+            c = _mean_shift_step(c)
     else:
         def _mean_shift(i, c, max_diff):
             new_c = _mean_shift_step(c)
