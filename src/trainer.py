@@ -149,6 +149,7 @@ class Trainer(object):
 
             sess.run(init)
             sess.run(self.data_provider_val.init_op)
+            sess.run(self.data_provider_train.init_op)
 
             if self._caffemodel_path and self._restore_path:
                 raise ValueError("Could not load both: Caffemodel and tf checkpoint")
