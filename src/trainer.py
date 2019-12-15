@@ -195,12 +195,14 @@ class Trainer(object):
                 logging.info("Resuming Training at epoch {} and total step {}". format(epoch, init_step))
 
             logging.info("Start optimization...")
-
+            s_train = 0
+            s_val = 0
             for step in range(init_step, self._n_epochs*self._training_iters):
-
+                s_train += 1
                 # renitialze dataprovider if looped through a hole dataset
-                if (step+1 * self.config.batch_size_train) % self.data_provider_train.size == 0:
+                if (s_train*self.config.batch_size_train+self.config.batch_size_train) > self.data_provider_train.size:
                     sess.run(self.data_provider_train.init_op)
+                    s_train = 0
 
                 batch_x, batch_y, __ = sess.run(self.data_provider_train.next_batch)
 
@@ -233,8 +235,10 @@ class Trainer(object):
                     outF.close()
 
                 if step % self._training_iters == 0 and step != 0:
-                    if (step+1 * self.config.batch_size_val) % self.data_provider_val.size == 0:
+                    s_val += 1
+                    if (s_val*self.config.batch_size_val+self.config.batch_size_val) > self.data_provider_val.size:
                         sess.run(self.data_provider_val.init_op)
+                        s_val = 0
                     test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
                     self.output_epoch_stats(epoch, total_loss, self._training_iters, lr)
                     self.store_prediction(sess, test_x, util.crop_to_shape(test_y, pred_shape),

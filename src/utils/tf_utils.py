@@ -202,7 +202,7 @@ def mean_shift(input_x, n_updates=-1, window_radius=0.02, bin_seed=True):
         Y = tf.pow((c - xT) / window_radius, 2)
         gY = tf.exp(-Y)
         num = tf.reduce_sum(tf.expand_dims(gY, 2) * input_x, axis=1)
-        denom = tf.reduce_sum(gY, axis=1, keep_dims=True)
+        denom = tf.reduce_sum(gY, axis=1, keepdims=True)
         c = num / denom
         return c
 
