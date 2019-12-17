@@ -11,6 +11,8 @@ from src.utils.split_utilities import TrainingDataset
 import src.utils.enum_params as enp
 import os
 import src.utils.data_utils as dutils
+import time
+
 
 def recreate_image(codebook, labels, w, h):
     """Recreate the (compressed) image from the code book & labels"""
@@ -82,16 +84,23 @@ def eval_binning_and_meanshift():
     pl = tf.placeholder(tf.float32, shape=[240, 240, 1])
     tv = tfu.get_tv_smoothed(pl, tau=tv_tau, weight=tv_weight, eps=tv_eps, m_itr=tv_m_itr)
     tv = tfu.normalize_and_zero_center_tensor(tv, max=255.0, new_max=1.0, normalize_std=True)
-    binned = tfu.get_fixed_bin_clustering(image=tv, n_bins=10)
-    ms = tfu.get_meanshift_clustering(image=tv, ms_itr=200, win_r=0.02, n_clusters=10, bin_seeding=True)
+    binned = tfu.get_fixed_bin_clustering(image=pl, n_bins=10)
+    ms = tfu.get_meanshift_clustering(image=pl, ms_itr=50, win_r=0.03, n_clusters=10, bin_seeding=True)
     # run tf
     with tf.Session() as sess:
 
         tf.global_variables_initializer().run()
-        tv_smoothed, binning, ms_clustering = sess.run([tv, binned, ms], feed_dict={pl: img})
+        t_st = time.time()
+        tv_smoothed = sess.run(tv, feed_dict={pl: img})
+        t_tv = time.time()
+        binning = sess.run(binned, feed_dict={pl: tv_smoothed})
+        t_b = time.time()
+        ms_clustering = sess.run(ms, feed_dict={pl: tv_smoothed})
+        t_ms = time.time()
         img_tv_tf = np.array(np.reshape(tv_smoothed, (240, 240)))
         img_bn = np.array(np.reshape(binning, (240, 240)))
         img_ms = np.array(np.reshape(ms_clustering, (240, 240)))
+        print("TV: {}  Bin: {}  MS: {}".format(t_tv-t_st, t_b-t_tv, t_ms-t_b))
         X = np.reshape(img, (240, 240))
         plt.matshow(X, "orig")
         plt.matshow(img_tv_tf, "img_tv")

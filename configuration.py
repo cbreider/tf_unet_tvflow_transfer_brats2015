@@ -39,7 +39,7 @@ class DataParams:
     set_image_size = [set_data_height,
                       set_data_width]  # size which the images should be reszied to for training
     nr_of_channels = 1              # number of channles of in/out images (grayscale)
-    nr_of_classes = 10
+    nr_of_classes = 2
     shuffle = True                  # Set true to extra Shuffle Trining Data. Note dict.items() is allready random
     do_image_augmentation_train = True    # Set True to augment training images random crapp, flip, rotation
     do_image_augmentation_val = False  # Set True to augment training images random crapp, flip, rotation for validation

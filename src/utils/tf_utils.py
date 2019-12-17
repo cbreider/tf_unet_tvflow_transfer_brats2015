@@ -401,7 +401,9 @@ def normalize_and_zero_center_tensor(tensor, max, new_max, normalize_std):
 
 
 def get_dice_score(pred, y, eps=1e-7, weight=False):
-
+    if pred.get_shape().as_list()[3] == 2:
+        pred = tf.argmax(pred, axis=3)
+        y = tf.argmax(y, axis=3)
     numerator = tf.reduce_sum(y * pred)
     denominator = tf.reduce_sum(y + pred)
     if weight:
