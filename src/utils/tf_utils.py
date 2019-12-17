@@ -404,8 +404,8 @@ def get_dice_score(pred, y, eps=1e-7, weight=False):
     if pred.get_shape().as_list()[3] == 2:
         pred = tf.argmax(pred, axis=3)
         y = tf.argmax(y, axis=3)
-    numerator = tf.reduce_sum(y * pred)
-    denominator = tf.reduce_sum(y + pred)
+    numerator = tf.cast(tf.reduce_sum(y * pred), tf.float32)
+    denominator = tf.cast(tf.reduce_sum(y + pred), tf.float32)
     if weight:
         weights = 1.0 / (tf.reduce_sum(y))
         numerator = tf.reduce_sum(weights * numerator)
