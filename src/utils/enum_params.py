@@ -18,6 +18,7 @@ class ConvNetType(Enum):
     """
     U_NET_2D = 1       # Choose to use Cross Entropy Cost (Segmentation)
 
+
 class Cost(Enum):
     """
     cost functions

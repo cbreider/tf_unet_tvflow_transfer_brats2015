@@ -14,7 +14,7 @@ import numpy as np
 import random
 from scipy import ndimage
 import SimpleITK as sitk
-#import nrrd
+import logging
 from PIL import Image
 import copy
 
@@ -76,7 +76,6 @@ def load_dataset_from_mha_files(file_paths, skip_empty=True):
             if int(np.max(in_vol[i]) == 0) and skip_empty:
                 continue
             out.append([in_vol[i], gt[i]])
-        print(f)
         f+=1
     return out
 
@@ -340,7 +339,7 @@ def transpose_volumes(volumes, slice_direction):
     elif slice_direction == 'coronal':
         tr_volumes = [np.transpose(x, (1, 0, 2)) for x in volumes]
     else:
-        print('undefined slice direction:', slice_direction)
+        logging.error('undefined slice direction:', slice_direction)
         tr_volumes = volumes
     return tr_volumes
 

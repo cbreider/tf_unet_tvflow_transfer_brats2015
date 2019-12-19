@@ -191,15 +191,15 @@ class ConvNetModel(object):
         :param sess: current session instance
         :param model_path: path to file system checkpoint location
         """
-        print('{} Restoring from tf checkpoint: {}'.format(datetime.now(), model_path))
+        logging.info('{} Restoring from tf checkpoint: {}'.format(datetime.now(), model_path))
         if restore_mode == RestoreMode.COMPLETE_SESSION:
-            print('{} Resuming complete session: {}'.format(datetime.now(), model_path))
+            logging.info('{} Resuming complete session: {}'.format(datetime.now(), model_path))
             saver = tf.train.Saver()
         elif restore_mode == RestoreMode.COMPLETE_NET:
-            print('{} Restoring Complete Net: {}'.format(datetime.now(), model_path))
+            logging.info('{} Restoring Complete Net: {}'.format(datetime.now(), model_path))
             saver = tf.train.Saver(self.variables + self.out_vars)
         elif restore_mode == RestoreMode.ONLY_BASE_NET:
-            print('{} Restoring only Bases Net: {}'.format(datetime.now(), model_path))
+            logging.info('{} Restoring only Bases Net: {}'.format(datetime.now(), model_path))
             saver = tf.train.Saver(self.variables)
         else:
             raise ValueError()

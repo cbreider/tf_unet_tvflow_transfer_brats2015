@@ -11,6 +11,7 @@ Author: Christian Breiderhoff
 
 
 import tensorflow as tf
+import logging
 
 
 def preprocess_images(scan, ground_truth):
@@ -105,7 +106,7 @@ def load_png_image(filename, nr_channels, img_size, data_type=tf.float32):
         img = tf.cast(img_resized, data_type)
         return img
     except Exception as e:
-        print("type error: " + str(e) + str(filename))
+        logging.error("type error: " + str(e) + str(filename))
 
 
 def get_fixed_bin_clustering(image, n_bins=10):

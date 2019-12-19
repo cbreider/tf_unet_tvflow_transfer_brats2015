@@ -179,6 +179,8 @@ class Trainer(object):
             init_step = 0
             epoch = 0
             total_loss = 0
+            s_train = 0
+            s_val = 0
             if os.path.isfile(step_file) and self._restore_mode != RestoreMode.ONLY_BASE_NET:
                 f = open(step_file, "r")
                 fl = f.readlines()
@@ -195,63 +197,70 @@ class Trainer(object):
                 logging.info("Resuming Training at epoch {} and total step {}". format(epoch, init_step))
 
             logging.info("Start optimization...")
-            s_train = 0
-            s_val = 0
-            for step in range(init_step, self._n_epochs*self._training_iters):
-                s_train += 1
-                # renitialze dataprovider if looped through a hole dataset
-                if (s_train*self.config.batch_size_train+self.config.batch_size_train) > self.data_provider_train.size:
-                    sess.run(self.data_provider_train.init_op)
-                    s_train = 0
 
-                batch_x, batch_y, __ = sess.run(self.data_provider_train.next_batch)
+            try:
+                for step in range(init_step, self._n_epochs*self._training_iters):
+                    s_train += 1
+                    # renitialze dataprovider if looped through a hole dataset
+                    if (s_train*self.config.batch_size_train+self.config.batch_size_train) > self.data_provider_train.size:
+                        sess.run(self.data_provider_train.init_op)
+                        s_train = 0
 
-                # Run optimization op (backprop)
-                if step == 0:
-                    self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
-                                                util.crop_to_shape(batch_y, pred_shape))
-                _, loss, lr, gradients = sess.run(
-                    (self.optimizer, self.net.cost, self.learning_rate_node, self.net.gradients_node),
-                    feed_dict={self.net.x: batch_x,
-                               self.net.y: util.crop_to_shape(batch_y, pred_shape),
-                               self.net.keep_prob: self._dropout})
+                    batch_x, batch_y, __ = sess.run(self.data_provider_train.next_batch)
 
-                if self.net.summaries and self._norm_grads:
-                    avg_gradients = _update_avg_gradients(avg_gradients, gradients, step)
-                    norm_gradients = [np.linalg.norm(gradient) for gradient in avg_gradients]
-                    self.norm_gradients_node.assign(norm_gradients).eval()
+                    # Run optimization op (backprop)
+                    if step == 0:
+                        self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
+                                                    util.crop_to_shape(batch_y, pred_shape))
+                    _, loss, lr, gradients = sess.run(
+                        (self.optimizer, self.net.cost, self.learning_rate_node, self.net.gradients_node),
+                        feed_dict={self.net.x: batch_x,
+                                   self.net.y: util.crop_to_shape(batch_y, pred_shape),
+                                   self.net.keep_prob: self._dropout})
 
-                total_loss += loss
+                    if self.net.summaries and self._norm_grads:
+                        avg_gradients = _update_avg_gradients(avg_gradients, gradients, step)
+                        norm_gradients = [np.linalg.norm(gradient) for gradient in avg_gradients]
+                        self.norm_gradients_node.assign(norm_gradients).eval()
 
-                if step % self._display_step == 0 and step != 0:
-                    self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
-                                                util.crop_to_shape(batch_y, pred_shape))
-                    save_path = self.net.save(sess, save_path)
-                    # save epoch and step
-                    outF = open(step_file, "w")
-                    outF.write("{}".format(step+1))
-                    outF.write("\n")
-                    outF.write("{}".format(epoch+1))
-                    outF.close()
+                    total_loss += loss
 
-                if step % self._training_iters == 0 and step != 0:
-                    s_val += 1
-                    if (s_val*self.config.batch_size_val+self.config.batch_size_val) > self.data_provider_val.size:
-                        sess.run(self.data_provider_val.init_op)
-                        s_val = 0
-                    test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
-                    self.output_epoch_stats(epoch, total_loss, self._training_iters, lr)
-                    self.store_prediction(sess, test_x, util.crop_to_shape(test_y, pred_shape),
-                                      "epoch_%s" % epoch, summary_writer_validation, step, epoch, test_tv)
+                    if step % self._display_step == 0 and step != 0:
+                        self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
+                                                    util.crop_to_shape(batch_y, pred_shape))
+                        save_path = self.net.save(sess, save_path)
+                        # save epoch and step
+                        outF = open(step_file, "w")
+                        outF.write("{}".format(step+1))
+                        outF.write("\n")
+                        outF.write("{}".format(epoch+1))
+                        outF.close()
 
+                    if step % self._training_iters == 0 and step != 0:
+                        s_val += 1
+                        epoch += 1
+                        if (s_val*self.config.batch_size_val+self.config.batch_size_val) > self.data_provider_val.size:
+                            sess.run(self.data_provider_val.init_op)
+                            s_val = 0
+                        test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
+                        self.output_epoch_stats(epoch, total_loss, self._training_iters, lr)
+                        self.store_prediction(sess, test_x, util.crop_to_shape(test_y, pred_shape),
+                                          "epoch_%s" % epoch, summary_writer_validation, step, epoch, test_tv)
+                        total_loss = 0
 
+                logging.info("Optimization Finished!")
 
-                    total_loss = 0
-                    epoch += 1
+                return save_path
 
-            logging.info("Optimization Finished!")
+            except KeyboardInterrupt:
+                logging.info("Training canceled by user. Saving model...")
+                save_path = self.net.save(sess, save_path)
+                logging.info("Done! Bye Bye")
+                return save_path
 
-            return save_path
+            except Exception as e:
+                logging.error(str(e))
+                return None
 
     def store_prediction(self, sess, batch_x, batch_y, name, summary_writer, step, epoch, batch_tv, write=True):
         loss, acc, err, prediction, dice, ce = self.run_summary(sess, summary_writer, step, batch_x, batch_y, write=write)

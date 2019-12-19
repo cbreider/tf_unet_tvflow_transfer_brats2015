@@ -13,6 +13,7 @@ import h5py
 import numpy as np
 import tensorflow as tf
 from datetime import datetime
+import logging
 
 """
 This dictionary provides a mapping from the original caffe model to the tf mpdel defined in tf_convnet.py
@@ -62,7 +63,7 @@ def load_pre_trained_caffe_variables(session, file_path):
     if ".h5" not in file_path:
         raise ValueError()
 
-    print('{} Loading pre-trained caffe weights from {}'.format(datetime.now(), file_path))
+    logging.info('{} Loading pre-trained caffe weights from {}'.format(datetime.now(), file_path))
 
     f = h5py.File(file_path, 'r')
     data = f['data']

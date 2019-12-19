@@ -19,6 +19,7 @@ import os
 import configuration as config
 import tensorflow as tf
 import logging
+import src.utils.logger as log
 from random import *
 from src.utils.enum_params import TrainingModes, DataModes, Optimizer, RestoreMode
 from src.tf_data_pipeline_wrapper import ImageData
@@ -27,6 +28,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 
 
 if __name__ == "__main__":
+
+    logging.basicConfig(filename='log_test.log', level=logging.DEBUG)
 
     parser = argparse.ArgumentParser()
 
@@ -70,6 +73,9 @@ if __name__ == "__main__":
     data_paths = DataPaths(data_path="default", mode="SEGMENTATION_TEST")
     data_paths.load_data_paths(mkdirs=False)
     file_paths = None
+
+    log.init_logger(type="train", path=data_paths.tf_out_path)
+
     if not use_Brats_Testing:
         file_paths = TrainingDataset(paths=data_paths,
                                      mode=TrainingModes.SEGMENTATION,
@@ -95,7 +101,7 @@ if __name__ == "__main__":
     cross_entropy = 0
 
     with tf.Session() as sess:
-        print("Running Tests on {} samples".format(len(file_paths.test_paths)))
+        logging.info("Running Tests on {} samples".format(len(file_paths.test_paths)))
         sess.run(tf.global_variables_initializer())
         ckpt = tf.train.get_checkpoint_state(model_path)
         if ckpt and ckpt.model_checkpoint_path:
@@ -137,7 +143,9 @@ if __name__ == "__main__":
                         im = dutils.image_histogram_equalization(im)[0]
                         dutils.save_image(im, os.path.join(out_path, "{}_{}.jpg".format(i, m)))
 
-                print("Test {} of {}  finished".format(idx, int(len(file_paths.test_paths)/config.TrainingParams.batch_size_val)))
+                logging.info(
+                    "Test {} of {}  finished".format(idx,
+                                                     int(len(file_paths.test_paths)/config.TrainingParams.batch_size_val)))
 
                 idx += 1
 
@@ -158,11 +166,11 @@ if __name__ == "__main__":
     outF.write("\n")
     outF.close()
 
-    print("Test successfully evaluated:")
-    print("ERROR: {}".format(error))
-    print("ACCURACY: {}".format(accuracy))
-    print("CROSS ENTROPY: {}".format(cross_entropy))
-    print("DICE: {}".format(dice))
+    logging.info("Test successfully evaluated:")
+    logging.info("ERROR: {}".format(error))
+    logging.info("ACCURACY: {}".format(accuracy))
+    logging.info("CROSS ENTROPY: {}".format(cross_entropy))
+    logging.info("DICE: {}".format(dice))
 
 
 

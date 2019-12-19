@@ -82,7 +82,8 @@ class DataPaths(object):
             if not os.path.exists(self.tf_out_path):
                 os.makedirs(self.tf_out_path)
                 # save config file to out folder
-            copyfile("configuration.py", os.path.join(self.tf_out_path, "configuration.py"))
+            copyfile("configuration.py", os.path.join(self.tf_out_path,
+                                                      "configuration.py.{0:%Y-%m-%d_%H:%M:%S}".format(datetime.now())))
         else:
             self.tf_out_path = restore_dir
 

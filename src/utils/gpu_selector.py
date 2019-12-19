@@ -21,7 +21,7 @@ def set_cuda_gpu(cuda_gpu):
     global cuda_device
     cuda_device = str(cuda_gpu)
     os.environ["CUDA_VISIBLE_DEVICES"] = cuda_device
-    print('Setting Cuda GPU /{}'.format(cuda_device))
+    logging.info('Setting Cuda GPU /{}'.format(cuda_device))
 
     # calling this function makes tf allocating most of gpu memory. Why? Is this bad?
     # local_device_protos = device_lib.list_local_devices()

@@ -21,10 +21,8 @@ import configuration as config
 import tensorflow as tf
 import logging
 import os
+import src.utils.logger as log
 from src.utils.enum_params import TrainingModes, DataModes, Optimizer, RestoreMode
-
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 
 
 if __name__ == "__main__":
@@ -59,7 +57,7 @@ if __name__ == "__main__":
     restore_path = None
     caffemodel_path = None
     train_mode = TrainingModes(args.mode)
-    restore_mode = RestoreMode(args.restore_mode)
+    restore_mode = None
 
     if args.create_new_split:
         create_new_training_split = True
@@ -67,10 +65,13 @@ if __name__ == "__main__":
         create_summaries = False
     if args.restore_path is not None:
         restore_path = args.restore_path
+    if args.restore_mode:
+        restore_mode = RestoreMode(args.restore_mode)
     if args.caffemodel_path is not None:
         caffemodel_path = args.caffemodel_path
     if args.cuda_device >= 0:
         cuda_selector.set_cuda_gpu(args.cuda_device)
+
 
     # tf.enable_eager_execution()
     tf.reset_default_graph()
@@ -80,16 +81,13 @@ if __name__ == "__main__":
                                                                          or restore_mode == RestoreMode.COMPLETE_NET)
                                                                     else None)
 
-    outF = open(os.path.join(data_paths.tf_out_path, "args.txt"), "w")
-    outF.write("create_new_split: {}".format(create_new_training_split))
-    outF.write("\n")
-    outF.write("restore_path: {}".format(restore_path))
-    outF.write("\n")
-    outF.write("caffemodel_path: {}".format(caffemodel_path))
-    outF.write("\n")
-    outF.write("restore_mode: {}".format(restore_mode))
-    outF.write("\n")
-    outF.close()
+    log.init_logger(type="train", path=data_paths.tf_out_path)
+
+    logging.info("Given Args: mode: {}, create_new_split: {}, restore_path: {},"
+                 " restore_mode: {}, caffemodel_path: {}, cuda_dev: {}".format(
+        train_mode, create_new_training_split, restore_path, restore_mode, caffemodel_path, args.cuda_device
+    ))
+
 
     file_paths = TrainingDataset(paths=data_paths, mode=train_mode, data_config=config.DataParams,
                                  new_split=create_new_training_split)
