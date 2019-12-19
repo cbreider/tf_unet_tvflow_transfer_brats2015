@@ -71,7 +71,7 @@ if __name__ == "__main__":
     tf.reset_default_graph()
     out_path=model_path
     data_paths = DataPaths(data_path="default", mode="SEGMENTATION_TEST")
-    data_paths.load_data_paths(mkdirs=False)
+    data_paths.load_data_paths(mkdirs=False, restore_dir=model_path)
     file_paths = None
 
     log.init_logger(type="train", path=data_paths.tf_out_path)
