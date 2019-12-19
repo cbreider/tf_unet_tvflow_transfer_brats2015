@@ -11,7 +11,7 @@ Author: Christian Breiderhoff
 
 
 import os
-
+import logging
 
 cuda_device = ''
 
