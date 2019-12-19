@@ -87,5 +87,4 @@ class DataPaths(object):
 
         copyfile("configuration.py", os.path.join(self.tf_out_path,
                                                   "configuration.py.{0:%Y-%m-%d_%H:%M:%S}".format(datetime.now())))
-        logging.info("Allocating '{:}'".format(self.tf_out_path))
         self.is_loaded = True

@@ -88,6 +88,7 @@ if __name__ == "__main__":
         train_mode, create_new_training_split, restore_path, restore_mode, caffemodel_path, args.cuda_device
     ))
 
+    logging.info("Allocating '{}'".format(data_paths.tf_out_path))
 
     file_paths = TrainingDataset(paths=data_paths, mode=train_mode, data_config=config.DataParams,
                                  new_split=create_new_training_split)

@@ -75,7 +75,7 @@ if __name__ == "__main__":
     file_paths = None
 
     log.init_logger(type="train", path=data_paths.tf_out_path)
-
+    logging.info("Allocating '{}'".format(data_paths.tf_out_path))
     if not use_Brats_Testing:
         file_paths = TrainingDataset(paths=data_paths,
                                      mode=TrainingModes.SEGMENTATION,
