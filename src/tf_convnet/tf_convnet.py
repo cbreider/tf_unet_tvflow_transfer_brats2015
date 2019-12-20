@@ -110,7 +110,7 @@ class ConvNetModel(object):
                 self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
                 self.error = tf.constant(1.0) - self.accuracy
                 self.error_rate = tf.math.multiply(self.error, tf.constant(100.0))
-                self.dice = tfu.get_dice_score(pred=self.predicter, y=self.y, eps=1e-5)
+                self.dice = tfu.get_dice_score(pred=tf.cast(self.predicter, tf.float32), y=self.y, eps=1e-5)
 
     def _get_cost(self):
         """
