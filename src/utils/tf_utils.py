@@ -13,6 +13,7 @@ Author: Christian Breiderhoff
 import tensorflow as tf
 import logging
 import numpy as np
+import elasticdeform.tf as etf
 
 
 def preprocess_images(scan, ground_truth):
@@ -28,6 +29,12 @@ def preprocess_images(scan, ground_truth):
     combined = tf.concat([scan, ground_truth], axis=2)
     image_shape = tf.shape(scan)
 
+    displacement_val = np.random.randn(2, 3, 3) * 5
+    # construct TensorFlow input and top gradient
+    displacement = tf.Variable(displacement_val)
+
+    combined_deform = etf.deform_grid(combined, displacement, order=3, axis=(0, 1))
+
     last_label_dim = tf.shape(ground_truth)[-1]
     last_image_dim = tf.shape(scan)[-1]
     size = tf.random.uniform((),
@@ -35,12 +42,15 @@ def preprocess_images(scan, ground_truth):
                                                          tf.constant(2.0)), tf.int32),
                              maxval=image_shape[0],
                              dtype=tf.int32)
-    combined_crop = tf.cond(tf.random.uniform(()) > 0.5,
-                            lambda: tf.random_crop(value=combined,
-                                       size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0)),
-                            lambda: combined)
+    combined_crop = tf.random_crop(value=combined_deform, size=tf.concat([[size, size], [last_label_dim + last_image_dim]],
+                                                                  axis=0))
+    #combined_crop = tf.cond(tf.random.uniform(()) > 0.5,
+    #                        lambda: tf.random_crop(value=combined,
+    #                                   size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0)),
+    #                        lambda: combined)
 
     combined_flip = tf.image.random_flip_left_right(combined_crop)
+    combined_flip = tf.image.random_flip_up_down(combined_flip)
     im = tf.image.resize_images(combined_flip[:, :, :last_image_dim], size=[image_shape[0], image_shape[1]])
     gt = tf.image.resize_images(combined_flip[:, :, last_image_dim:], size=[image_shape[0], image_shape[1]])
     return im, gt
