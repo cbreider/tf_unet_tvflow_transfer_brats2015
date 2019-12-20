@@ -16,7 +16,7 @@ import numpy as np
 import elasticdeform.tf as etf
 
 
-def preprocess_images(scan, ground_truth):
+def preprocess_images(scan, ground_truth, dispacement_sigma=15):
     """
     combined pre processing input and gt images
 
@@ -29,21 +29,19 @@ def preprocess_images(scan, ground_truth):
     combined = tf.concat([scan, ground_truth], axis=2)
     image_shape = tf.shape(scan)
 
-    displacement_val = np.random.randn(2, 3, 3) * 5
+    displacement_val = np.random.randn(2, 1, 3) * dispacement_sigma
     # construct TensorFlow input and top gradient
     displacement = tf.Variable(displacement_val)
-
-    combined_deform = etf.deform_grid(combined, displacement, order=3, axis=(0, 1))
+    combined_deform = etf.deform_grid(combined, displacement, order=3, axis=(0,1), prefilter=False)
 
     last_label_dim = tf.shape(ground_truth)[-1]
     last_image_dim = tf.shape(scan)[-1]
-    size = tf.random.uniform((),
-                             minval=tf.cast(tf.math.divide(tf.cast(image_shape[0], tf.float32),
-                                                         tf.constant(2.0)), tf.int32),
+    size = tf.random.uniform((), minval=tf.cast(tf.math.divide(tf.cast(image_shape[0], tf.float32),
+                                                               tf.constant(2.0)), tf.int32),
                              maxval=image_shape[0],
                              dtype=tf.int32)
-    combined_crop = tf.random_crop(value=combined_deform, size=tf.concat([[size, size], [last_label_dim + last_image_dim]],
-                                                                  axis=0))
+    combined_crop = tf.random_crop(value=combined_deform,
+                                   size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0))
     #combined_crop = tf.cond(tf.random.uniform(()) > 0.5,
     #                        lambda: tf.random_crop(value=combined,
     #                                   size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0)),
