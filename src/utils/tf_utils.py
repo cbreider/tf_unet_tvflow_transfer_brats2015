@@ -12,6 +12,7 @@ Author: Christian Breiderhoff
 
 import tensorflow as tf
 import logging
+import numpy as np
 
 
 def preprocess_images(scan, ground_truth):
@@ -412,7 +413,27 @@ def get_dice_score(pred, y, eps=1e-7, weight=False):
         numerator = tf.reduce_sum(weights * numerator)
         denominator = tf.reduce_sum(weights * denominator)
 
-    return (2 * numerator) / (denominator + eps)
+    return ((2 * numerator) + eps) / (denominator + eps)
+
+
+def get_cross_entropy(logits, y, n_class, weights=None):
+    if n_class > 1:  # multiclass
+        loss_map = tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits,
+                                                              labels=y)
+        if weights is not None:
+            class_weights = tf.constant(np.array(weights, dtype=np.float32))
+            weight_map = tf.multiply(y, class_weights)
+            weight_map = tf.reduce_sum(weight_map, axis=1)
+
+            loss = tf.multiply(loss_map, weight_map)
+    else:  # binary
+        if weights is not None:
+            loss = tf.nn.weighted_cross_entropy_with_logits(logits=logits, targets=y, pos_weight=weights[0])
+        else:
+            loss = tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=y)
+
+    loss = tf.reduce_mean(loss)
+    return loss
 
 
 def get_image_summary(img, idx=0):

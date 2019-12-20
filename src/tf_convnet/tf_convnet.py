@@ -81,11 +81,12 @@ class ConvNetModel(object):
 
         with tf.name_scope("cross_entropy"):
             if self.cost_function == Cost.MSE:
-                self.cross_entropy = tf.constant(0) # cross entropy for regression useless
+                self.cross_entropy = tf.constant(0)  # cross entropy for regression useless
             else:
-                self.cross_entropy = cross_entropy(tf.reshape(self.y, [-1, self._n_class]),
-                                                   tf.reshape(pixel_wise_softmax(self.logits), [-1, self._n_class]))
-
+                self.cross_entropy = tfu.get_cross_entropy(logits=tf.reshape(self.y, [-1, self._n_class]),
+                                                           y=tf.reshape(self.y, [-1, self._n_class]),
+                                                           n_class=self._n_class,
+                                                           weights=None)
         with tf.name_scope("results"):
             if self.cost_function == Cost.MSE:
                 self.correct_pred = tf.constant(0)  # makes no sense for regression
@@ -98,7 +99,10 @@ class ConvNetModel(object):
                 self.accuracy = tf.constant(1.0) - self.error
                 self.dice = tf.constant(0)
             else:
-                self.predicter = pixel_wise_softmax(self.logits)
+                if self._n_class > 1:
+                    self.predicter = pixel_wise_softmax(self.logits)
+                else:
+                    self.predicter = tf.nn.sigmoid(self.logits)
                 self.pred_slice = tf.cast(tf.argmax(self.predicter, axis=3), tf.float32)
                 self.y_slice = tf.cast(tf.argmax(self.y, axis=3), tf.float32)
                 self.correct_pred = tf.equal(self.pred_slice, self.y_slice)
@@ -115,22 +119,9 @@ class ConvNetModel(object):
             flat_logits = tf.reshape(self.logits, [-1, self._n_class])
             flat_labels = tf.reshape(self.y, [-1, self._n_class])
             if self.cost_function == Cost.CROSS_ENTROPY:
+                loss = tfu.get_cross_entropy(logits=flat_logits, y=flat_labels, n_class=self._n_class,
+                                             weights=self._class_weights)
 
-                if self._class_weights is not None:
-                    class_weights = tf.constant(np.array(self._class_weights, dtype=np.float32))
-
-                    weight_map = tf.multiply(flat_labels, class_weights)
-                    weight_map = tf.reduce_sum(weight_map, axis=1)
-
-                    loss_map = tf.nn.softmax_cross_entropy_with_logits_v2(logits=flat_logits,
-                                                                          labels=flat_labels)
-                    weighted_loss = tf.multiply(loss_map, weight_map)
-
-                    loss = tf.reduce_mean(weighted_loss)
-
-                else:
-                    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=flat_logits,
-                                                                                     labels=flat_labels))
             elif self.cost_function == Cost.DICE_COEFFICIENT:
                 loss = 1 - tfu.get_dice_score(flat_logits, flat_labels, eps=1e-7)
 

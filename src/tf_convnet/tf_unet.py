@@ -160,7 +160,7 @@ def create_2d_unet(x, keep_prob, channels, n_class, n_layers=5, features_root=64
             convs.append((conv1, conv2))
 
             size *= pool_size
-            size -= 2 * 2 * (filter_size // 2) # valid conv
+            size -= 2 * 2 * (filter_size // 2)  # valid conv
 
     last_feature_map = in_node
 
@@ -169,12 +169,12 @@ def create_2d_unet(x, keep_prob, channels, n_class, n_layers=5, features_root=64
         weight = weight_variable([1, 1, features_root, n_class], stddev, trainable=True)
         bias = bias_variable([n_class], name="bias", trainable=True)
         conv = conv2d(in_node, weight, bias, tf.constant(1.0))
-        if act_func_out == Activation_Func.RELU:
+        if act_func_out == Activation_Func.NONE or n_class == 1:  # in binary sigmoid is added within cs loss
+            output_map = conv
+        elif act_func_out == Activation_Func.RELU:
             output_map = tf.nn.relu(conv)
         elif act_func_out == Activation_Func.SIGMOID:
             output_map = tf.nn.sigmoid(conv)
-        elif act_func_out == Activation_Func.NONE:
-            output_map = conv
         else:
             raise ValueError()
         if add_residual_layer:
