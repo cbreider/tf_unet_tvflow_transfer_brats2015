@@ -416,8 +416,8 @@ def get_dice_score(pred, y, eps=1e-7, binary=False, weight=False):
     :returns: Dice score Tensor shape ():
     """
     if pred.get_shape().as_list()[3] == 2 and binary:
-        pred = tf.argmax(pred, axis=3)
-        y = tf.argmax(y, axis=3)
+        pred = tf.expand_dims(tf.argmax(pred, axis=3), axis=3)
+        y = tf.expand_dims(tf.argmax(y, axis=3), axis=3)
     numerator_per_class = tf.cast(tf.reduce_sum(y * pred, axis=[1, 2]), tf.float32)
     denominator_per_class = tf.cast(tf.reduce_sum(y + pred, axis=[1, 2]), tf.float32)
     if weight:
