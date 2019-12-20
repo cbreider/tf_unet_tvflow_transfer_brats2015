@@ -16,7 +16,7 @@ import numpy as np
 import elasticdeform.tf as etf
 
 
-def preprocess_images(scan, ground_truth, dispacement_sigma=15):
+def preprocess_images(scan, ground_truth, dispacement_sigma=10):
     """
     combined pre processing input and gt images
 
@@ -29,9 +29,9 @@ def preprocess_images(scan, ground_truth, dispacement_sigma=15):
     combined = tf.concat([scan, ground_truth], axis=2)
     image_shape = tf.shape(scan)
 
-    displacement_val = np.random.randn(2, 1, 3) * dispacement_sigma
+    #displacement_val = np.random.randn(2, 2, 3) * dispacement_sigma
     # construct TensorFlow input and top gradient
-    displacement = tf.Variable(displacement_val)
+    displacement = tf.random.normal(shape=[2, 2, 3]) * dispacement_sigma
     combined_deform = etf.deform_grid(combined, displacement, order=3, axis=(0,1), prefilter=False)
 
     last_label_dim = tf.shape(ground_truth)[-1]

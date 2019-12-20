@@ -84,7 +84,7 @@ class ConvNetModel(object):
             if self.cost_function == Cost.MSE:
                 self.cross_entropy = tf.constant(0)  # cross entropy for regression useless
             else:
-                self.cross_entropy = tfu.get_cross_entropy(logits=tf.reshape(self.y, [-1, self._n_class]),
+                self.cross_entropy = tfu.get_cross_entropy(logits=tf.reshape(self.logits, [-1, self._n_class]),
                                                            y=tf.reshape(self.y, [-1, self._n_class]),
                                                            n_class=self._n_class,
                                                            weights=None)
