@@ -91,6 +91,7 @@ class ConvNetParams:
     nr_of_classes = DataParams.nr_of_classes
     use_scale_as_gt = DataParams.use_scale_image_as_gt
     max_tv_value = DataParams.norm_image_value
+    two_classe_as_binary = True
 
 
 class TrainingParams:

@@ -52,6 +52,7 @@ class ConvNetModel(object):
         self._class_weights = self._convnet_config.class_weights
         self._regularizer = self._convnet_config.regularizer
         self._max_tv_value = self._convnet_config.max_tv_value
+        self._two_classes_are_binary = self._convnet_config.two_classe_as_binary
 
         self.x = tf.placeholder("float", shape=[None, None, None, self._n_channels], name="x")
         self.y = tf.placeholder("float", shape=[None, None, None, self._n_class], name="y")
@@ -105,12 +106,13 @@ class ConvNetModel(object):
                     self.y_slice = tf.cast(tf.argmax(self.y, axis=3), tf.float32)
                     self.correct_pred = tf.equal(self.pred_slice, self.y_slice)
                 else:
-                    self.predicter = tf.cast(tf.nn.sigmoid(self.logits), tf.int32)
-                    self.correct_pred = tf.equal(self.predicter, tf.cast(self.y, tf.int32))
+                    self.predicter = tf.round(tf.nn.sigmoid(self.logits))
+                    self.correct_pred = tf.equal(self.predicter, self.y)
                 self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
                 self.error = tf.constant(1.0) - self.accuracy
                 self.error_rate = tf.math.multiply(self.error, tf.constant(100.0))
-                self.dice = tfu.get_dice_score(pred=tf.cast(self.predicter, tf.float32), y=self.y, eps=1e-5)
+                self.dice = tfu.get_dice_score(pred=self.predicter, y=self.y, eps=1e-5,
+                                               binary=self._two_classes_are_binary)
 
     def _get_cost(self):
         """
@@ -124,7 +126,7 @@ class ConvNetModel(object):
                                              weights=self._class_weights)
 
             elif self.cost_function == Cost.DICE_COEFFICIENT:
-                loss = 1 - tfu.get_dice_score(flat_logits, flat_labels, eps=1e-7)
+                loss = 1 - tfu.get_dice_score(pred=self.logits, y=self.y, eps=1e-7, binary=self._two_classes_are_binary)
 
             elif self.cost_function == Cost.MSE:
                 loss = tf.losses.mean_squared_error(flat_logits, flat_labels)

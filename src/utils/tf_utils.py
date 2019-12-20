@@ -402,30 +402,47 @@ def normalize_and_zero_center_tensor(tensor, max, new_max, normalize_std):
     return out
 
 
-def get_dice_score(pred, y, eps=1e-7, weight=False):
-    if pred.get_shape().as_list()[3] == 2:
+def get_dice_score(pred, y, eps=1e-7, binary=False, weight=False):
+    """
+    calculates the (multiclass) dice score over a given batch of samples. In multiclass prediction (n_class > 1)
+    the dice score is the average dice score over all classes
+
+
+    :param pred: prediction tensor [batch_size, img_size1, img_size2, _nclasses] must be one hot encoded
+    :param y: max value of input image as it could be
+    :param eps: smoothing coeffient
+    :param binary: bool indicating wether the 2 class case should be treated as binary case (class 0 negatives)
+    :param weight: bool wether weight classes (not implemented)
+    :returns: Dice score Tensor shape ():
+    """
+    if pred.get_shape().as_list()[3] == 2 and binary:
         pred = tf.argmax(pred, axis=3)
         y = tf.argmax(y, axis=3)
-    numerator = tf.cast(tf.reduce_sum(y * pred), tf.float32)
-    denominator = tf.cast(tf.reduce_sum(y + pred), tf.float32)
+    numerator_per_class = tf.cast(tf.reduce_sum(y * pred, axis=[1, 2]), tf.float32)
+    denominator_per_class = tf.cast(tf.reduce_sum(y + pred, axis=[1, 2]), tf.float32)
     if weight:
-        weights = 1.0 / (tf.reduce_sum(y))
-        numerator = tf.reduce_sum(weights * numerator)
-        denominator = tf.reduce_sum(weights * denominator)
-
-    return ((2 * numerator) + eps) / (denominator + eps)
+        raise NotImplementedError()
+        #weights = 1.0 / (tf.reduce_sum(y, axis=[1, 2, 3]))
+        #numerator_per_class = tf.reduce_sum(weights * numerator_per_class)
+        #denominator_per_class = tf.reduce_sum(weights * denominator_per_class)
+    # calc dice per image and class (shape = [batch_size, n_class])
+    dice_per_class_and_image = ((2 * numerator_per_class) + eps) / (denominator_per_class + eps)
+    # calc dice per image (shape = [batch_size, n_class]) average over all classes
+    dice_per_image = tf.reduce_mean(dice_per_class_and_image, axis=1)
+    # calc dice (shape = []) average over all classes and images
+    dice = tf.reduce_mean(dice_per_image)
+    return dice
 
 
 def get_cross_entropy(logits, y, n_class, weights=None):
     if n_class > 1:  # multiclass
-        loss_map = tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits,
-                                                              labels=y)
+        loss = tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=y)
         if weights is not None:
             class_weights = tf.constant(np.array(weights, dtype=np.float32))
             weight_map = tf.multiply(y, class_weights)
             weight_map = tf.reduce_sum(weight_map, axis=1)
 
-            loss = tf.multiply(loss_map, weight_map)
+            loss = tf.multiply(loss, weight_map)
     else:  # binary
         if weights is not None:
             loss = tf.nn.weighted_cross_entropy_with_logits(logits=logits, targets=y, pos_weight=weights[0])
