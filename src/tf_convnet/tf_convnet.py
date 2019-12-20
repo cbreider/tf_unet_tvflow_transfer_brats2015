@@ -101,11 +101,12 @@ class ConvNetModel(object):
             else:
                 if self._n_class > 1:
                     self.predicter = pixel_wise_softmax(self.logits)
+                    self.pred_slice = tf.cast(tf.argmax(self.predicter, axis=3), tf.float32)
+                    self.y_slice = tf.cast(tf.argmax(self.y, axis=3), tf.float32)
+                    self.correct_pred = tf.equal(self.pred_slice, self.y_slice)
                 else:
-                    self.predicter = tf.nn.sigmoid(self.logits)
-                self.pred_slice = tf.cast(tf.argmax(self.predicter, axis=3), tf.float32)
-                self.y_slice = tf.cast(tf.argmax(self.y, axis=3), tf.float32)
-                self.correct_pred = tf.equal(self.pred_slice, self.y_slice)
+                    self.predicter = tf.cast(tf.nn.sigmoid(self.logits), tf.int32)
+                    self.correct_pred = tf.equal(self.predicter, tf.cast(self.y_slice), tf.int32)
                 self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
                 self.error = tf.constant(1.0) - self.accuracy
                 self.error_rate = tf.math.multiply(self.error, tf.constant(100.0))
