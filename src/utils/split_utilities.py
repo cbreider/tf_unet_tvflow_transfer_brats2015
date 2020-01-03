@@ -342,6 +342,7 @@ class TrainingDataset(object):
                             continue
                         file_path_val = file_path_key.replace(file_path_in,
                                                               file_path_gt)
+                        file_dict[file_path_key] = None
                         if not os.path.exists(file_path_val) and self._mode == TrainingModes.SEGMENTATION:
                             continue
                         file_dict[file_path_key] = file_path_val
