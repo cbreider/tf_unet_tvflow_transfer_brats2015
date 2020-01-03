@@ -90,8 +90,7 @@ class TFImageDataGenerator:
         if self._mode == TrainingModes.SEGMENTATION:
             if self.load_data_from_disk:
                 in_img = tf_utils.load_png_image(input_ob, nr_channels=self._nr_channels, img_size=self._in_img_size)
-                if gt_ob:
-                    gt_img = tf_utils.load_png_image(gt_ob, nr_channels=self._nr_channels, img_size=self._in_img_size)
+                gt_img = tf_utils.load_png_image(gt_ob, nr_channels=self._nr_channels, img_size=self._in_img_size)
             else:
                 in_img = tf.cast(tf.reshape(input_ob, [input_ob.shape[0], input_ob.shape[1], 1]), tf.float32)
                 gt_img = tf.cast(tf.reshape(gt_ob, [gt_ob.shape[0], gt_ob.shape[1], 1]), tf.float32)

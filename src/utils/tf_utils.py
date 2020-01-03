@@ -116,6 +116,7 @@ def load_png_image(filename, nr_channels, img_size, data_type=tf.float32):
         return img
     except Exception as e:
         logging.error("type error: " + str(e) + str(filename))
+        return tf.zeros(shape=img_size, dtype=data_type)
 
 
 def get_fixed_bin_clustering(image, n_bins=10):
