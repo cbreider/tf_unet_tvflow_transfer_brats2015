@@ -110,7 +110,7 @@ def load_png_image(filename, nr_channels, img_size, data_type=tf.float32):
     """
     try:
         img_string = tf.read_file(filename)
-        img_decoded = tf.image.decode_png(img_string, channels=nr_channels)
+        img_decoded = tf.image.decode_png(img_string, channels=0, dtype=tf.uint16)
         img_resized = tf.image.resize_images(img_decoded, size=img_size)
         img = tf.cast(img_resized, data_type)
         return img

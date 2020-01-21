@@ -180,7 +180,6 @@ class Trainer(object):
             epoch = 0
             total_loss = 0
             s_train = 0
-            s_val = 0
             if os.path.isfile(step_file) and self._restore_mode != RestoreMode.ONLY_BASE_NET:
                 f = open(step_file, "r")
                 fl = f.readlines()
@@ -196,6 +195,7 @@ class Trainer(object):
             if init_step != 0 and self._restore_path is not None:
                 logging.info("Resuming Training at epoch {} and total step {}". format(epoch, init_step))
 
+            epoch_size = int(self.data_provider_train.size / self.config.batch_size_train)
             logging.info("Start optimization...")
 
             try:
@@ -237,15 +237,8 @@ class Trainer(object):
                         outF.close()
 
                     if step % self._training_iters == 0 and step != 0:
-                        s_val += 1
-                        epoch += 1
-                        if (s_val*self.config.batch_size_val+self.config.batch_size_val) > self.data_provider_val.size:
-                            sess.run(self.data_provider_val.init_op)
-                            s_val = 0
-                        test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
                         self.output_epoch_stats(epoch, total_loss, self._training_iters, lr)
-                        self.store_prediction(sess, test_x, util.crop_to_shape(test_y, pred_shape),
-                                          "epoch_%s" % epoch, summary_writer_validation, step, epoch, test_tv)
+                        epoch += 1
                         total_loss = 0
 
                 logging.info("Optimization Finished!")
@@ -261,6 +254,26 @@ class Trainer(object):
             except Exception as e:
                 logging.error(str(e))
                 return None
+
+    def run_validation(self, epoch, sess, summary_writer):
+        vals = []
+        predictions = []
+        sess.run(self.data_provider_val.init_op)
+        self.store_prediction(sess, test_x, util.crop_to_shape(test_y, pred_shape),
+                              "epoch_%s" % epoch, summary_writer_validation, step, epoch, test_tv)
+        print("Running Validation...")
+        for i in range(int(self.data_provider_val.size / self.config.buffer_size_val)):
+            test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
+            loss, acc, err, prediction, dice, ce = sess.run(
+                [self.net.cost,
+                 self.net.accuracy, self.net.error_rate,
+                 self.net.predicter, self.net.dice,
+                 self.net.cross_entropy],
+                feed_dict={self.net.x: test_x,
+                           self.net.y: test_y,
+                           self.net.keep_prob: 1.})
+            vals.append([loss, acc, err, dice, ce])
+            predictions.append(predictions)
 
     def store_prediction(self, sess, batch_x, batch_y, name, summary_writer, step, epoch, batch_tv, write=True):
         loss, acc, err, prediction, dice, ce = self.run_summary(sess, summary_writer, step, batch_x, batch_y, write=write)
