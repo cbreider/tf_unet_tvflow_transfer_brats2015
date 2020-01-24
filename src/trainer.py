@@ -148,7 +148,6 @@ class Trainer(object):
                 tf.train.write_graph(sess.graph_def, self.output_path, "graph.pb", False)
 
             sess.run(init)
-            sess.run(self.data_provider_val.init_op)
             sess.run(self.data_provider_train.init_op)
 
             if self._caffemodel_path and self._restore_path:
@@ -186,9 +185,7 @@ class Trainer(object):
                 init_step = int(fl[0])
                 epoch = int(fl[1])
 
-            test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
-            pred_shape = self.store_prediction(sess, test_x, test_y, "_init", summary_writer_validation, init_step,
-                                               epoch, test_tv, write=False if init_step != 0 else True)
+            pred_shape = self.run_validation(epoch, sess, init_step, summary_writer_validation)
 
             avg_gradients = None
 
@@ -197,7 +194,7 @@ class Trainer(object):
 
             epoch_size = int(self.data_provider_train.size / self.config.batch_size_train)
             logging.info("Start optimization...")
-
+            avg_score_vals = []
             try:
                 for step in range(init_step, self._n_epochs*self._training_iters):
                     s_train += 1
@@ -212,11 +209,13 @@ class Trainer(object):
                     if step == 0:
                         self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
                                                     util.crop_to_shape(batch_y, pred_shape))
-                    _, loss, lr, gradients = sess.run(
-                        (self.optimizer, self.net.cost, self.learning_rate_node, self.net.gradients_node),
+                    _, loss, cs, dice, err, err_r, acc, lr, gradients = sess.run(
+                        (self.optimizer, self.net.cost, self.net.cross_entropy, self.net.dice, self.net.error,
+                         self.net.error_rate, self.net.accuracy, self.learning_rate_node, self.net.gradients_node),
                         feed_dict={self.net.x: batch_x,
                                    self.net.y: util.crop_to_shape(batch_y, pred_shape),
                                    self.net.keep_prob: self._dropout})
+                    avg_score_vals.append([loss, ce, dice, err, err_r, acc])
 
                     if self.net.summaries and self._norm_grads:
                         avg_gradients = _update_avg_gradients(avg_gradients, gradients, step)
@@ -229,17 +228,24 @@ class Trainer(object):
                         self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
                                                     util.crop_to_shape(batch_y, pred_shape))
                         save_path = self.net.save(sess, save_path)
+                        avg_score_vals = np.mean(np.array(avg_score_vals), axis=1)
+                        self.write_tf_summary(step,  avg_score_vals, summary_writer_training)
+                        logging.info(
+                            "Iter {:}, Average loss= {:.6f}, cross entropy = {:.4f}, Dice= {:.4f}, error= {:.1f}%, Accuracy {:.4f}".format(
+                                epoch, val_scores[0], val_scores[1], val_scores[2], val_scores[4], val_scores[5]))
                         # save epoch and step
                         outF = open(step_file, "w")
                         outF.write("{}".format(step+1))
                         outF.write("\n")
-                        outF.write("{}".format(epoch+1))
+                        outF.write("{}".format(epoch))
                         outF.close()
 
                     if step % self._training_iters == 0 and step != 0:
-                        self.output_epoch_stats(epoch, total_loss, self._training_iters, lr)
                         epoch += 1
+                        self.output_epoch_stats(epoch, total_loss, self._training_iters, lr)
                         total_loss = 0
+                        self.net.save()
+                        self.run_validation(epoch, sess, step, summary_writer_validation)
 
                 logging.info("Optimization Finished!")
 
@@ -259,6 +265,10 @@ class Trainer(object):
         vals = []
         predictions = []
         shape = []
+        out_p = os.path.join(self.output_path, "Epoch_{}".format(epoch))
+        itr = 0
+        if not os.path.exists(out_p):
+            os.makedirs(out_p)
         sess.run(self.data_provider_val.init_op)
         print("Running Validation for epoch ...")
         for i in range(int(self.data_provider_val.size / self.config.buffer_size_val)):
@@ -275,9 +285,11 @@ class Trainer(object):
             predictions.append(prediction)
             shape = prediction.shape
             if len(predictions) == 64:
-                self.store_prediction()
+                self.store_prediction("{}_{}".format(epoch, itr))
                 predictions = []
+                itr += 1
         val_scores = np.mean(np.array((vals)), axis=1)
+        self.write_tf_summary(step, val_scores, summary_writer)
         logging.info(
             "EPOCH {}: Verification loss= {:.6f}, cross entropy = {:.4f}, Dice= {:.4f}, error= {:.1f}%, Accuracy {:.4f}".format(
                 epoch, val_scores[0], val_scores[1], val_scores[2], val_scores[4], val_scores[5]))
@@ -285,18 +297,18 @@ class Trainer(object):
 
     def write_tf_summary(self, step, vals, summary_writer):
         tf.summary.scalar('loss', vals[0])
-        tf.summary.scalar('accuracy', vals[0])
-        tf.summary.scalar('error', vals[0])
-        tf.summary.scalar('error_rate', vals[0])
+        tf.summary.scalar('accuracy', vals[5])
+        tf.summary.scalar('error', vals[4])
+        tf.summary.scalar('error_rate', vals[3])
         if not self.net.cost == Cost.MSE:
-            tf.summary.scalar('cross_entropy', vals[0])
-            tf.summary.scalar('dice', vals[0])
+            tf.summary.scalar('cross_entropy', vals[1])
+            tf.summary.scalar('dice', vals[2])
+
+        summary_writer.add_summary(summary_str, step)
+        summary_writer.flush()
 
 
-    def store_prediction(self, name, summary_writer, step, epoch, batch_tv):
-        pred_shape = prediction.shape
-
-
+    def store_prediction(self, name, batch_tv):
         if self.mode == TrainingModes.TVFLOW_SEGMENTATION:
             img = util.combine_img_prediction_tvclustering(data=batch_x, gt=batch_y, tv=batch_tv, pred=prediction)
         else:
@@ -304,15 +316,13 @@ class Trainer(object):
                                               mode=1 if self.net.cost_function == Cost.MSE else 0)
         util.save_image(img, "%s/%s.jpg" % (self.output_path, name))
 
-        return pred_shape
-
     def output_epoch_stats(self, epoch, total_loss, training_iters, lr):
         logging.info(
             "Epoch {:}, Average loss: {:.4f}, learning rate: {:.9f}".format(epoch, (total_loss / training_iters), lr))
 
     def output_minibatch_stats(self, sess, summary_writer, step, batch_x, batch_y):
 
-        loss, acc, err, predictions, dice, ce = self.run_summary(sess, summary_writer, step, batch_x, batch_y)
+        loss, acc, err, predictions, dice, ce = self.run_summary(sess, summary_writer, step, batch_x, batch_y, write=False)
         logging.info(
             "Iter {:}, Minibatch Loss= {:.4f}, Training Accuracy= {:.4f}, "
             "Minibatch error= {:.1f}%, Dice= {:.4f}, cross entropy = {:.4f}".format(step, loss, acc, err, dice, ce))
