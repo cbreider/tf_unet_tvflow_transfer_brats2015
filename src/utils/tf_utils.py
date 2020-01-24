@@ -389,24 +389,17 @@ def normalize_and_zero_center_tensor(tensor, max, new_max, normalize_std):
     :param normalize_std: True if std should be normalized
     :returns: One hot Tensor of depth = depth:
     """
-    if max == new_max:
-        normal = tensor
-    else:
-        normal = tf.math.divide(tensor, tf.constant(max))
-        normal = tf.math.multiply(normal, tf.constant(new_max))
+
     # intensity normalize
-    if normalize_std:
-        mean, var = tf.nn.moments(normal, axes=[0, 1, 2])
-        out = tf.math.divide((normal-mean), tf.math.sqrt(var))
-    else:
-        mean = tf.reduce_mean(normal)
-        out = normal - mean
+    #mean, var = tf.nn.moments(normal, axes=[0, 1, 2])
+    out = tf.math.divide((tensor - ((59.5775 / 9971.0) * 65536.0)), tf.math.sqrt((217.8137 / 9971.0) * 65536.0))
+
     #set black elemts to random
     #zero = tf.constant(0, dtype=tf.float32)
     #where_zero = tf.equal(out, zero)
     #out = tf.where(where_zero > 0, tf.random_uniform(out.shape, -0.5, 0.5, dtype=tf.float32, seed=0), out)
     #out = tf.math.divide(tensor, tf.reduce_max(out))
-    out = tf.math.divide(out, tf.reduce_max(out))
+    out = tf.math.divide(out, 65536.0)
 
     return out
 
