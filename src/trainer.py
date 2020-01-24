@@ -255,33 +255,48 @@ class Trainer(object):
                 logging.error(str(e))
                 return None
 
-    def run_validation(self, epoch, sess, summary_writer):
+    def run_validation(self, epoch, sess, step, summary_writer):
         vals = []
         predictions = []
+        shape = []
         sess.run(self.data_provider_val.init_op)
-        self.store_prediction(sess, test_x, util.crop_to_shape(test_y, pred_shape),
-                              "epoch_%s" % epoch, summary_writer_validation, step, epoch, test_tv)
-        print("Running Validation...")
+        print("Running Validation for epoch ...")
         for i in range(int(self.data_provider_val.size / self.config.buffer_size_val)):
             test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
-            loss, acc, err, prediction, dice, ce = sess.run(
+            loss, acc, err, err_r, prediction, dice, ce = sess.run(
                 [self.net.cost,
-                 self.net.accuracy, self.net.error_rate,
+                 self.net.accuracy, self.net.error, self.net.error_rate,
                  self.net.predicter, self.net.dice,
                  self.net.cross_entropy],
                 feed_dict={self.net.x: test_x,
                            self.net.y: test_y,
                            self.net.keep_prob: 1.})
-            vals.append([loss, acc, err, dice, ce])
-            predictions.append(predictions)
+            vals.append([loss, ce, dice, err, err_r, acc])
+            predictions.append(prediction)
+            shape = prediction.shape
+            if len(predictions) == 64:
+                self.store_prediction()
+                predictions = []
+        val_scores = np.mean(np.array((vals)), axis=1)
+        logging.info(
+            "EPOCH {}: Verification loss= {:.6f}, cross entropy = {:.4f}, Dice= {:.4f}, error= {:.1f}%, Accuracy {:.4f}".format(
+                epoch, val_scores[0], val_scores[1], val_scores[2], val_scores[4], val_scores[5]))
+        return shape
 
-    def store_prediction(self, sess, batch_x, batch_y, name, summary_writer, step, epoch, batch_tv, write=True):
-        loss, acc, err, prediction, dice, ce = self.run_summary(sess, summary_writer, step, batch_x, batch_y, write=write)
+    def write_tf_summary(self, step, vals, summary_writer):
+        tf.summary.scalar('loss', vals[0])
+        tf.summary.scalar('accuracy', vals[0])
+        tf.summary.scalar('error', vals[0])
+        tf.summary.scalar('error_rate', vals[0])
+        if not self.net.cost == Cost.MSE:
+            tf.summary.scalar('cross_entropy', vals[0])
+            tf.summary.scalar('dice', vals[0])
 
+
+    def store_prediction(self, name, summary_writer, step, epoch, batch_tv):
         pred_shape = prediction.shape
 
-        logging.info("EPOCH {}: Verification error= {:.1f}%, loss= {:.6f}, Dice= {:.4f}, cross entropy = {:.4f}".format(
-            epoch, err, loss, dice, ce))
+
         if self.mode == TrainingModes.TVFLOW_SEGMENTATION:
             img = util.combine_img_prediction_tvclustering(data=batch_x, gt=batch_y, tv=batch_tv, pred=prediction)
         else:

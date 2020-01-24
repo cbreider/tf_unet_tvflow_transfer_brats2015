@@ -20,7 +20,6 @@ import argparse
 import configuration as config
 import tensorflow as tf
 import logging
-import os
 import src.utils.logger as log
 from src.utils.enum_params import TrainingModes, DataModes, Optimizer, RestoreMode
 
