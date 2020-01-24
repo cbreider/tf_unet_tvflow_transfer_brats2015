@@ -215,7 +215,7 @@ class Trainer(object):
                         feed_dict={self.net.x: batch_x,
                                    self.net.y: util.crop_to_shape(batch_y, pred_shape),
                                    self.net.keep_prob: self._dropout})
-                    avg_score_vals.append([loss, ce, dice, err, err_r, acc])
+                    avg_score_vals.append([loss, cs, dice, err, err_r, acc])
 
                     if self.net.summaries and self._norm_grads:
                         avg_gradients = _update_avg_gradients(avg_gradients, gradients, step)
@@ -228,11 +228,12 @@ class Trainer(object):
                         self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
                                                     util.crop_to_shape(batch_y, pred_shape))
                         save_path = self.net.save(sess, save_path)
-                        avg_score_vals = np.mean(np.array(avg_score_vals), axis=1)
+                        avg_score_vals = np.mean(np.array(avg_score_vals), axis=0)
                         self.write_tf_summary(step,  avg_score_vals, summary_writer_training)
                         logging.info(
                             "Iter {:}, Average loss= {:.6f}, cross entropy = {:.4f}, Dice= {:.4f}, error= {:.1f}%, Accuracy {:.4f}".format(
-                                epoch, val_scores[0], val_scores[1], val_scores[2], val_scores[4], val_scores[5]))
+                                step, avg_score_vals[0], avg_score_vals[1], avg_score_vals[2], avg_score_vals[4], avg_score_vals[5]))
+                        avg_score_vals = []
                         # save epoch and step
                         outF = open(step_file, "w")
                         outF.write("{}".format(step+1))
@@ -244,7 +245,6 @@ class Trainer(object):
                         epoch += 1
                         self.output_epoch_stats(epoch, total_loss, self._training_iters, lr)
                         total_loss = 0
-                        self.net.save()
                         self.run_validation(epoch, sess, step, summary_writer_validation)
 
                 logging.info("Optimization Finished!")
@@ -264,14 +264,17 @@ class Trainer(object):
     def run_validation(self, epoch, sess, step, summary_writer):
         vals = []
         predictions = []
+        bx = []
+        by = []
+        btv = []
         shape = []
         out_p = os.path.join(self.output_path, "Epoch_{}".format(epoch))
         itr = 0
         if not os.path.exists(out_p):
             os.makedirs(out_p)
         sess.run(self.data_provider_val.init_op)
-        print("Running Validation for epoch ...")
-        for i in range(int(self.data_provider_val.size / self.config.buffer_size_val)):
+        logging.info("Running Validation for epoch {}...".format(epoch))
+        for i in range(int(self.data_provider_val.size / self.config.batch_size_val)):
             test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
             loss, acc, err, err_r, prediction, dice, ce = sess.run(
                 [self.net.cost,
@@ -283,12 +286,23 @@ class Trainer(object):
                            self.net.keep_prob: 1.})
             vals.append([loss, ce, dice, err, err_r, acc])
             predictions.append(prediction)
+            bx.append(test_x)
+            by.append(test_y)
+            btv.append(test_tv)
             shape = prediction.shape
             if len(predictions) == 64:
-                self.store_prediction("{}_{}".format(epoch, itr))
+                self.store_prediction("{}_{}".format(epoch, itr), out_p,
+                                      np.squeeze(np.array(bx), axis=1), np.squeeze(np.array(by), axis=1),
+                                      np.squeeze(np.array(btv), axis=1), np.squeeze(np.array(predictions), axis=1))
                 predictions = []
+                bx = []
+                by = []
+                btv = []
                 itr += 1
-        val_scores = np.mean(np.array((vals)), axis=1)
+        self.store_prediction("{}_{}".format(epoch, itr), out_p,
+                              np.squeeze(np.array(bx), axis=1), np.squeeze(np.array(by), axis=1),
+                              np.squeeze(np.array(btv), axis=1), np.squeeze(np.array(predictions), axis=1))
+        val_scores = np.mean(np.array(vals), axis=0)
         self.write_tf_summary(step, val_scores, summary_writer)
         logging.info(
             "EPOCH {}: Verification loss= {:.6f}, cross entropy = {:.4f}, Dice= {:.4f}, error= {:.1f}%, Accuracy {:.4f}".format(
@@ -296,25 +310,25 @@ class Trainer(object):
         return shape
 
     def write_tf_summary(self, step, vals, summary_writer):
-        tf.summary.scalar('loss', vals[0])
-        tf.summary.scalar('accuracy', vals[5])
-        tf.summary.scalar('error', vals[4])
-        tf.summary.scalar('error_rate', vals[3])
+        summary = tf.Summary()
+        summary.value.add(tag='loss', simple_value=vals[0])
+        summary.value.add(tag='accuracy', simple_value=vals[5])
+        summary.value.add(tag='error', simple_value=vals[4])
+        summary.value.add(tag='error_rate', simple_value=vals[3])
         if not self.net.cost == Cost.MSE:
-            tf.summary.scalar('cross_entropy', vals[1])
-            tf.summary.scalar('dice', vals[2])
+            summary.value.add(tag='cross_entropy', simple_value=vals[1])
+            summary.value.add(tag='dice', simple_value=vals[2])
 
-        summary_writer.add_summary(summary_str, step)
+        summary_writer.add_summary(summary, step)
         summary_writer.flush()
 
-
-    def store_prediction(self, name, batch_tv):
+    def store_prediction(self, name, path, batch_x, batch_y, batch_tv, prediction):
         if self.mode == TrainingModes.TVFLOW_SEGMENTATION:
             img = util.combine_img_prediction_tvclustering(data=batch_x, gt=batch_y, tv=batch_tv, pred=prediction)
         else:
             img = util.combine_img_prediction(batch_x, batch_y, prediction,
                                               mode=1 if self.net.cost_function == Cost.MSE else 0)
-        util.save_image(img, "%s/%s.jpg" % (self.output_path, name))
+        util.save_image(img, "%s/%s.jpg" % (path, name))
 
     def output_epoch_stats(self, epoch, total_loss, training_iters, lr):
         logging.info(
