@@ -293,7 +293,8 @@ class Trainer(object):
                 itr += 1
                 if mini and itr == 10:
                     break
-        self.store_prediction("{}_{}".format(epoch, itr), out_p,
+        if len(bx) > 0:
+            self.store_prediction("{}_{}".format(epoch, itr), out_p,
                               np.squeeze(np.array(bx), axis=1), np.squeeze(np.array(by), axis=1),
                               np.squeeze(np.array(btv), axis=1), np.squeeze(np.array(predictions), axis=1))
         val_scores = np.mean(np.array(vals), axis=0)
