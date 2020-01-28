@@ -108,14 +108,6 @@ class Trainer(object):
         if self.net.summaries and self._norm_grads:
             tf.summary.histogram('norm_grads', self.norm_gradients_node)
 
-        tf.summary.scalar('loss', self.net.cost)
-        tf.summary.scalar('accuracy', self.net.accuracy)
-        tf.summary.scalar('error', self.net.error)
-        tf.summary.scalar('error_rate', self.net.error_rate)
-        if not self.net.cost == Cost.MSE:
-            tf.summary.scalar('cross_entropy', self.net.cross_entropy)
-            tf.summary.scalar('dice', self.net.dice)
-
         self.optimizer = self._get_optimizer(global_step)
         tf.summary.scalar('learning_rate', self.learning_rate_node)
 
@@ -185,7 +177,7 @@ class Trainer(object):
                 init_step = int(fl[0])
                 epoch = int(fl[1])
 
-            pred_shape = self.run_validation(epoch, sess, init_step, summary_writer_validation)
+            pred_shape = self.run_validation(epoch, sess, init_step, summary_writer_validation, mini=True)
 
             avg_gradients = None
 
@@ -261,7 +253,7 @@ class Trainer(object):
                 logging.error(str(e))
                 return None
 
-    def run_validation(self, epoch, sess, step, summary_writer):
+    def run_validation(self, epoch, sess, step, summary_writer, mini=False):
         vals = []
         predictions = []
         bx = []
@@ -276,8 +268,8 @@ class Trainer(object):
         logging.info("Running Validation for epoch {}...".format(epoch))
         for i in range(int(self.data_provider_val.size / self.config.batch_size_val)):
             test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
-            loss, acc, err, err_r, prediction, dice, ce = sess.run(
-                [self.net.cost,
+            __, loss, acc, err, err_r, prediction, dice, ce = sess.run(
+                [self.summary_op, self.net.cost,
                  self.net.accuracy, self.net.error, self.net.error_rate,
                  self.net.predicter, self.net.dice,
                  self.net.cross_entropy],
@@ -299,6 +291,8 @@ class Trainer(object):
                 by = []
                 btv = []
                 itr += 1
+                if mini and itr == 10:
+                    break
         self.store_prediction("{}_{}".format(epoch, itr), out_p,
                               np.squeeze(np.array(bx), axis=1), np.squeeze(np.array(by), axis=1),
                               np.squeeze(np.array(btv), axis=1), np.squeeze(np.array(predictions), axis=1))
@@ -336,7 +330,7 @@ class Trainer(object):
 
     def output_minibatch_stats(self, sess, summary_writer, step, batch_x, batch_y):
 
-        loss, acc, err, predictions, dice, ce = self.run_summary(sess, summary_writer, step, batch_x, batch_y, write=False)
+        loss, acc, err, predictions, dice, ce = self.run_summary(sess, summary_writer, step, batch_x, batch_y, write=True)
         logging.info(
             "Iter {:}, Minibatch Loss= {:.4f}, Training Accuracy= {:.4f}, "
             "Minibatch error= {:.1f}%, Dice= {:.4f}, cross entropy = {:.4f}".format(step, loss, acc, err, dice, ce))

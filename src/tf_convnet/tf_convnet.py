@@ -101,12 +101,12 @@ class ConvNetModel(object):
                 self.dice = tf.constant(0)
             else:
                 if self._n_class > 1:
-                    self.predicter = tf.round(pixel_wise_softmax(self.logits))
+                    self.predicter = tf.nn.softmax(self.logits, axis=3)
                     self.pred_slice = tf.cast(tf.argmax(self.predicter, axis=3), tf.float32)
                     self.y_slice = tf.cast(tf.argmax(self.y, axis=3), tf.float32)
                     self.correct_pred = tf.equal(self.pred_slice, self.y_slice)
                 else:
-                    self.predicter = tf.round(tf.nn.sigmoid(self.logits))
+                    self.predicter = tf.cast(tf.nn.sigmoid(self.logits) > 0.5, tf.float32)
                     self.correct_pred = tf.equal(self.predicter, self.y)
                 self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
                 self.error = tf.constant(1.0) - self.accuracy
@@ -126,7 +126,7 @@ class ConvNetModel(object):
                                              weights=self._class_weights)
 
             elif self.cost_function == Cost.DICE_COEFFICIENT:
-                loss = 1.0 - tfu.get_dice_score(pred=self.logits, y=self.y, eps=1e-7, binary=self._two_classes_are_binary)
+                loss = 1.0 - tfu.get_dice_score(pred=self.logits, y=self.y, eps=1e-5, binary=self._two_classes_are_binary)
 
             elif self.cost_function == Cost.MSE:
                 loss = tf.losses.mean_squared_error(pixel_wise_softmax(self.logits), flat_labels)

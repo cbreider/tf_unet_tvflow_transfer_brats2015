@@ -64,7 +64,7 @@ def crop_images_to_to_non_zero(scan, ground_truth, size, tvimg=None):
     :returns:cobmbined padded,cropped and flipped images
     """
     # HACK check if gt is completly zero then return orginal images
-    total = tf.reduce_sum(tf.abs(ground_truth))
+    total = tf.reduce_sum(tf.abs(scan))
     is_all_zero = tf.equal(total, 0)
     return tf.cond(is_all_zero,
                    lambda: (scan, ground_truth, tvimg),
@@ -421,7 +421,7 @@ def get_dice_score(pred, y, eps=1e-7, binary=False, weight=False):
         pred = tf.expand_dims(tf.argmax(pred, axis=3), axis=3)
         y = tf.expand_dims(tf.argmax(y, axis=3), axis=3)
     numerator_per_class = tf.cast(tf.reduce_sum(y * pred, axis=[1, 2]), tf.float32)
-    denominator_per_class = tf.cast(tf.reduce_sum(y + pred, axis=[1, 2]), tf.float32)
+    denominator_per_class = tf.cast(tf.reduce_sum(y*y, axis=[1, 2]) + tf.reduce_sum(pred*pred, axis=[1, 2]), tf.float32)
     if weight:
         raise NotImplementedError()
         #weights = 1.0 / (tf.reduce_sum(y, axis=[1, 2, 3]))
@@ -430,9 +430,9 @@ def get_dice_score(pred, y, eps=1e-7, binary=False, weight=False):
     # calc dice per image and class (shape = [batch_size, n_class])
     dice_per_class_and_image = ((2 * numerator_per_class) + eps) / (denominator_per_class + eps)
     # calc dice per image (shape = [batch_size, n_class]) average over all classes
-    dice_per_image = tf.reduce_mean(dice_per_class_and_image, axis=1)
+    #dice_per_image = tf.reduce_mean(dice_per_class_and_image, axis=1)
     # calc dice (shape = []) average over all classes and images
-    dice = tf.reduce_mean(dice_per_image)
+    dice = tf.reduce_mean(dice_per_class_and_image)
     return dice
 
 
