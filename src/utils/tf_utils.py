@@ -41,7 +41,7 @@ def preprocess_images(scan, ground_truth, dispacement_sigma=10):
                              maxval=image_shape[0],
                              dtype=tf.int32)
     combined_crop = tf.random_crop(value=combined_deform,
-                                   size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0))
+                                   size=tf.concat([[200, 200], [last_label_dim + last_image_dim]], axis=0))
     #combined_crop = tf.cond(tf.random.uniform(()) > 0.5,
     #                        lambda: tf.random_crop(value=combined,
     #                                   size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0)),
