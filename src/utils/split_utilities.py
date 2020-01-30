@@ -107,6 +107,13 @@ class TrainingDataset(object):
                 validation=len(self.validation_paths),
                 path=self._paths.split_path
             ))
+        if self._load_only_mid_scans:
+            keep_out = []
+            if self._load_only_mid_scans:
+                keep_out.extend(["_{}.".format(i) for i in range(40)])
+                keep_out.extend(["_{}.".format(i) for i in range(120, 150)])
+            for
+
 
     def _create_new_split(self):
         """Creates and sets a new split training paths and validtaion paths
@@ -315,6 +322,7 @@ class TrainingDataset(object):
         """
         file_dict = dict()
         for patient_path in patient_paths:
+            sclice = [[] for i in range(len(self._use_modalities)+1)]
             file_paths = os.listdir(patient_path)
             file_paths = sorted(file_paths, reverse=True)
             file_path_gt = [f for f in file_paths if (self._paths.ground_truth_path_identifier[0] in f.lower() or
@@ -324,25 +332,33 @@ class TrainingDataset(object):
                     continue
                 file_path_in = file_path
                 file_path_full = os.path.join(patient_path, file_path)
-                for file in os.listdir(file_path_full):
+                file_slices = sorted(os.listdir(file_path_full))
+                for file in file_slices:
                     if any(st in file for st in keep_out):
                         continue
                     if file.endswith(ext_key):
-                        file_path_key = os.path.join(file_path_full, file)
+                        file_path_img = os.path.join(file_path_full, file)
                         modality = ""
-                        if self._paths.t1_identifier in file_path_key.lower():
+                        i = 0
+                        if self._paths.t1_identifier in file_path_img.lower():
                             modality = self._paths.t1_identifier
-                        if self._paths.t1c_identifier in file_path_key.lower():
+                            i = self._use_modalities.index(self._paths.t1_identifier)
+                        if self._paths.t1c_identifier in file_path_img.lower():
                             modality = self._paths.t1c_identifier
-                        if self._paths.t2_identifier in file_path_key.lower():
+                            i = self._use_modalities.index(self._paths.t1c_identifier)
+                        if self._paths.t2_identifier in file_path_img.lower():
                             modality = self._paths.t2_identifier
-                        if self._paths.flair_identifier in file_path_key.lower():
+                            i = self._use_modalities.index(self._paths.t2_identifier)
+                        if self._paths.flair_identifier in file_path_img.lower():
                             modality = self._paths.flair_identifier
+                            i = self._use_modalities.index(self._paths.flair_identifier)
                         if not any(modality in m for m in self._use_modalities):
                             continue
-                        file_path_val = file_path_key.replace(file_path_in,
+
+                        slice[i].apped(file_path_img)
+                        file_path_gt_full = file_path_img.replace(file_path_in,
                                                               file_path_gt)
-                        if not os.path.exists(file_path_val) and self._mode == TrainingModes.SEGMENTATION:
+                        if not os.path.exists(file_path_gt_full) and self._mode == TrainingModes.SEGMENTATION:
                             continue
                         file_dict[file_path_key] = file_path_val
         return file_dict

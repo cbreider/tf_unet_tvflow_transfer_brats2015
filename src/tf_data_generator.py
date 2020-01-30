@@ -38,7 +38,7 @@ class TFImageDataGenerator:
 
         self._nr_of_classes = self._data_config.nr_of_classes
         self._normalize_std = self._data_config.normailze_std
-        self._nr_channels = self._data_config.nr_of_channels
+        self._nr_channels = self._data_config.nr_of_input_channels
         self._input_data = None
         self._gt_data = None
         self.data = None
