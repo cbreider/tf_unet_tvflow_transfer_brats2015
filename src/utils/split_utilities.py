@@ -112,7 +112,9 @@ class TrainingDataset(object):
             if self._load_only_mid_scans:
                 keep_out.extend(["_{}.".format(i) for i in range(40)])
                 keep_out.extend(["_{}.".format(i) for i in range(120, 150)])
-            for
+            for k in self.train_paths.keys():
+                if any(st in file for st in keep_out):
+                    del self.train_paths[k]
 
 
     def _create_new_split(self):
@@ -176,26 +178,19 @@ class TrainingDataset(object):
         if use_scale:
             tv_flow_ext = "_tvflow_scale.png"
 
-        keep_out = []
-        if self._load_only_mid_scans:
-            keep_out.extend(["_{}.".format(i) for i in range(40)])
-            keep_out.extend(["_{}.".format(i) for i in range(120, 150)])
-
         raw_to_tvflow_file_dict = dict()
         raw_to_tvflow_file_dict.update(self._get_paths_dict_tvflow_single(base_path_key=self._paths.raw_train_dir,
                                                                           base_path_value=self._paths.tv_flow_out_dir,
                                                                           ext_key=self._paths.png_ext,
                                                                           ext_val=tv_flow_ext,
                                                                           gg=self._paths.high_grade_gliomas_folder,
-                                                                          without_gt=True,
-                                                                          keep_out=keep_out))
+                                                                          without_gt=True))
         raw_to_tvflow_file_dict.update(self._get_paths_dict_tvflow_single(base_path_key=self._paths.raw_train_dir,
                                                                           base_path_value=self._paths.tv_flow_out_dir,
                                                                           ext_key=self._paths.png_ext,
                                                                           ext_val=tv_flow_ext,
                                                                           gg=self._paths.low_grade_gliomas_folder,
-                                                                          without_gt=True,
-                                                                          keep_out=keep_out))
+                                                                          without_gt=True))
         return raw_to_tvflow_file_dict
 
     def _get_raw_to_seg_file_paths_dict(self):
@@ -222,23 +217,15 @@ class TrainingDataset(object):
 
         train_split, validation_split, test_split = self._split_patients(patient_paths=patient_paths)
 
-        keep_out = []
-        if self._load_only_mid_scans and not self._use_mha:
-            keep_out.extend(["_{}.".format(i) for i in range(40)])
-            keep_out.extend(["_{}.".format(i) for i in range(120, 150)])
-
         train_dict = dict()
         val_dict = dict()
         test_dict = dict()
         train_dict.update(self._get_paths_dict_seg_single(patient_paths=train_split,
-                                                          ext_key=ext,
-                                                          keep_out=keep_out))
+                                                          ext_key=ext))
         val_dict.update(self._get_paths_dict_seg_single(patient_paths=validation_split,
-                                                          ext_key=ext,
-                                                          keep_out=keep_out))
+                                                          ext_key=ext))
         test_dict.update(self._get_paths_dict_seg_single(patient_paths=test_split,
-                                                          ext_key=ext,
-                                                          keep_out=keep_out))
+                                                          ext_key=ext))
         train_k = list(train_dict.keys())
         val_k = list(val_dict.keys())
         random.shuffle(train_k)
@@ -259,7 +246,7 @@ class TrainingDataset(object):
         return  patient_paths
 
     def _get_paths_dict_tvflow_single(self, base_path_key, base_path_value, ext_key=".png", ext_val=".png",
-                                      gg="HGG", without_gt=False, keep_out=[]):
+                                      gg="HGG", without_gt=False):
         """
         Creates a dictionary with tvflow and Brats2015
 
@@ -287,8 +274,6 @@ class TrainingDataset(object):
             if not os.path.exists(out_path):
                 continue
             for file in os.listdir(path):
-                if any(st in file for st in keep_out):
-                    continue
                 if file.endswith(ext_key):
                     file_path_key = os.path.join(path, file)
                     modality = ""
@@ -309,7 +294,7 @@ class TrainingDataset(object):
                     file_dict[file_path_key] = file_path_val
         return file_dict
 
-    def _get_paths_dict_seg_single(self, patient_paths, ext_key=".png", keep_out=[]):
+    def _get_paths_dict_seg_single(self, patient_paths, ext_key=".png"):
         """
         Creates a dictionary with tvflow and Brats2015
 
@@ -321,8 +306,8 @@ class TrainingDataset(object):
                 {"path/to/brats2015/Patient/Flair/slice.png" : "path/to/tvflow/Patient/Flair/slice.png"}
         """
         file_dict = dict()
+        slices = [[] for i in range(len(self._use_modalities) + 1)]
         for patient_path in patient_paths:
-            sclice = [[] for i in range(len(self._use_modalities)+1)]
             file_paths = os.listdir(patient_path)
             file_paths = sorted(file_paths, reverse=True)
             file_path_gt = [f for f in file_paths if (self._paths.ground_truth_path_identifier[0] in f.lower() or
@@ -334,8 +319,6 @@ class TrainingDataset(object):
                 file_path_full = os.path.join(patient_path, file_path)
                 file_slices = sorted(os.listdir(file_path_full))
                 for file in file_slices:
-                    if any(st in file for st in keep_out):
-                        continue
                     if file.endswith(ext_key):
                         file_path_img = os.path.join(file_path_full, file)
                         modality = ""
@@ -355,12 +338,12 @@ class TrainingDataset(object):
                         if not any(modality in m for m in self._use_modalities):
                             continue
 
-                        slice[i].apped(file_path_img)
+                        slices[i].apped(file_path_img)
                         file_path_gt_full = file_path_img.replace(file_path_in,
                                                               file_path_gt)
                         if not os.path.exists(file_path_gt_full) and self._mode == TrainingModes.SEGMENTATION:
                             continue
-                        file_dict[file_path_key] = file_path_val
+                        slices[len(self._use_modalities)] = file_path_gt_full
         return file_dict
 
     def _safe_and_archive_split(self, split, file_name):
