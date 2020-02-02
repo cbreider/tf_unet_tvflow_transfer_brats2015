@@ -12,6 +12,7 @@ import os
 import datetime
 import json
 import logging
+import numpy as np
 from src.utils.enum_params import TrainingModes
 from random import shuffle
 from configuration import DataParams
@@ -67,7 +68,7 @@ class TrainingDataset(object):
         self._mode = mode  # type: TrainingModes
         self._data_config = data_config  # type: DataParams
         self._use_scale = self._data_config.use_scale_image_as_gt
-        self._load_only_mid_scans = self._data_config.load_only_middle_scans
+        self._load_only_mid_scans = self._data_config.use_only_spatial_range
         self._split_ratio = self._data_config.split_train_val_ratio
         self._nr_of_samples = self._data_config.nr_of_samples
         self._use_mha = self._data_config.use_mha_files_instead
@@ -107,15 +108,15 @@ class TrainingDataset(object):
                 validation=len(self.validation_paths),
                 path=self._paths.split_path
             ))
-        if self._load_only_mid_scans:
+        if self._load_only_mid_scans and len(self._load_only_mid_scans) == 2:
+            tmp = dict()
             keep_out = []
-            if self._load_only_mid_scans:
-                keep_out.extend(["_{}.".format(i) for i in range(40)])
-                keep_out.extend(["_{}.".format(i) for i in range(120, 150)])
+            keep_out.extend(["_{}.".format(i) for i in range(0, self._load_only_mid_scans[0])])
+            keep_out.extend(["_{}.".format(i) for i in range(self._load_only_mid_scans[0]+1, 155+1)])
             for k in self.train_paths.keys():
-                if any(st in file for st in keep_out):
-                    del self.train_paths[k]
-
+                if not any(st in k for st in keep_out):
+                    tmp[k] = self.train_paths[k]
+            self.train_paths = tmp
 
     def _create_new_split(self):
         """Creates and sets a new split training paths and validtaion paths
@@ -313,8 +314,6 @@ class TrainingDataset(object):
             file_path_gt = [f for f in file_paths if (self._paths.ground_truth_path_identifier[0] in f.lower() or
                                                       self._paths.ground_truth_path_identifier[1] in f.lower())][0]
             for file_path in file_paths:
-                if self._paths.ground_truth_path_identifier[0] in file_path.lower() or self._paths.ground_truth_path_identifier[1] in file_path.lower():
-                    continue
                 file_path_in = file_path
                 file_path_full = os.path.join(patient_path, file_path)
                 file_slices = sorted(os.listdir(file_path_full))
@@ -335,15 +334,29 @@ class TrainingDataset(object):
                         if self._paths.flair_identifier in file_path_img.lower():
                             modality = self._paths.flair_identifier
                             i = self._use_modalities.index(self._paths.flair_identifier)
-                        if not any(modality in m for m in self._use_modalities):
+                        if self._paths.ground_truth_path_identifier[0] in file_path.lower() or \
+                                self._paths.ground_truth_path_identifier[1] in file_path.lower():
+                            modality = "gt"
+                            i = len(self._use_modalities)
+
+                        if not any(modality in m for m in self._use_modalities) and modality != "gt":
                             continue
 
-                        slices[i].apped(file_path_img)
                         file_path_gt_full = file_path_img.replace(file_path_in,
                                                               file_path_gt)
                         if not os.path.exists(file_path_gt_full) and self._mode == TrainingModes.SEGMENTATION:
                             continue
-                        slices[len(self._use_modalities)] = file_path_gt_full
+
+                        slices[i].append(file_path_img)
+
+        # Check if there are the same number of images for each modality
+        if any(len(sl) != len(slices[0]) for sl in slices):
+            raise ValueError("Lenght of Lists do not match")
+        arr = np.array(slices).transpose()
+        for i in range(arr.shape[0]):
+            j = arr.shape[1]-1
+            file_dict[arr[i, j]] = list(arr[i, 0:j])
+
         return file_dict
 
     def _safe_and_archive_split(self, split, file_name):

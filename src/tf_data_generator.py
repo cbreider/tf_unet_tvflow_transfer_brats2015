@@ -38,7 +38,8 @@ class TFImageDataGenerator:
 
         self._nr_of_classes = self._data_config.nr_of_classes
         self._normalize_std = self._data_config.normailze_std
-        self._nr_channels = self._data_config.nr_of_input_channels
+        self._nr_channels = self._data_config.nr_of_image_channels
+        self._nr_modalities = self._data_config.nr_of_input_modalities
         self._input_data = None
         self._gt_data = None
         self.data = None
@@ -80,23 +81,38 @@ class TFImageDataGenerator:
     def _parse_function(self):
         raise NotImplementedError()
 
-    def _default_parse_func(self, input_ob, gt_ob):
+    def _default_parse_func(self, input_ob, gt_ob, modalities, data_vals):
         # load and preprocess the image
         # if data is given as png path load the data first
-        in_img = tf.expand_dims(tf.zeros(self._in_img_size, dtype=tf.float32), 2)
+        in_img = tf.zeros(shape=(self._in_img_size[0], self._in_img_size[1], self._nr_modalities), dtype=tf.float32)
         tv_img = tf.zeros_like(in_img)
-        gt_img = tf.zeros_like(in_img)
+        gt_img = tf.zeros(shape=(self._in_img_size[0], self._in_img_size[1], 1), dtype=tf.float32)
+
+        if self.load_data_from_disk:
+            for i in range(len(modalities)):
+                in_img[:, :, i] = tf_utils.load_png_image(input_ob[i], nr_channels=self._nr_channels,
+                                                          img_size=self._in_img_size)
+        else:
+            in_img = tf.cast(tf.reshape(input_ob, [input_ob.shape[0], input_ob.shape[1], 1]), tf.float32)
+
+        tv_img = tf_utils.normalize_and_zero_center_tensor(tv_img, max=self._data_max_value,
+                                                           new_max=self._data_norm_value,
+                                                           normalize_std=self._normalize_std)
 
         if self._mode == TrainingModes.SEGMENTATION:
             if self.load_data_from_disk:
-                in_img = tf_utils.load_png_image(input_ob, nr_channels=self._nr_channels, img_size=self._in_img_size)
+                for i in range(len(modalities)):
+                    in_img[:, :, i] = tf_utils.load_png_image(input_ob[i], nr_channels=self._nr_channels,
+                                                              img_size=self._in_img_size)
                 gt_img = tf_utils.load_png_image(gt_ob, nr_channels=self._nr_channels, img_size=self._in_img_size)
             else:
                 in_img = tf.cast(tf.reshape(input_ob, [input_ob.shape[0], input_ob.shape[1], 1]), tf.float32)
                 gt_img = tf.cast(tf.reshape(gt_ob, [gt_ob.shape[0], gt_ob.shape[1], 1]), tf.float32)
         elif self._mode == TrainingModes.TVFLOW_SEGMENTATION or self._mode == TrainingModes.TVFLOW_REGRESSION:
             if self.load_data_from_disk:
-                in_img = tf_utils.load_png_image(input_ob, nr_channels=self._nr_channels, img_size=self._in_img_size)
+                for i in range(len(modalities)):
+                    in_img[:, :, i] = tf_utils.load_png_image(input_ob[i], nr_channels=self._nr_channels,
+                                                              img_size=self._in_img_size)
                 if self._load_tv_from_file:
                     tv_img = tf_utils.load_png_image(gt_ob, nr_channels=self._nr_channels, img_size=self._in_img_size)
                 else:
@@ -167,8 +183,8 @@ class TFTrainingImageDataGenerator(TFImageDataGenerator):
         logging.info("Train buffer size {}, batch size {}".format(self._buffer_size, self._batch_size))
         # convert lists to TF tensor
         if self.load_data_from_disk:
-            gt = list(self._raw_data.values())
-            input_val = list(self._raw_data.keys())
+            gt = list(self._raw_data.keys())
+            input_val = list(self._raw_data.values())
             self._input_data = convert_to_tensor(input_val)
             self._gt_data = convert_to_tensor(gt)
         else:
@@ -203,8 +219,8 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
         logging.info("Validation buffer size {}, batch size {}".format(self._buffer_size, self._batch_size))
         # convert lists to TF tensor
         if self.load_data_from_disk:
-            gt = list(self._raw_data.values())
-            input_val = list(self._raw_data.keys())
+            gt = list(self._raw_data.keys())
+            input_val = list(self._raw_data.values())
             self._input_data = convert_to_tensor(input_val)
             self._gt_data = convert_to_tensor(gt)
         else:

@@ -57,10 +57,11 @@ class DataParams:
     norm_image_value = 1.0          # Values which Images should be normed to during pre processing
     data_max_value = 255.0          # Max value of inout images (uint8)
     normailze_std = True            # normalize standard deviation for images during pre processing
-    load_only_middle_scans = False   # load only slice 40 - 120
+    use_only_spatial_range = [30, 130]   # use only slices use_only_spatial_range[0] to use_only_spatial_range[1] because
+                                        # it is unlikly to be tumot regions in the outer scans. use_only_spatial_range= None to use all scans
     nr_of_samples = 0               # use only a subset of images. if 0 all data is used
     use_modalities = [modalities[0], modalities[1], modalities[2], modalities[3]]  # modalities used for training
-    nr_of_input_channels = len(use_modalities)              # number of channles of in/out images (grayscale)
+    nr_of_input_modalities = len(use_modalities)              # number of channles of in/out images (grayscale)
     nr_of_classes = 2
     use_mha_files_instead = False
     load_tv_from_file = False
@@ -96,7 +97,7 @@ class ConvNetParams:
     freeze_down_layers = False       # freeze encoder layers during training
     freeze_up_layers = False        # freeze decoder layers during training
     activation_func_out = Activation_Func.RELU  # Act func for output map # noe for regression
-    nr_input_channels = DataParams.nr_of_input_channels
+    nr_input_channels = DataParams.nr_of_input_modalities
     nr_of_classes = DataParams.nr_of_classes
     use_scale_as_gt = DataParams.use_scale_image_as_gt
     max_tv_value = DataParams.norm_image_value
