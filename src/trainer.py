@@ -298,7 +298,7 @@ class Trainer(object):
                 itr += 1
 
                 size = [8, 8]
-                fmaps = util.revert_zero_centering(np.squeeze(np.array(features[60:80]), axis=1))
+                fmaps = util.revert_zero_centering(np.squeeze(np.array(features[75:76]), axis=1))
                 map_s = [fmaps.shape[1], fmaps.shape[2]]
 
                 for m in range(fmaps.shape[0]):
@@ -309,7 +309,7 @@ class Trainer(object):
                                                                                 size[1] * map_s[1])
                     # histogram normalization
                     im = util.image_histogram_equalization(im)[0]
-                    util.save_image(im, os.path.join(out_p, "{}_{}.jpg".format(i, m)))
+                    util.save_image(im, os.path.join(out_p, "{}_{}.jpg".format(itr, m)))
                 features = []
                 if mini and itr == 5:
                     break
