@@ -705,7 +705,7 @@ def combine_img_prediction(data, gt, pred, mode=1, label_colors=None):
 
     ny = data.shape[2]
     ch = data.shape[3]
-    data = revert_zero_centering(data).reshape(-1, ny, ch)
+    data = revert_zero_centering(data).reshape(-1, ny*ch, 1)
 
     data_rgb = to_rgb(data)
     data_size = (data_rgb.shape[1], data_rgb.shape[0])
@@ -717,8 +717,8 @@ def combine_img_prediction(data, gt, pred, mode=1, label_colors=None):
     elif mode == 1:
         gt = revert_zero_centering(gt)
         pred = revert_zero_centering(pred)
-        gt = gt.reshape(-1, gt.shape[2], ch)
-        pred = pred.reshape(-1, pred.shape[2], ch)
+        gt = gt.reshape(-1, gt.shape[2], 1)
+        pred = pred.reshape(-1, pred.shape[2], 1)
         gt_rgb = to_rgb(gt)
         pred_rgb = to_rgb(pred)
 

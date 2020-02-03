@@ -70,10 +70,10 @@ class DataPaths(object):
 
         if not os.path.exists(self.data_dir):
             raise FileNotFoundError()
-        if not os.path.exists(self.brats_train_dir):
-            return FileNotFoundError()
-        if not os.path.exists(self.brats_test_dir):
-            raise FileNotFoundError()
+        #if not os.path.exists(self.brats_train_dir):
+        #    return FileNotFoundError()
+        #if not os.path.exists(self.brats_test_dir):
+        #    raise FileNotFoundError()
         if not os.path.exists(self.slice_dir):
             raise FileNotFoundError()
         if not os.path.exists(self.png_dir):

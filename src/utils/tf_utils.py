@@ -378,7 +378,7 @@ def to_one_hot_custom(image, depth):
     return one_hot
 
 
-def normalize_and_zero_center_tensor(tensor, max, new_max, normalize_std):
+def normalize_and_zero_center_tensor(tensor, max, normalize_std, new_max=None, mean=None, std=None):
     """
     Creates a one hot tensor of a given image
 
@@ -390,16 +390,24 @@ def normalize_and_zero_center_tensor(tensor, max, new_max, normalize_std):
     :returns: One hot Tensor of depth = depth:
     """
 
-    # intensity normalize
-    #mean, var = tf.nn.moments(normal, axes=[0, 1, 2])
-    out = tf.math.divide((tensor - ((59.5775 / 9971.0) * 65536.0)), tf.math.sqrt((217.8137 / 9971.0) * 65536.0))
+    if normalize_std:
+        # intensity normalize                     new_max
+        if mean is None or std is None:
+            mean, var = tf.nn.moments(tensor, axes=[0, 1, 2])
+            std = tf.math.sqrt(var)
+        out = tf.math.divide((tensor - mean), std)
+        max = (max - mean) / std
+    else:
+        out = tensor
 
     #set black elemts to random
     #zero = tf.constant(0, dtype=tf.float32)
     #where_zero = tf.equal(out, zero)
     #out = tf.where(where_zero > 0, tf.random_uniform(out.shape, -0.5, 0.5, dtype=tf.float32, seed=0), out)
     #out = tf.math.divide(tensor, tf.reduce_max(out))
-    out = tf.math.divide(out, 65536.0)
+
+    if new_max is None:
+        out = tf.math.multiply(tf.math.divide(out, max), new_max)
 
     return out
 
