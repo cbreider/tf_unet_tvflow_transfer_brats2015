@@ -139,13 +139,14 @@ class TFImageDataGenerator:
         if self._crop_to_non_zero:
             in_img, gt_img, tv_img = tf_utils.crop_images_to_to_non_zero(scan=in_img, ground_truth=gt_img,
                                                                          size=self._set_img_size, tvimg=tv_img)
-        for i in range(len(self._use_modalities)):
-            in_img = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._use_modalities,
+
+        if self._do_augmentation:
+            in_img, gt_img = tf_utils.preprocess_images(in_img, gt_img)
+
+        in_img = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._use_modalities,
                                                                new_max=self._data_norm_value,
                                                                normalize_std=self._normalize_std,
                                                                data_vals=self._data_vals)
-        if self._do_augmentation:
-            in_img, gt_img = tf_utils.preprocess_images(in_img, gt_img)
 
         if self._mode == TrainingModes.SEGMENTATION:
             gt_img = tf_utils.to_one_hot_custom(gt_img, depth=self._nr_of_classes)

@@ -16,7 +16,7 @@ import numpy as np
 import elasticdeform.tf as etf
 
 
-def preprocess_images(scan, ground_truth, dispacement_sigma=10):
+def preprocess_images(scan, ground_truth, dispacement_sigma=25):
     """
     combined pre processing input and gt images
 
@@ -25,17 +25,18 @@ def preprocess_images(scan, ground_truth, dispacement_sigma=10):
     :param ground_truth: ground_truth image
     :returns:cobmbined padded,cropped and flipped images
     """
+    last_label_dim = tf.shape(ground_truth)[-1]
+    last_image_dim = tf.shape(scan)[-1]
     #  preprocess the image
     combined = tf.concat([scan, ground_truth], axis=2)
     image_shape = tf.shape(scan)
 
-    #displacement_val = np.random.randn(2, 2, 3) * dispacement_sigma
+    #displacement_val = np.random.randn(3, 2, 3) * dispacement_sigma
     # construct TensorFlow input and top gradient
     displacement = tf.random.normal(shape=[2, 2, 3]) * dispacement_sigma
-    combined_deform = etf.deform_grid(combined, displacement, order=3, axis=(0,1), prefilter=False)
+    combined_deform = etf.deform_grid(combined, displacement, order=3, axis=(0, 1), prefilter=False)
 
-    last_label_dim = tf.shape(ground_truth)[-1]
-    last_image_dim = tf.shape(scan)[-1]
+
     size = tf.random.uniform((), minval=tf.cast(tf.math.divide(tf.cast(image_shape[0], tf.float32),
                                                                tf.constant(2.0)), tf.int32),
                              maxval=image_shape[0],
@@ -414,9 +415,8 @@ def normalize_and_zero_center_slice(tensor, max, normalize_std, new_max=None, me
     if normalize_std:
         # intensity normalize                     new_max
         if mean is None or std is None:
-            mean, var = tf.nn.moments(tensor, axes=[0, 1, 2])
-            std = tf.math.sqrt(var)
-        out = tf.math.divide((tensor - mean), std)
+            mean, std = tf.nn.moments(tensor, axes=[0, 1, 2])
+        out = tf.math.divide((tensor - mean), tf.math.sqrt(std))
         max = (max - mean) / std
     else:
         out = tensor

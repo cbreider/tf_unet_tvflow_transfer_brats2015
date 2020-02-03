@@ -33,7 +33,7 @@ class DataParams:
     data_values = {modalities[0]: [9971, 59.5775, 217.8138],  # max, mean std of the training mri scans
                    modalities[1]: [11737, 79.6471, 272.0175],
                    modalities[2]: [11737, 81.787, 273.7927],
-                   modalities[3]: [15281, 97.9302, 14.4067]}
+                   modalities[3]: [15281, 97.9302, 314.4067]}
 
     raw_data_height = 240
     raw_data_width = 240
@@ -49,7 +49,7 @@ class DataParams:
      #img preprocessing and augmentation
     shuffle = True                  # Set true to extra Shuffle Trining Data. Note dict.items() is allready random
     do_image_augmentation_train = True    # Set True to augment training images random crapp, flip, rotation
-    do_image_augmentation_val = False  # Set True to augment training images random crapp, flip, rotation for validation
+    do_image_augmentation_val = True  # Set True to augment training images random crapp, flip, rotation for validation
     split_train_val_ratio = [0.99, 0.01] # [0.6, 0.2 0.2]     # Ration of Nr Training images to Val images (optioanl test)
     use_scale_image_as_gt = False   # choose if you want to use tv scale image instead of smoothed (only tv training)
     crop_to_non_zero_train = True         # Choose True to alway crop Training images to region of non zero values
