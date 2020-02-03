@@ -17,6 +17,8 @@ from src.utils.enum_params import TrainingModes
 from random import shuffle
 from configuration import DataParams
 import random
+import re
+import collections
 
 
 class TestFilePaths(object):
@@ -229,9 +231,9 @@ class TrainingDataset(object):
 
         train_split, validation_split, test_split = self._split_patients(patient_paths=patient_paths)
 
-        train_dict = dict()
-        val_dict = dict()
-        test_dict = dict()
+        train_dict = collections.OrderedDict()
+        val_dict = collections.OrderedDict()
+        test_dict = collections.OrderedDict()
         train_dict.update(self._get_paths_dict_seg_single(patient_paths=train_split,
                                                           ext_key=ext))
         val_dict.update(self._get_paths_dict_seg_single(patient_paths=validation_split,
@@ -241,15 +243,11 @@ class TrainingDataset(object):
         train_k = list(train_dict.keys())
         val_k = list(val_dict.keys())
         random.shuffle(train_k)
-        random.shuffle(val_k)
         rand_train_dict = dict()
         for key in train_k:
             rand_train_dict.update({key: train_dict[key]})
-        rand_val_dict = dict()
-        for key in val_k:
-            rand_val_dict.update({key: val_dict[key]})
 
-        return rand_train_dict, rand_val_dict, test_dict
+        return rand_train_dict, val_dict, test_dict
 
     def _get_patient_folders(self, base_path, gg="HGG"):
         gg_path = os.path.join(base_path, gg)
@@ -272,7 +270,7 @@ class TrainingDataset(object):
         :returns Dictionary: with input and gt paths:
                 {"path/to/brats2015/Patient/Flair/slice.png" : "path/to/tvflow/Patient/Flair/slice.png"}
         """
-        file_dict = dict()
+        file_dict = collections.OrderedDict()
         gg_path = os.path.join(base_path_key, gg)
         patient_names = os.listdir(gg_path)
         patient_paths = [os.path.join(gg_path, patient) for patient in patient_names]
@@ -317,7 +315,7 @@ class TrainingDataset(object):
         :returns Dictionary: with input and gt paths:
                 {"path/to/brats2015/Patient/Flair/slice.png" : "path/to/tvflow/Patient/Flair/slice.png"}
         """
-        file_dict = dict()
+        file_dict = collections.OrderedDict()
         slices = [[] for i in range(len(self._use_modalities) + 1)]
         for patient_path in patient_paths:
             file_paths = os.listdir(patient_path)
@@ -327,7 +325,8 @@ class TrainingDataset(object):
             for file_path in file_paths:
                 file_path_in = file_path
                 file_path_full = os.path.join(patient_path, file_path)
-                file_slices = sorted(os.listdir(file_path_full))
+                file_slices = os.listdir(file_path_full)
+                file_slices.sort(key=self.natural_keys)
                 for file in file_slices:
                     if file.endswith(ext_key):
                         file_path_img = os.path.join(file_path_full, file)
@@ -457,3 +456,14 @@ class TrainingDataset(object):
         data = file.read()
         split = json.loads(data)
         return split
+
+    def atoi(self, text):
+        return int(text) if text.isdigit() else text
+
+    def natural_keys(self, text):
+        '''
+        alist.sort(key=natural_keys) sorts in human order
+        http://nedbatchelder.com/blog/200712/human_sorting.html
+        (See Toothy's implementation in the comments)
+        '''
+        return [self.atoi(c) for c in re.split(r'(\d+)', text)]

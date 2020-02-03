@@ -784,6 +784,10 @@ def revert_zero_centering(data):
     return np.array(images)
 
 
+def get_hard_dice_score(gt, pred, eps=1e-5):
+    return (2 * float(np.sum(gt * pred) + eps)) / (float(np.sum(gt) + np.sum(pred)) + eps)
+
+
 def save_image(img, path):
     """
     Writes the image to disk

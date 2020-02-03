@@ -49,11 +49,11 @@ class DataParams:
      #img preprocessing and augmentation
     shuffle = True                  # Set true to extra Shuffle Trining Data. Note dict.items() is allready random
     do_image_augmentation_train = True    # Set True to augment training images random crapp, flip, rotation
-    do_image_augmentation_val = True  # Set True to augment training images random crapp, flip, rotation for validation
+    do_image_augmentation_val = False  # Set True to augment training images random crapp, flip, rotation for validation
     split_train_val_ratio = [0.99, 0.01] # [0.6, 0.2 0.2]     # Ration of Nr Training images to Val images (optioanl test)
     use_scale_image_as_gt = False   # choose if you want to use tv scale image instead of smoothed (only tv training)
-    crop_to_non_zero_train = True         # Choose True to alway crop Training images to region of non zero values
-    crop_to_non_zero_val = True    # Choose True to alway crop Training images to region of non zero values for validation
+    crop_to_non_zero_train = False         # Choose True to alway crop Training images to region of non zero values
+    crop_to_non_zero_val = False    # Choose True to alway crop Training images to region of non zero values for validation
     norm_image_value = None          # Values which Images should be normed to during pre processing
     data_max_value = 255.0          # Max value of inout images (uint8)
     normailze_std = True            # normalize standard deviation for images during pre processing
@@ -62,7 +62,7 @@ class DataParams:
     nr_of_samples = 0               # use only a subset of images. if 0 all data is used
     use_modalities = [modalities[0], modalities[1], modalities[2], modalities[3]]  # modalities used for training
     nr_of_input_modalities = len(use_modalities)              # number of channles of in/out images (grayscale)
-    nr_of_classes = 2
+    nr_of_classes = 1
     use_mha_files_instead = False
     load_tv_from_file = False
 
@@ -90,7 +90,7 @@ class ConvNetParams:
     cost_function = Cost.CROSS_ENTROPY        # Cost function to use. Choose from class Cost(Enum)
     padding = True                  # Use padding to preserve feature map size and prevent downscaling
     batch_normalization = True      # Use Batchnormalization Yes/No
-    class_weights = None #[1.0, 3.0]            # weight for each individual class # TODO ?
+    class_weights = [3.0]            # weight for each individual class # TODO ?
     regularizer = 0.0000001           # lambda value for l2 regualizer
     tv_regularizer = 0.01            # tv regularize for TV loss. oly used if Cost funcion is TV
     add_residual_layer = False       # Add residual layer/skip layer at the end output = input + last_layer
@@ -107,8 +107,8 @@ class ConvNetParams:
 class TrainingParams:
     """ Training parameters"""
     num_epochs = 100000             # number of training epochs
-    training_iters = 15000           # iterations per epoch
-    display_step = 1000              # number of iterations between
+    training_iters = 10000           # iterations per epoch
+    display_step = 500              # number of iterations between
     label_smothing = 0              # smooth label values int gt to confuse network # TODO ?
     optimizer = Optimizer.ADAM      # Optimizer to use. Choose from class Optimizer(Enum):
     batch_size_train = DataParams.batch_size_train            # batch size used for training
@@ -117,7 +117,7 @@ class TrainingParams:
     buffer_size_val = DataParams.buffer_size_val # buffer size for tf validation data pipeline (only used for tv training)
     norm_grads = False              # norm gradients in summary
     write_graph = True              # write graph in tf summary
-    keep_prob_dopout = 0.5          # keep prob for dropout
+    keep_prob_dopout = 1.0          # keep prob for dropout
 
     adam_args = dict(learning_rate=0.0001,  # Hyperparameters for Adam optimzer
                      beta1=0.9,
@@ -125,8 +125,8 @@ class TrainingParams:
                      epsilon=1e-08,
                      use_locking=False,
                      name='Adam',
-                     decay_rate=0.5,
-                     decay_steps=30000)
+                     decay_rate=0.6,
+                     decay_steps=20000)
     momentum_args = dict(momentum=0.99,     # Hyperparameters for Momentum optimzer
                          learning_rate=0.00001,
                          decay_rate=0.90,

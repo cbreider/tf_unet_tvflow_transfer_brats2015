@@ -223,8 +223,6 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
         tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=1)
         tmp_data = tmp_data.prefetch(buffer_size=self._buffer_size)
         # shuffle the first `buffer_size` elements of the dataset
-        if self._shuffle:
-            tmp_data = tmp_data.shuffle(buffer_size=self._buffer_size)
         # create a new dataset with batches of images
         tmp_data = tmp_data.batch(self._batch_size)
         self.data = tmp_data

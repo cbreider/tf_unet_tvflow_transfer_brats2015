@@ -255,11 +255,13 @@ class Trainer(object):
 
     def run_validation(self, epoch, sess, step, summary_writer, mini=False):
         vals = []
+        dice_per_volume = []
         predictions = []
         bx = []
         by = []
         btv = []
         shape = []
+        features = []
         out_p = os.path.join(self.output_path, "Epoch_{}".format(epoch))
         itr = 0
         if not os.path.exists(out_p):
@@ -268,11 +270,11 @@ class Trainer(object):
         logging.info("Running Validation for epoch {}...".format(epoch))
         for i in range(int(self.data_provider_val.size / self.config.batch_size_val)):
             test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
-            __, loss, acc, err, err_r, prediction, dice, ce = sess.run(
+            __, loss, acc, err, err_r, prediction, dice, ce, feature = sess.run(
                 [self.summary_op, self.net.cost,
                  self.net.accuracy, self.net.error, self.net.error_rate,
                  self.net.predicter, self.net.dice,
-                 self.net.cross_entropy],
+                 self.net.cross_entropy, self.net.last_feature_map],
                 feed_dict={self.net.x: test_x,
                            self.net.y: test_y,
                            self.net.keep_prob: 1.})
@@ -282,7 +284,10 @@ class Trainer(object):
             by.append(test_y)
             btv.append(test_tv)
             shape = prediction.shape
-            if len(predictions) == 64:
+            features.append(feature)
+            if len(predictions) == 155:
+
+                dice_per_volume.append(util.get_hard_dice_score(np.array(by), np.array(predictions)))
                 self.store_prediction("{}_{}".format(epoch, itr), out_p,
                                       np.squeeze(np.array(bx), axis=1), np.squeeze(np.array(by), axis=1),
                                       np.squeeze(np.array(btv), axis=1), np.squeeze(np.array(predictions), axis=1))
@@ -291,7 +296,22 @@ class Trainer(object):
                 by = []
                 btv = []
                 itr += 1
-                if mini and itr == 10:
+
+                size = [8, 8]
+                fmaps = util.revert_zero_centering(np.squeeze(np.array(features[60:80]), axis=1))
+                map_s = [fmaps.shape[1], fmaps.shape[2]]
+
+                for m in range(fmaps.shape[0]):
+                    fmap = fmaps[m]
+                    im = fmap.reshape(map_s[0], map_s[0],
+                                      size[0], size[1]).transpose(2, 0,
+                                                                  3, 1).reshape(size[0] * map_s[0],
+                                                                                size[1] * map_s[1])
+                    # histogram normalization
+                    im = util.image_histogram_equalization(im)[0]
+                    util.save_image(im, os.path.join(out_p, "{}_{}.jpg".format(i, m)))
+                features = []
+                if mini and itr == 5:
                     break
         if len(bx) > 0:
             self.store_prediction("{}_{}".format(epoch, itr), out_p,
@@ -300,8 +320,10 @@ class Trainer(object):
         val_scores = np.mean(np.array(vals), axis=0)
         self.write_tf_summary(step, val_scores, summary_writer)
         logging.info(
-            "EPOCH {}: Verification loss= {:.6f}, cross entropy = {:.4f}, Dice= {:.4f}, error= {:.1f}%, Accuracy {:.4f}".format(
-                epoch, val_scores[0], val_scores[1], val_scores[2], val_scores[4], val_scores[5]))
+            "EPOCH {} Per Slice: Verification loss= {:.6f}, cross entropy = {:.4f}, Dice per sclice = {:.4f}, "
+            "Dice per_volume = {:.4f}, error= {:.1f}%, Accuracy {:.4f}".format(
+                epoch, val_scores[0], val_scores[1], val_scores[2], np.mean(np.array(dice_per_volume)),
+                val_scores[4], val_scores[5]))
         return shape
 
     def write_tf_summary(self, step, vals, summary_writer):
