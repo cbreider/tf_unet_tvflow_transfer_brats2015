@@ -582,11 +582,7 @@ def to_rgb(img):
         img = np.tile(img, 3)
 
     img[np.isnan(img)] = 0
-    img -= np.amin(img)
-    if np.amax(img) != 0:
-        img /= np.amax(img)
 
-    img *= 255
     return img.astype('uint8')
 
 
@@ -705,15 +701,20 @@ def combine_img_prediction(data, gt, pred, mode=1, label_colors=None):
 
     ny = data.shape[2]
     ch = data.shape[3]
-    data = revert_zero_centering(data).reshape(-1, ny*ch, 1)
 
+    data_for_gt = to_rgb(revert_zero_centering(data[:, :, :, 0]).reshape(-1, ny, 1))
+    data = np.concatenate((revert_zero_centering(data[:, :, :, 0]),
+                           revert_zero_centering(data[:, :, :, 1]),
+                           revert_zero_centering(data[:, :, :, 2]),
+                           revert_zero_centering(data[:, :, :, 3])),
+                          axis=2).reshape(-1, ny*ch, 1)
     data_rgb = to_rgb(data)
-    data_size = (data_rgb.shape[1], data_rgb.shape[0])
+    data_size = (data_for_gt.shape[1], data_for_gt.shape[0])
     if mode == 0:
         gt = gt.reshape(-1, gt.shape[2], gt.shape[3])
         pred = pred.reshape(-1, pred.shape[2], pred.shape[3])
-        gt_rgb = one_hot_to_rgb(gt, data_rgb)
-        pred_rgb = one_hot_to_rgb(pred, data_rgb)
+        gt_rgb = one_hot_to_rgb(gt, data_for_gt)
+        pred_rgb = one_hot_to_rgb(pred, data_for_gt)
     elif mode == 1:
         gt = revert_zero_centering(gt)
         pred = revert_zero_centering(pred)
@@ -774,7 +775,10 @@ def revert_zero_centering(data):
         img = data[i]
         min = np.amin(img)
         img = img - min
-        img = img / np.amax(img)
+        m = np.amax(img)
+        if m == 0.0:
+            m = 1.0
+        img = img / m
         img *= 255.0
         images.append(img)
     return np.array(images)

@@ -97,26 +97,37 @@ class TrainingDataset(object):
             if sum(self._split_ratio) != 1.0:
                 raise ValueError()
             self._create_new_split()
+            if self._load_only_mid_scans and len(self._load_only_mid_scans) == 2:
+                tmp = dict()
+                keep_out = []
+                keep_out.extend(["_{}.".format(i) for i in range(0, self._load_only_mid_scans[0])])
+                keep_out.extend(["_{}.".format(i) for i in range(self._load_only_mid_scans[1] + 1, 155 + 1)])
+                for k in self.train_paths.keys():
+                    if not any(st in k for st in keep_out):
+                        tmp[k] = self.train_paths[k]
+                self.train_paths = tmp
+
             logging.info("Created dataset of {train} training samples and {validation} validation samples.".format(
                 train=len(self.train_paths),
                 validation=len(self.validation_paths)
             ))
         else:
             self._read_train_and_val_splits_from_folder()
+            if self._load_only_mid_scans and len(self._load_only_mid_scans) == 2:
+                tmp = dict()
+                keep_out = []
+                keep_out.extend(["_{}.".format(i) for i in range(0, self._load_only_mid_scans[0])])
+                keep_out.extend(["_{}.".format(i) for i in range(self._load_only_mid_scans[0] + 1, 155 + 1)])
+                for k in self.train_paths.keys():
+                    if not any(st in k for st in keep_out):
+                        tmp[k] = self.train_paths[k]
+                self.train_paths = tmp
+
             logging.info("Loaded dataset of {train} training samples and {validation} validation samples from {path}.".format(
                 train=len(self.train_paths),
                 validation=len(self.validation_paths),
                 path=self._paths.split_path
             ))
-        if self._load_only_mid_scans and len(self._load_only_mid_scans) == 2:
-            tmp = dict()
-            keep_out = []
-            keep_out.extend(["_{}.".format(i) for i in range(0, self._load_only_mid_scans[0])])
-            keep_out.extend(["_{}.".format(i) for i in range(self._load_only_mid_scans[0]+1, 155+1)])
-            for k in self.train_paths.keys():
-                if not any(st in k for st in keep_out):
-                    tmp[k] = self.train_paths[k]
-            self.train_paths = tmp
 
     def _create_new_split(self):
         """Creates and sets a new split training paths and validtaion paths

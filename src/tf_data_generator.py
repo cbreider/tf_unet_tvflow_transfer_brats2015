@@ -91,21 +91,23 @@ class TFImageDataGenerator:
         tv_img = tf.zeros_like(gt_img)
         tv_base = tf.zeros_like(gt_img)
 
+        slices = []
         for i in range(len(self._use_modalities)):
-            in_img[:, :, i] = tf_utils.load_png_image(input_ob[i], nr_channels=self._nr_channels,
-                                                      img_size=self._in_img_size)
-            if None: #todo add case
-                tv_base = in_img[:, :, i]
-            in_img[:, :, i] = tf_utils.normalize_and_zero_center_tensor(in_img[:, :, i], max=self._data_max_value,
-                                                                        new_max=self._data_norm_value,
-                                                                        normalize_std=self._normalize_std)
-
+            slices.append(tf_utils.load_png_image(input_ob[i], nr_channels=self._nr_channels,
+                                                      img_size=self._in_img_size))
+        in_img = tf.concat(slices, axis=2)
         if self._mode == TrainingModes.SEGMENTATION:
             gt_img = tf_utils.load_png_image(gt_ob, nr_channels=self._nr_channels, img_size=self._in_img_size)
         elif self._mode == TrainingModes.TVFLOW_SEGMENTATION or self._mode == TrainingModes.TVFLOW_REGRESSION:
             if self._load_tv_from_file:
                 tv_img = tf_utils.load_png_image(gt_ob, nr_channels=self._nr_channels, img_size=self._in_img_size)
             else:
+                if None:  # todo add case
+                    tv_base = in_img[:, :, i]
+                    v = self._data_vals[self._use_modalities[i]]
+                    tv_base = tf_utils.normalize_and_zero_center_sclice(tv_base, max=self._data_max_value,
+                                                                        new_max=self._data_norm_value,
+                                                                        normalize_std=self._normalize_std)
                 tv_img = tf_utils.get_tv_smoothed(img=tv_base, tau=self.tv_tau, weight=self.tv_weight,
                                                   eps=self.tv_eps, m_itr=self.tv_nr_itr)
 
@@ -138,11 +140,10 @@ class TFImageDataGenerator:
             in_img, gt_img, tv_img = tf_utils.crop_images_to_to_non_zero(scan=in_img, ground_truth=gt_img,
                                                                          size=self._set_img_size, tvimg=tv_img)
         for i in range(len(self._use_modalities)):
-            v = self._data_vals[self._use_modalities[i]]
-            in_img = tf_utils.normalize_and_zero_center_tensor(in_img, max=v[0],
+            in_img = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._use_modalities,
                                                                new_max=self._data_norm_value,
                                                                normalize_std=self._normalize_std,
-                                                               mean=v[1], std=[2])
+                                                               data_vals=self._data_vals)
         if self._do_augmentation:
             in_img, gt_img = tf_utils.preprocess_images(in_img, gt_img)
 

@@ -378,7 +378,28 @@ def to_one_hot_custom(image, depth):
     return one_hot
 
 
-def normalize_and_zero_center_tensor(tensor, max, normalize_std, new_max=None, mean=None, std=None):
+def normalize_and_zero_center_tensor(tensor, modalities, data_vals, normalize_std, new_max=None):
+    """
+        Creates a one hot tensor of a given image
+
+
+        :param tensor: input tensor of shape [?, ?, ?, ?]
+        :param max: max value of input image as it could be
+        :param new_max: new max which the image is normailzed to
+        :param normalize_std: True if std should be normalized
+        :returns: One hot Tensor of depth = depth
+        """
+    slices = []
+    for i in range (len(modalities)):
+        v = data_vals[modalities[i]]
+        slices.append(normalize_and_zero_center_slice(tf.expand_dims(tensor[:, :, i], axis=2), max=v[0],
+                                                                     normalize_std=normalize_std,
+                                                      new_max=new_max, mean=v[1], std=v[2]))
+
+    return tf.concat(slices, axis=2)
+
+
+def normalize_and_zero_center_slice(tensor, max, normalize_std, new_max=None, mean=None, std=None):
     """
     Creates a one hot tensor of a given image
 
@@ -406,7 +427,7 @@ def normalize_and_zero_center_tensor(tensor, max, normalize_std, new_max=None, m
     #out = tf.where(where_zero > 0, tf.random_uniform(out.shape, -0.5, 0.5, dtype=tf.float32, seed=0), out)
     #out = tf.math.divide(tensor, tf.reduce_max(out))
 
-    if new_max is None:
+    if new_max is not None:
         out = tf.math.multiply(tf.math.divide(out, max), new_max)
 
     return out

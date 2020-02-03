@@ -54,7 +54,7 @@ class DataParams:
     use_scale_image_as_gt = False   # choose if you want to use tv scale image instead of smoothed (only tv training)
     crop_to_non_zero_train = True         # Choose True to alway crop Training images to region of non zero values
     crop_to_non_zero_val = True    # Choose True to alway crop Training images to region of non zero values for validation
-    norm_image_value = 1.0          # Values which Images should be normed to during pre processing
+    norm_image_value = None          # Values which Images should be normed to during pre processing
     data_max_value = 255.0          # Max value of inout images (uint8)
     normailze_std = True            # normalize standard deviation for images during pre processing
     use_only_spatial_range = [30, 130]   # use only slices use_only_spatial_range[0] to use_only_spatial_range[1] because
@@ -83,8 +83,8 @@ class DataParams:
 class ConvNetParams:
     """ ConvNetParams parameters"""
     conv_net_type = ConvNetType.U_NET_2D
-    num_layers = 3                  # number of encoder layers including bottom layer
-    feat_root = 16                  # number of feature maps/kernels in the first layer
+    num_layers = 5                  # number of encoder layers including bottom layer
+    feat_root = 64                  # number of feature maps/kernels in the first layer
     filter_size = 3                 # kernel size
     pool_size = 2                   # size of max pooling
     cost_function = Cost.CROSS_ENTROPY        # Cost function to use. Choose from class Cost(Enum)
@@ -107,8 +107,8 @@ class ConvNetParams:
 class TrainingParams:
     """ Training parameters"""
     num_epochs = 100000             # number of training epochs
-    training_iters = 10           # iterations per epoch
-    display_step = 5              # number of iterations between
+    training_iters = 15000           # iterations per epoch
+    display_step = 1000              # number of iterations between
     label_smothing = 0              # smooth label values int gt to confuse network # TODO ?
     optimizer = Optimizer.ADAM      # Optimizer to use. Choose from class Optimizer(Enum):
     batch_size_train = DataParams.batch_size_train            # batch size used for training
@@ -125,7 +125,7 @@ class TrainingParams:
                      epsilon=1e-08,
                      use_locking=False,
                      name='Adam',
-                     decay_rate=0.6,
+                     decay_rate=0.5,
                      decay_steps=30000)
     momentum_args = dict(momentum=0.99,     # Hyperparameters for Momentum optimzer
                          learning_rate=0.00001,
