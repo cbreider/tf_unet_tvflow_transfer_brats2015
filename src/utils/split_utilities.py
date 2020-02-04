@@ -119,7 +119,7 @@ class TrainingDataset(object):
                 tmp = dict()
                 keep_out = []
                 keep_out.extend(["_{}.".format(i) for i in range(0, self._load_only_mid_scans[0])])
-                keep_out.extend(["_{}.".format(i) for i in range(self._load_only_mid_scans[0] + 1, 155 + 1)])
+                keep_out.extend(["_{}.".format(i) for i in range(self._load_only_mid_scans[1] + 1, 155 + 1)])
                 for k in self.train_paths.keys():
                     if not any(st in k for st in keep_out):
                         tmp[k] = self.train_paths[k]
