@@ -117,7 +117,7 @@ class TrainingParams:
     buffer_size_val = DataParams.buffer_size_val # buffer size for tf validation data pipeline (only used for tv training)
     norm_grads = False              # norm gradients in summary
     write_graph = True              # write graph in tf summary
-    keep_prob_dopout = 1.0          # keep prob for dropout
+    keep_prob_dopout = 0.8          # keep prob for dropout
 
     adam_args = dict(learning_rate=0.0001,  # Hyperparameters for Adam optimzer
                      beta1=0.9,
@@ -125,8 +125,8 @@ class TrainingParams:
                      epsilon=1e-08,
                      use_locking=False,
                      name='Adam',
-                     decay_rate=0.6,
-                     decay_steps=20000)
+                     decay_rate=0.1,
+                     decay_steps=100000)
     momentum_args = dict(momentum=0.99,     # Hyperparameters for Momentum optimzer
                          learning_rate=0.00001,
                          decay_rate=0.90,
