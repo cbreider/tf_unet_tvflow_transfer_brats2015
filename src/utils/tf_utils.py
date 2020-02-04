@@ -34,20 +34,21 @@ def preprocess_images(scan, ground_truth, dispacement_sigma=25):
 
     #displacement_val = np.random.randn(3, 2, 3) * dispacement_sigma
     # construct TensorFlow input and top gradient
-    displacement = tf.random.normal(shape=[2, 2, 3]) * dispacement_sigma
+    displacement = tf.random.normal(shape=[2, 3, 3]) * dispacement_sigma
     combined_deform = etf.deform_grid(combined, displacement, order=3, axis=(0, 1), prefilter=False)
 
 
-    size = tf.random.uniform((), minval=tf.cast(tf.math.divide(tf.cast(image_shape[0], tf.float32),
-                                                               tf.constant(2.0)), tf.int32),
-                             maxval=image_shape[0],
+
+
+    size = tf.random.uniform((), minval=tf.cast(tf.cast(image_shape[0], tf.float32) * 0.8, tf.int32),
+                             maxval=tf.cast(tf.cast(image_shape[0], tf.float32) * 1.2, tf.int32),
                              dtype=tf.int32)
-    combined_crop = tf.random_crop(value=combined_deform,
-                                   size=tf.concat([[200, 200], [last_label_dim + last_image_dim]], axis=0))
-    #combined_crop = tf.cond(tf.random.uniform(()) > 0.5,
-    #                        lambda: tf.random_crop(value=combined,
-    #                                   size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0)),
-    #                        lambda: combined)
+    #combined_crop = tf.random_crop(value=combined_deform,
+    #                              size=tf.concat([[200, 200], [last_label_dim + last_image_dim]], axis=0))
+    combined_crop = tf.cond(tf.random.uniform(()) > 0.5,
+                            lambda: tf.random_crop(value=combined,
+                                       size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0)),
+                            lambda: combined)
 
     combined_flip = tf.image.random_flip_left_right(combined_crop)
     combined_flip = tf.image.random_flip_up_down(combined_flip)
