@@ -70,7 +70,8 @@ if __name__ == "__main__":
     # tf.enable_eager_execution()
     tf.reset_default_graph()
     out_path=model_path
-    data_paths = DataPaths(data_path="default", mode="SEGMENTATION_TEST")
+    data_paths = DataPaths(data_path="default", mode="SEGMENTATION_TEST",
+                           tumor_mode=config.DataParams.segmentation_mask.name)
     data_paths.load_data_paths(mkdirs=False, restore_dir=model_path)
     file_paths = None
 

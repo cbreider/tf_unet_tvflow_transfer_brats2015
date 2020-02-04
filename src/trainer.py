@@ -310,7 +310,7 @@ class Trainer(object):
                 itr += 1
                 if mini and itr == mini_size:
                     break
-                    
+
             util.progress(i, set_size if not mini else (mini_size * 155))
 
         if len(data[1]) > 0:
@@ -322,7 +322,7 @@ class Trainer(object):
         self.write_tf_summary(step, val_scores, summary_writer, cost_val=["dice_per_volume", dp])
         logging.info(
             "EPOCH {} Per Slice: Verification loss= {:.6f}, cross entropy = {:.4f}, Dice per slice = {:.4f}, "
-            "Dice per volume = {:.4f}, error= {:.1f}%, Accuracy {:.4f}".format(
+            "Dice per volume = {:.4f}, error= {:.2f}%, Accuracy {:.4f}".format(
                 epoch, val_scores[0], val_scores[1], val_scores[2], dp,
                 val_scores[4], val_scores[5]))
         return shape

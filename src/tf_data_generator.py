@@ -36,6 +36,8 @@ class TFImageDataGenerator:
         self._shuffle = self._data_config.shuffle
         self._mode = mode  # type: TrainingModes
 
+        self._segmentation_mask = self._data_config.segmentation_mask
+
         self._nr_of_classes = self._data_config.nr_of_classes
         self._normalize_std = self._data_config.normailze_std
         self._nr_channels = self._data_config.nr_of_image_channels
@@ -105,7 +107,7 @@ class TFImageDataGenerator:
                 if None:  # todo add case
                     tv_base = in_img[:, :, i]
                     v = self._data_vals[self._use_modalities[i]]
-                    tv_base = tf_utils.normalize_and_zero_center_sclice(tv_base, max=self._data_max_value,
+                    tv_base = tf_utils.normalize_and_zero_center_slice(tv_base, max=self._data_max_value,
                                                                         new_max=self._data_norm_value,
                                                                         normalize_std=self._normalize_std)
                 tv_img = tf_utils.get_tv_smoothed(img=tv_base, tau=self.tv_tau, weight=self.tv_weight,
@@ -149,7 +151,7 @@ class TFImageDataGenerator:
                                                                data_vals=self._data_vals)
 
         if self._mode == TrainingModes.SEGMENTATION:
-            gt_img = tf_utils.to_one_hot_custom(gt_img, depth=self._nr_of_classes)
+            gt_img = tf_utils.to_one_hot_brats(gt_img, mask_mode=self._segmentation_mask, depth=self._nr_of_classes)
 
         elif self._mode == TrainingModes.TVFLOW_SEGMENTATION:
             gt_img = tf.reshape(gt_img, [tf.shape(gt_img)[0], tf.shape(gt_img)[1]])

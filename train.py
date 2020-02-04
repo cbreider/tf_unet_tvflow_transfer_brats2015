@@ -75,7 +75,8 @@ if __name__ == "__main__":
     # tf.enable_eager_execution()
     tf.reset_default_graph()
 
-    data_paths = DataPaths(data_path="default", mode=train_mode.name)
+    data_paths = DataPaths(data_path="default", mode=train_mode.name,
+                           tumor_mode=config.DataParams.segmentation_mask.name)
     data_paths.load_data_paths(mkdirs=True, restore_dir=restore_path if (restore_mode == RestoreMode.COMPLETE_SESSION
                                                                          or restore_mode == RestoreMode.COMPLETE_NET)
                                                                     else None)

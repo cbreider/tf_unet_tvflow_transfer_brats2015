@@ -39,6 +39,15 @@ class DataModes(Enum):
     TESTING = 3
 
 
+class Subtumral_Modes(Enum):
+    """
+    Oparation Modes for the Data generator
+    """
+    COMPLETE = 1
+    CORE = 2
+    ENHANCING = 3
+
+
 class TrainingModes(Enum):
     """
     training modes

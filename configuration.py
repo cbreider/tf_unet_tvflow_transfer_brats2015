@@ -11,7 +11,7 @@ Author: Christian Breiderhoff
 
 
 import src.utils.path_utils as p_util
-from src.utils.enum_params import Optimizer, Cost, Activation_Func, TV_clustering_method, ConvNetType
+from src.utils.enum_params import Optimizer, Cost, Activation_Func, TV_clustering_method, ConvNetType, Subtumral_Modes
 
 
 class DataParams:
@@ -29,6 +29,8 @@ class DataParams:
         4,  # enhancing tumor
         0  # everything else
     ]
+    segmentation_mask = Subtumral_Modes.COMPLETE
+
     modalities = ["mr_flair", "mr_t1", "mr_t1c", "mr_t2"]
     data_values = {modalities[0]: [9971, 59.5775, 217.8138],  # max, mean std of the training mri scans
                    modalities[1]: [11737, 79.6471, 272.0175],

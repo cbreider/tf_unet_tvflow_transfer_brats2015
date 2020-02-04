@@ -14,6 +14,7 @@ import tensorflow as tf
 import logging
 import numpy as np
 import elasticdeform.tf as etf
+from src.utils.enum_params import Subtumral_Modes
 
 
 def preprocess_images(scan, ground_truth, dispacement_sigma=25):
@@ -356,7 +357,7 @@ def convert_8bit_image_to_one_hot(image, depth=255):
     return one_hot
 
 
-def to_one_hot_custom(image, depth):
+def to_one_hot_brats(image, mask_mode=Subtumral_Modes.COMPLETE, depth=1):
     """
     Creates a one hot tensor of a given image
 
@@ -365,13 +366,20 @@ def to_one_hot_custom(image, depth):
     :param depth: depth of the one hot tensor default =255 (8bit image)
     :returns: One hot Tensor of depth = depth:
     """
+    if mask_mode == Subtumral_Modes.COMPLETE: # hole tumor and every thing else
+        mask = tf.greater(image, 0.)
+    elif mask_mode == Subtumral_Modes.CORE:
+        mask = tf.logical_or(tf.logical_or(tf.equal(image, 1.), tf.equal(image, 3.)), tf.equal(image, 4.))
+    elif mask_mode == Subtumral_Modes.ENHANCING:
+        mask = tf.equal(image, 4.)
+    else:
+        raise ValueError()
+
+    image = tf.where(mask, tf.ones_like(image), tf.zeros_like(image))
+
     if depth == 1:
-        mask = tf.greater(image, 0.)
-        image = tf.where(mask, tf.ones_like(image), image)
         return image
-    if depth == 2: # hole tumor and every thing else
-        mask = tf.greater(image, 0.)
-        image = tf.where(mask, tf.ones_like(image), image)
+
     image = tf.reshape(image, [tf.shape(image)[0], tf.shape(image)[1]])
     if not image.dtype == tf.uint8:
         image = tf.cast(image, tf.uint8)
