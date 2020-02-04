@@ -254,6 +254,7 @@ class Trainer(object):
                 return None
 
     def run_validation(self, epoch, sess, step, summary_writer, mini=False):
+        mini_size = 5
         vals = []
         dice_per_volume = []
         data = [[], [], [],  [], []] # x, y, tv, pred, feature maps
@@ -264,6 +265,10 @@ class Trainer(object):
             os.makedirs(out_p)
         sess.run(self.data_provider_val.init_op)
         logging.info("Running Validation for epoch {}...".format(epoch))
+
+        set_size = int(self.data_provider_val.size / self.config.batch_size_val)
+        util.progress(0,  set_size if not mini else (mini_size * 155))
+
         for i in range(int(self.data_provider_val.size / self.config.batch_size_val)):
             test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
             __, loss, acc, err, err_r, prediction, dice, ce, feature = sess.run(
@@ -303,8 +308,11 @@ class Trainer(object):
 
                 data = [[], [], [],  [], []]
                 itr += 1
-                if mini and itr == 5:
+                if mini and itr == mini_size:
                     break
+                    
+            util.progress(i, set_size if not mini else (mini_size * 155))
+
         if len(data[1]) > 0:
             self.store_prediction("{}_{}".format(epoch, itr), out_p,
                               np.squeeze(np.array(data[0]), axis=1), np.squeeze(np.array(data[1]), axis=1),
