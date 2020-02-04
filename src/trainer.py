@@ -351,7 +351,7 @@ class Trainer(object):
         loss, acc, err, predictions, dice, ce = self.run_summary(sess, summary_writer, step, batch_x, batch_y, write=True)
         logging.info(
             "Iter {:}, Minibatch Loss= {:.4f}, cross entropy = {:.4f}, Dice= {:.4f}, "
-            "error= {:.2f} Accuracy= {:.4f}".format(step, loss, ce, dice, err, acc))
+            "error= {:.2f}% Accuracy= {:.4f}".format(step, loss, ce, dice, err, acc))
 
     def run_summary(self, sess, summary_writer, step, batch_x, batch_y, write=True):
         # Calculate batch loss and accuracy

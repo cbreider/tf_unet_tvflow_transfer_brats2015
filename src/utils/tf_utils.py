@@ -449,8 +449,8 @@ def get_dice_score(pred, y, eps=1e-7, axis=[1, 2], binary=False, class_axis=3, w
     if pred.get_shape().as_list()[3] == 2 and binary:
         pred = tf.expand_dims(tf.argmax(pred, axis=3), axis=class_axis)
         y = tf.expand_dims(tf.argmax(y, axis=class_axis), axis=class_axis)
-    numerator_per_class = tf.cast(tf.reduce_sum(y * pred, axis=axis), tf.float32)
-    denominator_per_class = tf.cast(tf.reduce_sum(y, axis=axis) + tf.reduce_sum(pred, axis=axis), tf.float32)
+    numerator = tf.cast(tf.reduce_sum(y * pred, axis=axis), tf.float32)
+    denominator = tf.cast(tf.reduce_sum(y, axis=axis) + tf.reduce_sum(pred, axis=axis), tf.float32)
 
     if weight:# TODO Wighting useful for multiclass?
         raise NotImplementedError()
@@ -459,10 +459,10 @@ def get_dice_score(pred, y, eps=1e-7, axis=[1, 2], binary=False, class_axis=3, w
         #denominator_per_class = tf.reduce_sum(weights * denominator_per_class)
 
     # calc dice per image and class (shape = [batch_size, n_class])
-    dice_per_class_and_image = ((2 * numerator_per_class) + eps) / (denominator_per_class + eps)
+    dice = ((2 * numerator) + eps) / (denominator + eps)
 
     # calc dice (shape = []) average over all classes and images
-    dice = tf.reduce_mean(dice_per_class_and_image)
+    dice = tf.reduce_mean(dice)
 
     return dice
 
@@ -486,11 +486,16 @@ def get_dice_loss(logits, y, loss_type='jaccard', axis=[1, 2], class_axis=3, eps
         pred = pixel_wise_softmax(logits, axis=class_axis)
     else: # binary
         pred = tf.nn.sigmoid(logits)
+
+    numerator = tf.cast(tf.reduce_sum(y * pred, axis=axis), tf.float32)
+
     if loss_type == 'jaccard':
         pred = pred * pred
         y = y * y
 
-    dice = get_dice_score(pred=pred, y=y, eps=eps, axis=axis, weight=weight, binary=False)
+    denominator = tf.cast(tf.reduce_sum(y, axis=axis) + tf.reduce_sum(pred, axis=axis), tf.float32)
+    dice_ = ((2 * numerator) + eps) / (denominator + eps)
+    dice = tf.reduce_mean(dice_)
     return dice
 
 
