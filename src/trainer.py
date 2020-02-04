@@ -256,12 +256,8 @@ class Trainer(object):
     def run_validation(self, epoch, sess, step, summary_writer, mini=False):
         vals = []
         dice_per_volume = []
-        predictions = []
-        bx = []
-        by = []
-        btv = []
+        data = [[], [], [],  [], []] # x, y, tv, pred, feature maps
         shape = []
-        features = []
         out_p = os.path.join(self.output_path, "Epoch_{}".format(epoch))
         itr = 0
         if not os.path.exists(out_p):
@@ -278,55 +274,52 @@ class Trainer(object):
                 feed_dict={self.net.x: test_x,
                            self.net.y: test_y,
                            self.net.keep_prob: 1.})
+
             vals.append([loss, ce, dice, err, err_r, acc])
-            predictions.append(prediction)
-            bx.append(test_x)
-            by.append(test_y)
-            btv.append(test_tv)
+            data[0].append(test_x)
+            data[1].append(test_y)
+            data[2].append(test_tv)
+            data[3].append(prediction)
+            data[4].append(feature)
             shape = prediction.shape
-            features.append(feature)
-            if len(predictions) == 155:
 
-                dice_per_volume.append(util.get_hard_dice_score(np.array(by), np.array(predictions)))
+            if len(data[1]) == 155:
+                dice_per_volume.append(util.get_hard_dice_score(np.array(data[1]), np.array(data[:][3])))
                 self.store_prediction("{}_{}".format(epoch, itr), out_p,
-                                      np.squeeze(np.array(bx), axis=1), np.squeeze(np.array(by), axis=1),
-                                      np.squeeze(np.array(btv), axis=1), np.squeeze(np.array(predictions), axis=1))
-                predictions = []
-                bx = []
-                by = []
-                btv = []
-                itr += 1
+                                      np.squeeze(np.array(data[0]), axis=1), np.squeeze(np.array(data[1]), axis=1),
+                                      np.squeeze(np.array(data[2]), axis=1), np.squeeze(np.array(data[3]), axis=1))
 
+                # safe one feature_map
                 size = [8, 8]
-                fmaps = util.revert_zero_centering(np.squeeze(np.array(features[75:76]), axis=1))
-                map_s = [fmaps.shape[1], fmaps.shape[2]]
+                a = np.array(data[4][75])
+                fmap = util.revert_zero_centering(np.squeeze(np.array(data[4][75]), axis=0))
+                map_s = [fmap.shape[0], fmap.shape[1]]
+                im = fmap.reshape(map_s[0], map_s[0], size[0], size[1]
+                                  ).transpose(2, 0, 3, 1
+                                              ).reshape(size[0] * map_s[0], size[1] * map_s[1])
+                # histogram normalization
+                #im = util.image_histogram_equalization(im)[0]
+                util.save_image(im, os.path.join(out_p, "{}_{}_fmap.jpg".format(epoch, itr)))
 
-                for m in range(fmaps.shape[0]):
-                    fmap = fmaps[m]
-                    im = fmap.reshape(map_s[0], map_s[0],
-                                      size[0], size[1]).transpose(2, 0,
-                                                                  3, 1).reshape(size[0] * map_s[0],
-                                                                                size[1] * map_s[1])
-                    # histogram normalization
-                    im = util.image_histogram_equalization(im)[0]
-                    util.save_image(im, os.path.join(out_p, "{}_{}.jpg".format(itr, m)))
-                features = []
+                data = [[], [], [],  [], []]
+                itr += 1
                 if mini and itr == 5:
                     break
-        if len(bx) > 0:
+        if len(data[1]) > 0:
             self.store_prediction("{}_{}".format(epoch, itr), out_p,
-                              np.squeeze(np.array(bx), axis=1), np.squeeze(np.array(by), axis=1),
-                              np.squeeze(np.array(btv), axis=1), np.squeeze(np.array(predictions), axis=1))
+                              np.squeeze(np.array(data[0]), axis=1), np.squeeze(np.array(data[1]), axis=1),
+                              np.squeeze(np.array(data[2]), axis=1), np.squeeze(np.array(data[3]), axis=1))
         val_scores = np.mean(np.array(vals), axis=0)
-        self.write_tf_summary(step, val_scores, summary_writer)
+        dp = np.mean(np.array(dice_per_volume))
+        self.write_tf_summary(step, val_scores, summary_writer, cost_val=["dice_per_volume", dp])
         logging.info(
-            "EPOCH {} Per Slice: Verification loss= {:.6f}, cross entropy = {:.4f}, Dice per sclice = {:.4f}, "
-            "Dice per_volume = {:.4f}, error= {:.1f}%, Accuracy {:.4f}".format(
-                epoch, val_scores[0], val_scores[1], val_scores[2], np.mean(np.array(dice_per_volume)),
+            "EPOCH {} Per Slice: Verification loss= {:.6f}, cross entropy = {:.4f}, Dice per slice = {:.4f}, "
+            "Dice per volume = {:.4f}, error= {:.1f}%, Accuracy {:.4f}".format(
+                epoch, val_scores[0], val_scores[1], val_scores[2], dp,
                 val_scores[4], val_scores[5]))
         return shape
 
-    def write_tf_summary(self, step, vals, summary_writer):
+    def write_tf_summary(self, step, vals, summary_writer, cost_val=None):
         summary = tf.Summary()
         summary.value.add(tag='loss', simple_value=vals[0])
         summary.value.add(tag='accuracy', simple_value=vals[5])
@@ -335,6 +328,8 @@ class Trainer(object):
         if not self.net.cost == Cost.MSE:
             summary.value.add(tag='cross_entropy', simple_value=vals[1])
             summary.value.add(tag='dice', simple_value=vals[2])
+        if cost_val is not None:
+            summary.value.add(tag=cost_val[0], simple_value=cost_val[1])
 
         summary_writer.add_summary(summary, step)
         summary_writer.flush()
@@ -355,8 +350,8 @@ class Trainer(object):
 
         loss, acc, err, predictions, dice, ce = self.run_summary(sess, summary_writer, step, batch_x, batch_y, write=True)
         logging.info(
-            "Iter {:}, Minibatch Loss= {:.4f}, Training Accuracy= {:.4f}, "
-            "Minibatch error= {:.1f}%, Dice= {:.4f}, cross entropy = {:.4f}".format(step, loss, acc, err, dice, ce))
+            "Iter {:}, Minibatch Loss= {:.4f}, cross entropy = {:.4f}, Dice= {:.4f}, "
+            "error= {:.2f} Accuracy= {:.4f}".format(step, loss, ce, dice, err, acc))
 
     def run_summary(self, sess, summary_writer, step, batch_x, batch_y, write=True):
         # Calculate batch loss and accuracy

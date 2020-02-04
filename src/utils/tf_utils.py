@@ -404,7 +404,6 @@ def normalize_and_zero_center_slice(tensor, max, normalize_std, new_max=None, me
     """
     Creates a one hot tensor of a given image
 
-
     :param tensor: input tensor of shape [?, ?, ?, ?]
     :param max: max value of input image as it could be
     :param new_max: new max which the image is normailzed to
@@ -433,35 +432,65 @@ def normalize_and_zero_center_slice(tensor, max, normalize_std, new_max=None, me
     return out
 
 
-def get_dice_score(pred, y, eps=1e-7, binary=False, weight=False):
+def get_dice_score(pred, y, eps=1e-7, axis=[1, 2], binary=False, class_axis=3, weight=False):
     """
     calculates the (multiclass) dice score over a given batch of samples. In multiclass prediction (n_class > 1)
     the dice score is the average dice score over all classes
-
 
     :param pred: prediction tensor [batch_size, img_size1, img_size2, _nclasses] must be one hot encoded
     :param y: max value of input image as it could be
     :param eps: smoothing coeffient
     :param binary: bool indicating wether the 2 class case should be treated as binary case (class 0 negatives)
     :param weight: bool wether weight classes (not implemented)
+    :param axis: axis to sum over
+    :param class_axis: axis of class assignments
     :returns: Dice score Tensor shape ():
     """
     if pred.get_shape().as_list()[3] == 2 and binary:
-        pred = tf.expand_dims(tf.argmax(pred, axis=3), axis=3)
-        y = tf.expand_dims(tf.argmax(y, axis=3), axis=3)
-    numerator_per_class = tf.cast(tf.reduce_sum(y * pred, axis=[1, 2]), tf.float32)
-    denominator_per_class = tf.cast(tf.reduce_sum(y*y, axis=[1, 2]) + tf.reduce_sum(pred*pred, axis=[1, 2]), tf.float32)
-    if weight:
+        pred = tf.expand_dims(tf.argmax(pred, axis=3), axis=class_axis)
+        y = tf.expand_dims(tf.argmax(y, axis=class_axis), axis=class_axis)
+    numerator_per_class = tf.cast(tf.reduce_sum(y * pred, axis=axis), tf.float32)
+    denominator_per_class = tf.cast(tf.reduce_sum(y, axis=axis) + tf.reduce_sum(pred, axis=axis), tf.float32)
+
+    if weight:# TODO Wighting useful for multiclass?
         raise NotImplementedError()
         #weights = 1.0 / (tf.reduce_sum(y, axis=[1, 2, 3]))
         #numerator_per_class = tf.reduce_sum(weights * numerator_per_class)
         #denominator_per_class = tf.reduce_sum(weights * denominator_per_class)
+
     # calc dice per image and class (shape = [batch_size, n_class])
     dice_per_class_and_image = ((2 * numerator_per_class) + eps) / (denominator_per_class + eps)
-    # calc dice per image (shape = [batch_size, n_class]) average over all classes
-    #dice_per_image = tf.reduce_mean(dice_per_class_and_image, axis=1)
+
     # calc dice (shape = []) average over all classes and images
     dice = tf.reduce_mean(dice_per_class_and_image)
+
+    return dice
+
+
+def get_dice_loss(logits, y, loss_type='jaccard', axis=[1, 2], class_axis=3, eps=1e-7, weight=False):
+    """
+    calculates the (multiclass) dice score over a given batch of samples. In multiclass prediction (n_class > 1)
+    the dice score is the average dice score over all classes
+
+
+    :param logits: prediction tensor [batch_size, img_size1, img_size2, _nclasses] must be one hot encoded
+    :param y: max value of input image as it could be
+    :param eps: smoothing coeffient
+    :param loss_type: `jaccard`` or ``sorensen``, default is ``jaccard``.
+    :param axis: axis to sum over
+    :param weight: bool wether weight classes (not implemented)
+    :param class_axis: axis of class assignments
+    :returns: Dice score Tensor shape ():
+    """
+    if logits.get_shape().as_list()[3] > 1: # multiclass
+        pred = pixel_wise_softmax(logits, axis=class_axis)
+    else: # binary
+        pred = tf.nn.sigmoid(logits)
+    if loss_type == 'jaccard':
+        pred = pred * pred
+        y = y * y
+
+    dice = get_dice_score(pred=pred, y=y, eps=eps, axis=axis, weight=weight, binary=False)
     return dice
 
 
@@ -500,3 +529,11 @@ def get_image_summary(img, idx=0):
     V = tf.transpose(V, (2, 0, 1))
     V = tf.reshape(V, tf.stack((-1, img_w, img_h, 1)))
     return V
+
+
+def pixel_wise_softmax(output_map, axis=3):
+    with tf.name_scope("pixel_wise_softmax"):
+        max_axis = tf.reduce_max(output_map, axis=axis, keepdims=True)
+        exponential_map = tf.exp(output_map - max_axis)
+        normalize = tf.reduce_sum(exponential_map, axis=axis, keepdims=True)
+        return exponential_map / normalize

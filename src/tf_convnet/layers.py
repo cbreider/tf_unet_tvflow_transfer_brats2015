@@ -64,14 +64,5 @@ def crop_and_concat(x1, x2):
         x1_crop = tf.slice(x1, offsets, size)
         return tf.concat([x1_crop, x2], 3)
 
-
-def pixel_wise_softmax(output_map):
-    with tf.name_scope("pixel_wise_softmax"):
-        max_axis = tf.reduce_max(output_map, axis=3, keepdims=True)
-        exponential_map = tf.exp(output_map - max_axis)
-        normalize = tf.reduce_sum(exponential_map, axis=3, keepdims=True)
-        return exponential_map / normalize
-
-
 def cross_entropy(y_, output_map):
     return -tf.reduce_mean(y_*tf.log(tf.clip_by_value(output_map, 1e-10, 1.0)), name="cross_entropy")

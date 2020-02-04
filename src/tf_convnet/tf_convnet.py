@@ -18,9 +18,6 @@ from datetime import datetime
 from src.utils.enum_params import Cost, RestoreMode
 import src.utils.tf_utils as tfu
 from configuration import ConvNetParams
-from src.tf_convnet.layers import (weight_variable, weight_variable_devonc, bias_variable,
-                                   conv2d, deconv2d, max_pool, crop_and_concat, pixel_wise_softmax,
-                                   cross_entropy)
 
 
 class ConvNetModel(object):
@@ -125,11 +122,15 @@ class ConvNetModel(object):
                 loss = tfu.get_cross_entropy(logits=flat_logits, y=flat_labels, n_class=self._n_class,
                                              weights=self._class_weights)
 
-            elif self.cost_function == Cost.DICE_COEFFICIENT:
+            elif self.cost_function == Cost.DICE_SOFT:
                 loss = 1.0 - tfu.get_dice_score(pred=self.logits, y=self.y, eps=1e-5, binary=self._two_classes_are_binary)
 
+            elif self.cost_function == Cost.DICE_LOG:
+                loss = - tf.math.log(tfu.get_dice_score(
+                    pred=self.logits, y=self.y, eps=1e-5, binary=self._two_classes_are_binary))
+
             elif self.cost_function == Cost.MSE:
-                loss = tf.losses.mean_squared_error(pixel_wise_softmax(self.logits), flat_labels)
+                loss = tf.losses.mean_squared_error(self.logits, flat_labels)
 
             elif self.cost_function == Cost.TV:
                 loss = tf.losses.mean_squared_error(flat_logits, flat_labels)
