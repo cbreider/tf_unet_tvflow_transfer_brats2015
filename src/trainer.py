@@ -177,7 +177,7 @@ class Trainer(object):
                 init_step = int(fl[0])
                 epoch = int(fl[1])
 
-            pred_shape = self.run_validation(epoch, sess, init_step, summary_writer_validation, mini=True)
+            pred_shape = self.run_validation(epoch, sess, init_step, summary_writer_validation, mini=True, log=False)
 
             avg_gradients = None
 
@@ -253,7 +253,7 @@ class Trainer(object):
                 logging.error(str(e))
                 return None
 
-    def run_validation(self, epoch, sess, step, summary_writer, mini=False):
+    def run_validation(self, epoch, sess, step, summary_writer, mini=False, log=True):
         mini_size = 5
         vals = []
         dice_per_volume = []
@@ -319,7 +319,8 @@ class Trainer(object):
                               np.squeeze(np.array(data[2]), axis=1), np.squeeze(np.array(data[3]), axis=1))
         val_scores = np.mean(np.array(vals), axis=0)
         dp = np.mean(np.array(dice_per_volume))
-        self.write_tf_summary(step, val_scores, summary_writer, cost_val=["dice_per_volume", dp])
+        if log:
+            self.write_tf_summary(step, val_scores, summary_writer, cost_val=["dice_per_volume", dp])
         logging.info(
             "EPOCH {} Per Slice: Verification loss= {:.6f}, cross entropy = {:.4f}, Dice per slice = {:.4f}, "
             "Dice per volume = {:.4f}, error= {:.2f}%, Accuracy {:.4f}".format(
