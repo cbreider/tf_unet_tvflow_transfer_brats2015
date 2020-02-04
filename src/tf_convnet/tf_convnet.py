@@ -123,11 +123,11 @@ class ConvNetModel(object):
                                              weights=self._class_weights)
 
             elif self.cost_function == Cost.DICE_SOFT:
-                loss = 1.0 - tfu.get_dice_score(pred=self.logits, y=self.y, eps=1e-5, binary=self._two_classes_are_binary)
+                loss = 1.0 - tfu.get_dice_loss(logits=self.logits, y=self.y, eps=1e-5)
 
             elif self.cost_function == Cost.DICE_LOG:
-                loss = - tf.math.log(tfu.get_dice_score(
-                    pred=self.logits, y=self.y, eps=1e-5, binary=self._two_classes_are_binary))
+                loss = - tf.math.log(tfu.get_dice_loss(
+                    logits=self.logits, y=self.y, eps=1e-5))
 
             elif self.cost_function == Cost.MSE:
                 loss = tf.losses.mean_squared_error(self.logits, flat_labels)
