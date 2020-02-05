@@ -170,7 +170,7 @@ class TFImageDataGenerator:
                                                                          size=self._set_img_size, tvimg=tv_img)
 
         if self._do_augmentation:
-            in_img, gt_img = tf_utils.preprocess_images(in_img, gt_img)
+            in_img, gt_img = tf_utils.distort_imgs(in_img, gt_img)
 
         in_img = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._use_modalities,
                                                                new_max=self._data_norm_value,
