@@ -12,7 +12,8 @@ Author: Christian Breiderhoff
 import tensorflow as tf
 import logging
 import os
-import src.utils.data_utils as util
+import src.utils.data_utils as dutil
+import src.utils.io_utils as ioutil
 import numpy as np
 from src.tf_convnet.caffe2tensorflow_mapping import load_pre_trained_caffe_variables
 from src.utils.enum_params import Cost, Optimizer, RestoreMode, TrainingModes
@@ -177,7 +178,7 @@ class Trainer(object):
                 init_step = int(fl[0])
                 epoch = int(fl[1])
 
-            pred_shape = self.run_validation(epoch, sess, init_step, summary_writer_validation, mini=False,
+            pred_shape = self.run_validation(epoch, sess, init_step, summary_writer_validation, save_path, mini=False,
                                              log=False if epoch != 0 else True)
 
             avg_gradients = None
@@ -201,12 +202,12 @@ class Trainer(object):
                     # Run optimization op (backprop)
                     if step == 0:
                         self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
-                                                    util.crop_to_shape(batch_y, pred_shape), write=True)
+                                                    dutil.crop_to_shape(batch_y, pred_shape), write=True)
                     _, loss, cs, dice, err, err_r, acc, lr, gradients = sess.run(
                         (self.optimizer, self.net.cost, self.net.cross_entropy, self.net.dice, self.net.error,
                          self.net.error_rate, self.net.accuracy, self.learning_rate_node, self.net.gradients_node),
                         feed_dict={self.net.x: batch_x,
-                                   self.net.y: util.crop_to_shape(batch_y, pred_shape),
+                                   self.net.y: dutil.crop_to_shape(batch_y, pred_shape),
                                    self.net.keep_prob: self._dropout})
                     avg_score_vals.append([loss, cs, dice, err, err_r, acc])
 
@@ -219,8 +220,7 @@ class Trainer(object):
 
                     if step % self._display_step == 0:
                         self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
-                                                    util.crop_to_shape(batch_y, pred_shape), write=True)
-                        save_path = self.net.save(sess, save_path)
+                                                    dutil.crop_to_shape(batch_y, pred_shape), write=True)
                         avg_score_vals = np.mean(np.array(avg_score_vals), axis=0)
                         self.write_tf_summary(step, avg_score_vals, summary_writer_training)
                         if step != 0:
@@ -241,15 +241,20 @@ class Trainer(object):
                         epoch += 1
                         self.output_epoch_stats(epoch, total_loss, self._training_iters, lr)
                         total_loss = 0
-                        self.run_validation(epoch, sess, step, summary_writer_validation)
+                        self.run_validation(epoch, sess, step, summary_writer_validation, save_path)
 
                 logging.info("Optimization Finished!")
 
                 return save_path
 
             except KeyboardInterrupt:
-                logging.info("Training canceled by user. Saving model...")
-                save_path = self.net.save(sess, save_path)
+                logging.info("Training canceled by user.")
+                save = ioutil.query_yes_no("Would you like to save tf session and model?", default=None)
+                if save:
+                    logging.info("Saving session model...")
+                    save_path = self.net.save(sess, save_path)
+                else:
+                    logging.info("Quitting without saving...")
                 logging.info("Done! Bye Bye")
                 return save_path
 
@@ -257,7 +262,7 @@ class Trainer(object):
                 logging.error(str(e))
                 return None
 
-    def run_validation(self, epoch, sess, step, summary_writer, mini=False, log=True):
+    def run_validation(self, epoch, sess, step, summary_writer, model_save_path, mini=False, log=True):
         mini_size = 5
         vals = []
         dice_per_volume = []
@@ -271,7 +276,7 @@ class Trainer(object):
         logging.info("Running Validation for epoch {}...".format(epoch))
 
         set_size = int(self.data_provider_val.size / self.config.batch_size_val)
-        util.progress(0,  set_size if not mini else (mini_size * 155))
+        ioutil.progress(0, set_size if not mini else (mini_size * 155))
 
         for i in range(int(self.data_provider_val.size / self.config.batch_size_val)):
             test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
@@ -293,7 +298,7 @@ class Trainer(object):
             shape = prediction.shape
 
             if len(data[1]) == 155:
-                dice_per_volume.append(util.get_hard_dice_score(np.array(data[1]), np.array(data[:][3])))
+                dice_per_volume.append(dutil.get_hard_dice_score(np.array(data[1]), np.array(data[:][3])))
                 self.store_prediction("{}_{}".format(epoch, itr), out_p,
                                       np.squeeze(np.array(data[0]), axis=1), np.squeeze(np.array(data[1]), axis=1),
                                       np.squeeze(np.array(data[2]), axis=1), np.squeeze(np.array(data[3]), axis=1))
@@ -301,21 +306,21 @@ class Trainer(object):
                 # safe one feature_map
                 size = [8, 8]
                 a = np.array(data[4][75])
-                fmap = util.revert_zero_centering(np.squeeze(np.array(data[4][75]), axis=0))
+                fmap = dutil.revert_zero_centering(np.squeeze(np.array(data[4][75]), axis=0))
                 map_s = [fmap.shape[0], fmap.shape[1]]
                 im = fmap.reshape(map_s[0], map_s[0], size[0], size[1]
                                   ).transpose(2, 0, 3, 1
                                               ).reshape(size[0] * map_s[0], size[1] * map_s[1])
                 # histogram normalization
                 #im = util.image_histogram_equalization(im)[0]
-                util.save_image(im, os.path.join(out_p, "{}_{}_fmap.jpg".format(epoch, itr)))
+                ioutil.save_image(im, os.path.join(out_p, "{}_{}_fmap.jpg".format(epoch, itr)))
 
                 data = [[], [], [],  [], []]
                 itr += 1
                 if mini and itr == mini_size:
                     break
 
-            util.progress(i, set_size if not mini else (mini_size * 155))
+            ioutil.progress(i, set_size if not mini else (mini_size * 155))
 
         if len(data[1]) > 0:
             self.store_prediction("{}_{}".format(epoch, itr), out_p,
@@ -330,6 +335,8 @@ class Trainer(object):
             "Dice per volume = {:.4f}, error= {:.2f}%, Accuracy {:.4f}".format(
                 epoch, val_scores[0], val_scores[1], val_scores[2], dp,
                 val_scores[4], val_scores[5]))
+        logging.info("Saving Session and Model ...")
+        save_path = self.net.save(sess, model_save_path)
         return shape
 
     def write_tf_summary(self, step, vals, summary_writer, cost_val=None):
@@ -349,11 +356,11 @@ class Trainer(object):
 
     def store_prediction(self, name, path, batch_x, batch_y, batch_tv, prediction):
         if self.mode == TrainingModes.TVFLOW_SEGMENTATION:
-            img = util.combine_img_prediction_tvclustering(data=batch_x, gt=batch_y, tv=batch_tv, pred=prediction)
+            img = dutil.combine_img_prediction_tvclustering(data=batch_x, gt=batch_y, tv=batch_tv, pred=prediction)
         else:
-            img = util.combine_img_prediction(batch_x, batch_y, prediction,
-                                              mode=1 if self.net.cost_function == Cost.MSE else 0)
-        util.save_image(img, "%s/%s.jpg" % (path, name))
+            img = dutil.combine_img_prediction(batch_x, batch_y, prediction,
+                                               mode=1 if self.net.cost_function == Cost.MSE else 0)
+        ioutil.save_image(img, "%s/%s.jpg" % (path, name))
 
     def output_epoch_stats(self, epoch, total_loss, training_iters, lr):
         logging.info(
