@@ -178,7 +178,7 @@ class Trainer(object):
                 init_step = int(fl[0])
                 epoch = int(fl[1])
 
-            pred_shape = self.run_validation(epoch, sess, init_step, summary_writer_validation, save_path, mini=False,
+            pred_shape = self.run_validation(epoch, sess, init_step, summary_writer_validation, save_path, mini=True,
                                              log=False if epoch != 0 else True)
 
             avg_gradients = None
@@ -229,13 +229,13 @@ class Trainer(object):
                                 "error= {:.2f}%, Accuracy {:.4f}".format(step, avg_score_vals[0], avg_score_vals[1],
                                                                          avg_score_vals[2], avg_score_vals[4],
                                                                          avg_score_vals[5]))
-                            avg_score_vals = []
                             # save epoch and step
                             outF = open(step_file, "w")
                             outF.write("{}".format(step+1))
                             outF.write("\n")
                             outF.write("{}".format(epoch))
                             outF.close()
+                        avg_score_vals = []
 
                     if step % self._training_iters == 0 and step != 0:
                         epoch += 1

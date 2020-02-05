@@ -50,6 +50,7 @@ class ConvNetModel(object):
         self._regularizer = self._convnet_config.regularizer
         self._max_tv_value = self._convnet_config.max_tv_value
         self._two_classes_are_binary = self._convnet_config.two_classe_as_binary
+        self._loss_weight = self._convnet_config.cost_weight
 
         self.x = tf.placeholder("float", shape=[None, None, None, self._n_channels], name="x")
         self.y = tf.placeholder("float", shape=[None, None, None, self._n_class], name="y")
@@ -117,7 +118,8 @@ class ConvNetModel(object):
         """
         with tf.name_scope("cost"):
 
-            if self.cost_function == Cost.BATCH_DICE_LOG or self.cost_function == Cost.BATCH_DICE_SOFT:
+            if self.cost_function == Cost.BATCH_DICE_LOG or self.cost_function == Cost.BATCH_DICE_SOFT or \
+                    self.cost_function == Cost.BATCH_DICE_SOFT_CE:
                 axis = [0, 1, 2, 3]
             else:
                 axis = [1, 2]
@@ -130,6 +132,12 @@ class ConvNetModel(object):
 
             elif self.cost_function == Cost.DICE_SOFT or self.cost_function == Cost.BATCH_DICE_SOFT:
                 loss = 1.0 - tfu.get_dice_loss(logits=self.logits, y=self.y, eps=1e-5, axis=axis)
+
+            elif self.cost_function == Cost.DICE_SOFT_CE or self.cost_function == Cost.BATCH_DICE_SOFT_CE:
+                loss = self._loss_weight * (1.0 - tfu.get_dice_loss(logits=self.logits, y=self.y, eps=1e-5, axis=axis))
+                loss += (1.0 - self._loss_weight) * tfu.get_cross_entropy(logits=flat_logits, y=flat_labels,
+                                                                          n_class=self._n_class,
+                                                                          weights=self._class_weights)
 
             elif self.cost_function == Cost.DICE_LOG or self.cost_function == Cost.BATCH_DICE_LOG:
                 loss = - tf.math.log(tfu.get_dice_loss(

@@ -89,7 +89,8 @@ class ConvNetParams:
     feat_root = 64                  # number of feature maps/kernels in the first layer
     filter_size = 3                 # kernel size
     pool_size = 2                   # size of max pooling
-    cost_function = Cost.BATCH_DICE_SOFT        # Cost function to use. Choose from class Cost(Enum)
+    cost_function = Cost.BATCH_DICE_SOFT_CE        # Cost function to use. Choose from class Cost(Enum)
+    cost_weight = 0.8
     padding = True                  # Use padding to preserve feature map size and prevent downscaling
     batch_normalization = True      # Use Batchnormalization Yes/No
     class_weights = None #[3.0]            # weight for each individual if binary just a list of length = 1
