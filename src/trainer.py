@@ -177,7 +177,8 @@ class Trainer(object):
                 init_step = int(fl[0])
                 epoch = int(fl[1])
 
-            pred_shape = self.run_validation(epoch, sess, init_step, summary_writer_validation, mini=True, log=False)
+            pred_shape = self.run_validation(epoch, sess, init_step, summary_writer_validation, mini=False,
+                                             log=False if epoch != 0 else True)
 
             avg_gradients = None
 
@@ -223,8 +224,10 @@ class Trainer(object):
                         avg_score_vals = np.mean(np.array(avg_score_vals), axis=0)
                         self.write_tf_summary(step,  avg_score_vals, summary_writer_training)
                         logging.info(
-                            "Iter {:}, Average loss= {:.6f}, cross entropy = {:.4f}, Dice= {:.4f}, error= {:.1f}%, Accuracy {:.4f}".format(
-                                step, avg_score_vals[0], avg_score_vals[1], avg_score_vals[2], avg_score_vals[4], avg_score_vals[5]))
+                            "Iter {:}, Average loss= {:.6f}, cross entropy = {:.4f}, Dice= {:.4f}, "
+                            "error= {:.2f}%, Accuracy {:.4f}".format(step, avg_score_vals[0], avg_score_vals[1],
+                                                                     avg_score_vals[2], avg_score_vals[4],
+                                                                     avg_score_vals[5]))
                         avg_score_vals = []
                         # save epoch and step
                         outF = open(step_file, "w")
