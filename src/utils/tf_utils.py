@@ -51,12 +51,11 @@ def distort_imgs(scan, ground_truth, displacement_sigma=25):
 
     combined_rot = tf.image.rot90(combined_crop, tf.random_uniform(shape=[], minval=0, maxval=4, dtype=tf.int32))
 
-    combined_brightness = tf.image.random_brightness(combined_rot, 0.3)
-
-    combined_flip = tf.image.random_flip_left_right(combined_brightness)
+    combined_flip = tf.image.random_flip_left_right(combined_rot)
     combined_flip = tf.image.random_flip_up_down(combined_flip)
 
-    im = tf.image.resize_images(combined_flip[:, :, :last_image_dim], size=[image_shape[0], image_shape[1]])
+    im = tf.image.random_brightness(tf.image.resize_images(combined_flip[:, :, :last_image_dim],
+                                                           size=[image_shape[0], image_shape[1]]), 0.3)
     gt = tf.image.resize_images(combined_flip[:, :, last_image_dim:], size=[image_shape[0], image_shape[1]])
     return im, gt
 
