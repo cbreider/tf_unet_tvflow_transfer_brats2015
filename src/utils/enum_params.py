@@ -24,10 +24,12 @@ class Cost(Enum):
     cost functions
     """
     CROSS_ENTROPY = 1       # Choose to use Cross Entropy Cost (Segmentation)
-    DICE_SOFT = 2    # Choose to use Dice Coefficient Cost (Segmentation)
+    DICE_SOFT = 2           # Choose to use Dice Coefficient Cost (Segmentation) -DICE
     MSE = 3                 # Choose to use Mean Squared Error Cost (TV Training / Regression)
     TV = 4                  # tv loss
-    DICE_LOG = 5
+    DICE_LOG = 5            # -log(DICE)
+    BATCH_DICE_SOFT = 6     # SOFT DICE treating bacth as 3D tensor
+    BATCH_DICE_LOG = 7      # LOG DICE treating bacth as 3D tensor
 
 
 class DataModes(Enum):

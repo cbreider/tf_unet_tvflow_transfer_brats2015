@@ -116,18 +116,24 @@ class ConvNetModel(object):
         Constructs the cost function, either cross_entropy, weighted cross_entropy or dice_coefficient
         """
         with tf.name_scope("cost"):
+
+            if self.cost_function == Cost.BATCH_DICE_LOG or self.cost_function == Cost.BATCH_DICE_SOFT:
+                axis = [0, 1, 2, 3]
+            else:
+                axis = [1, 2]
+
             flat_logits = tf.reshape(self.logits, [-1, self._n_class])
             flat_labels = tf.reshape(self.y, [-1, self._n_class])
             if self.cost_function == Cost.CROSS_ENTROPY:
                 loss = tfu.get_cross_entropy(logits=flat_logits, y=flat_labels, n_class=self._n_class,
                                              weights=self._class_weights)
 
-            elif self.cost_function == Cost.DICE_SOFT:
-                loss = 1.0 - tfu.get_dice_loss(logits=self.logits, y=self.y, eps=1e-5) #, axis=[0, 1, 2, 3])
+            elif self.cost_function == Cost.DICE_SOFT or self.cost_function == Cost.BATCH_DICE_SOFT:
+                loss = 1.0 - tfu.get_dice_loss(logits=self.logits, y=self.y, eps=1e-5, axis=axis)
 
-            elif self.cost_function == Cost.DICE_LOG:
+            elif self.cost_function == Cost.DICE_LOG or self.cost_function == Cost.BATCH_DICE_LOG:
                 loss = - tf.math.log(tfu.get_dice_loss(
-                    logits=self.logits, y=self.y, eps=1e-5)) #, axis=[0, 1, 2, 3]))
+                    logits=self.logits, y=self.y, eps=1e-5, axis=axis))
 
             elif self.cost_function == Cost.MSE:
                 loss = tf.losses.mean_squared_error(flat_logits, flat_labels)

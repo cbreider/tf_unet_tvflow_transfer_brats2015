@@ -50,14 +50,14 @@ class DataParams:
 
      #img preprocessing and augmentation
     shuffle = True                  # Set true to extra Shuffle Trining Data. Note dict.items() is allready random
-    do_image_augmentation_train = True    # Set True to augment training images random crapp, flip, rotation
-    do_image_augmentation_val = False  # Set True to augment training images random crapp, flip, rotation for validation
-    split_train_val_ratio = [0.8, 0.2] # [0.6, 0.2 0.2]     # Ration of Nr Training images to Val images (optioanl test)
-    use_scale_image_as_gt = False   # choose if you want to use tv scale image instead of smoothed (only tv training)
     crop_to_non_zero_train = False         # Choose True to alway crop Training images to region of non zero values
     crop_to_non_zero_val = False    # Choose True to alway crop Training images to region of non zero values for validation
+    do_image_augmentation_train = True    # Set True to augment training images random crapp, flip, rotation
+    do_image_augmentation_val = False  # Set True to augment training images random crapp, flip, rotation for validation
     norm_image_value = None          # Values which Images should be normed to during pre processing
     data_max_value = 255.0          # Max value of inout images (uint8)
+    split_train_val_ratio = [0.8, 0.2] # [0.6, 0.2 0.2]     # Ration of Nr Training images to Val images (optioanl test)
+    use_scale_image_as_gt = False   # choose if you want to use tv scale image instead of smoothed (only tv training)
     normailze_std = True            # normalize standard deviation for images during pre processing
     use_only_spatial_range = [30, 130]   # use only slices use_only_spatial_range[0] to use_only_spatial_range[1] because
                                         # it is unlikly to be tumot regions in the outer scans. use_only_spatial_range= None to use all scans
@@ -74,7 +74,7 @@ class DataParams:
                                     tv_weight=0.1,   #params for tv smoothing
                                     tv_eps=0.00001,
                                     tv_tau=0.125,
-                                    tv_m_itr=30,
+                                    tv_m_itr=50,
                                     km_m_itr=100, # params for kmeans clustering nr of clusters = nr of classes.Only used im tv
                                                     # clustering with kmeans)
                                     ms_m_itr=-1,  # params for mean shift clustering used in tv training
@@ -89,16 +89,16 @@ class ConvNetParams:
     feat_root = 64                  # number of feature maps/kernels in the first layer
     filter_size = 3                 # kernel size
     pool_size = 2                   # size of max pooling
-    cost_function = Cost.DICE_SOFT        # Cost function to use. Choose from class Cost(Enum)
+    cost_function = Cost.BATCH_DICE_SOFT        # Cost function to use. Choose from class Cost(Enum)
     padding = True                  # Use padding to preserve feature map size and prevent downscaling
     batch_normalization = True      # Use Batchnormalization Yes/No
-    class_weights = [3.0]            # weight for each individual if binary just a list of length = 1
+    class_weights = None #[3.0]            # weight for each individual if binary just a list of length = 1
     regularizer = 0.0000001           # lambda value for l2 regualizer
     tv_regularizer = 0.01            # tv regularize for TV loss. oly used if Cost funcion is TV
     add_residual_layer = False       # Add residual layer/skip layer at the end output = input + last_layer
     freeze_down_layers = False       # freeze encoder layers during training
     freeze_up_layers = False        # freeze decoder layers during training
-    activation_func_out = Activation_Func.RELU  # Act func for output map # noe for regression
+    activation_func_out = Activation_Func.NONE  # Act func for output map # noe for regression
     nr_input_channels = DataParams.nr_of_input_modalities
     nr_of_classes = DataParams.nr_of_classes
     use_scale_as_gt = DataParams.use_scale_image_as_gt
