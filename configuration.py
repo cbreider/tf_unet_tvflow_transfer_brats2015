@@ -59,7 +59,7 @@ class DataParams:
     split_train_val_ratio = [0.8, 0.2] # [0.6, 0.2 0.2]     # Ration of Nr Training images to Val images (optioanl test)
     use_scale_image_as_gt = False   # choose if you want to use tv scale image instead of smoothed (only tv training)
     normailze_std = True            # normalize standard deviation for images during pre processing
-    use_only_spatial_range = [30, 130]   # use only slices use_only_spatial_range[0] to use_only_spatial_range[1] because
+    use_only_spatial_range = [40, 130]   # use only slices use_only_spatial_range[0] to use_only_spatial_range[1] because
                                         # it is unlikly to be tumot regions in the outer scans. use_only_spatial_range= None to use all scans
     nr_of_samples = 0               # use only a subset of images. if 0 all data is used
     use_modalities = [modalities[0], modalities[1], modalities[2], modalities[3]]  # modalities used for training
@@ -128,8 +128,8 @@ class TrainingParams:
                      epsilon=1e-08,
                      use_locking=False,
                      name='Adam',
-                     decay_rate=0.1,
-                     decay_steps=100000)
+                     decay_rate=0.5,
+                     decay_steps=80000)
     momentum_args = dict(momentum=0.99,     # Hyperparameters for Momentum optimzer
                          learning_rate=0.00001,
                          decay_rate=0.90,
