@@ -201,7 +201,7 @@ class Trainer(object):
                     # Run optimization op (backprop)
                     if step == 0:
                         self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
-                                                    util.crop_to_shape(batch_y, pred_shape))
+                                                    util.crop_to_shape(batch_y, pred_shape), write=True)
                     _, loss, cs, dice, err, err_r, acc, lr, gradients = sess.run(
                         (self.optimizer, self.net.cost, self.net.cross_entropy, self.net.dice, self.net.error,
                          self.net.error_rate, self.net.accuracy, self.learning_rate_node, self.net.gradients_node),
@@ -217,24 +217,25 @@ class Trainer(object):
 
                     total_loss += loss
 
-                    if step % self._display_step == 0 and step != 0:
+                    if step % self._display_step == 0:
                         self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
-                                                    util.crop_to_shape(batch_y, pred_shape))
+                                                    util.crop_to_shape(batch_y, pred_shape), write=True)
                         save_path = self.net.save(sess, save_path)
                         avg_score_vals = np.mean(np.array(avg_score_vals), axis=0)
-                        self.write_tf_summary(step,  avg_score_vals, summary_writer_training)
-                        logging.info(
-                            "Iter {:}, Average loss= {:.6f}, cross entropy = {:.4f}, Dice= {:.4f}, "
-                            "error= {:.2f}%, Accuracy {:.4f}".format(step, avg_score_vals[0], avg_score_vals[1],
-                                                                     avg_score_vals[2], avg_score_vals[4],
-                                                                     avg_score_vals[5]))
-                        avg_score_vals = []
-                        # save epoch and step
-                        outF = open(step_file, "w")
-                        outF.write("{}".format(step+1))
-                        outF.write("\n")
-                        outF.write("{}".format(epoch))
-                        outF.close()
+                        self.write_tf_summary(step, avg_score_vals, summary_writer_training)
+                        if step != 0:
+                            logging.info(
+                                "Iter {:}, Average loss= {:.6f}, cross entropy = {:.4f}, Dice= {:.4f}, "
+                                "error= {:.2f}%, Accuracy {:.4f}".format(step, avg_score_vals[0], avg_score_vals[1],
+                                                                         avg_score_vals[2], avg_score_vals[4],
+                                                                         avg_score_vals[5]))
+                            avg_score_vals = []
+                            # save epoch and step
+                            outF = open(step_file, "w")
+                            outF.write("{}".format(step+1))
+                            outF.write("\n")
+                            outF.write("{}".format(epoch))
+                            outF.close()
 
                     if step % self._training_iters == 0 and step != 0:
                         epoch += 1
@@ -358,9 +359,10 @@ class Trainer(object):
         logging.info(
             "Epoch {:}, Average loss: {:.4f}, learning rate: {:.9f}".format(epoch, (total_loss / training_iters), lr))
 
-    def output_minibatch_stats(self, sess, summary_writer, step, batch_x, batch_y):
+    def output_minibatch_stats(self, sess, summary_writer, step, batch_x, batch_y, write=False):
 
-        loss, acc, err, predictions, dice, ce = self.run_summary(sess, summary_writer, step, batch_x, batch_y, write=True)
+        loss, acc, err, predictions, dice, ce = self.run_summary(sess, summary_writer,
+                                                                 step, batch_x, batch_y, write=write)
         logging.info(
             "Iter {:}, Minibatch Loss= {:.4f}, cross entropy = {:.4f}, Dice= {:.4f}, "
             "error= {:.2f}% Accuracy= {:.4f}".format(step, loss, ce, dice, err, acc))
