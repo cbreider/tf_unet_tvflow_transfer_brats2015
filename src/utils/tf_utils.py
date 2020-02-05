@@ -40,8 +40,8 @@ def preprocess_images(scan, ground_truth, dispacement_sigma=25):
 
 
 
-    size = tf.random.uniform((), minval=tf.cast(tf.cast(image_shape[0], tf.float32) * 0.8, tf.int32),
-                             maxval=tf.cast(tf.cast(image_shape[0], tf.float32) * 1.2, tf.int32),
+    size = tf.random.uniform((), minval=tf.cast(tf.cast(image_shape[0], tf.float32) * 0.7, tf.int32),
+                             maxval=tf.cast(tf.cast(image_shape[0], tf.float32), tf.int32),
                              dtype=tf.int32)
     combined_crop = tf.random_crop(value=combined_deform,
                                   size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0))
@@ -52,7 +52,9 @@ def preprocess_images(scan, ground_truth, dispacement_sigma=25):
 
     combined_flip = tf.image.random_flip_left_right(combined_crop)
     combined_flip = tf.image.random_flip_up_down(combined_flip)
+    tf.print(tf.shape(combined_flip))
     im = tf.image.resize_images(combined_flip[:, :, :last_image_dim], size=[image_shape[0], image_shape[1]])
+    tf.print(tf.shape(im))
     gt = tf.image.resize_images(combined_flip[:, :, last_image_dim:], size=[image_shape[0], image_shape[1]])
     return im, gt
 

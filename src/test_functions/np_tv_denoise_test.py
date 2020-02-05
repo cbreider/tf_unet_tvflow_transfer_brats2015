@@ -22,7 +22,7 @@ def test_reshape():
     plt.show()
 
 
-def tv_denoise(img, weight=0.1, tau=0.125, eps=1e-3, num_iter_max=200, ):
+def tv_denoise(img, weight=0.1, tau=0.125, eps=1e-3, num_iter_max=200):
     """Perform total-variation denoising on a grayscale image.
 
     Parameters

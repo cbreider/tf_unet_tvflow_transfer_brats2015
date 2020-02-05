@@ -2,9 +2,25 @@ import tensorflow as tf
 import  numpy as np
 import src.utils.tf_utils as tfu
 import matplotlib.pyplot as plt
-
+from src.test_functions.np_tv_denoise_test import tv_denoise
 img = np.array(plt.imread(
-    "/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0003_1/VSD.Brain.XX.O.MR_Flair.54524/VSD.Brain.XX.O.MR_Flair.54524_100.png"))
+    "/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0003_1/VSD.Brain.XX.O.MR_Flair.54524/VSD.Brain.XX.O.MR_Flair.54524_82.png"))
+
+img2 = np.array(plt.imread(
+    "/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0003_1/VSD.Brain.XX.O.MR_T2.54527/VSD.Brain.XX.O.MR_T2.54527_82.png"))
+
+res = (img + img2) / 2
+res_tv = tv_denoise(res)
+img_tv = tv_denoise(img)
+img2_tv = tv_denoise(img2)
+plt.matshow(img)
+plt.matshow(img2)
+plt.matshow(res)
+plt.matshow(img_tv)
+plt.matshow(img2_tv)
+plt.matshow(res_tv)
+plt.show()
+
 img = np.reshape(img, (240, 240, 1))
 pl = tf.placeholder(tf.float32, shape=[240, 240, 1])
 tv = tfu.get_tv_smoothed(pl, tau=0.125, weight=0.1, eps=0.00001, m_itr=200)

@@ -759,17 +759,21 @@ def combine_img_prediction_tvclustering(data, tv, gt, pred):
 
     ny = data.shape[2]
     ch = data.shape[3]
-    data = revert_zero_centering(data).reshape(-1, ny, ch)
-
+    data_for_gt = to_rgb(revert_zero_centering(data[:, :, :, 0]).reshape(-1, ny, 1))
+    data = np.concatenate((revert_zero_centering(data[:, :, :, 0]),
+                           revert_zero_centering(data[:, :, :, 1]),
+                           revert_zero_centering(data[:, :, :, 2]),
+                           revert_zero_centering(data[:, :, :, 3])),
+                          axis=2).reshape(-1, ny*ch, 1)
     data_rgb = to_rgb(data)
-    data_size = (data_rgb.shape[1], data_rgb.shape[0])
+    data_size = (data_for_gt.shape[1], data_for_gt.shape[0])
     gt = gt.reshape(-1, gt.shape[2], gt.shape[3])
     pred = pred.reshape(-1, pred.shape[2], pred.shape[3])
     gt_rgb = tv_clustered_one_hot_to_rgb(gt)
     pred_rgb = tv_clustered_one_hot_to_rgb(pred)
 
     tv = revert_zero_centering(tv)
-    tv = tv.reshape(-1, tv.shape[2], ch)
+    tv = tv.reshape(-1, tv.shape[2], 1)
     tv_rgb = to_rgb(tv)
 
     img = np.concatenate((data_rgb,

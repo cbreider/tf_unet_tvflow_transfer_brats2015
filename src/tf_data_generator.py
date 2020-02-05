@@ -15,7 +15,7 @@ from tensorflow.python.framework.ops import convert_to_tensor
 from abc import abstractmethod
 import src.utils.tf_utils as tf_utils
 import logging
-from src.utils.enum_params import TrainingModes, TV_clustering_method
+from src.utils.enum_params import TrainingModes, TV_clustering_method, Subtumral_Modes
 from configuration import DataParams
 
 
@@ -104,18 +104,45 @@ class TFImageDataGenerator:
             if self._load_tv_from_file:
                 tv_img = tf_utils.load_png_image(gt_ob, nr_channels=self._nr_channels, img_size=self._in_img_size)
             else:
-                if None:  # todo add case
-                    tv_base = in_img[:, :, i]
+                if self._segmentation_mask == Subtumral_Modes.COMPLETE:  # todo add case
+                    tv_base1 = tf.expand_dims(in_img[:, :, 0], axis=2)  # flair + t2
+                    tv_base2 = tf.expand_dims(in_img[:, :, 3], axis=2)
                     v = self._data_vals[self._use_modalities[i]]
-                    tv_base = tf_utils.normalize_and_zero_center_slice(tv_base, max=self._data_max_value,
-                                                                        new_max=self._data_norm_value,
-                                                                        normalize_std=self._normalize_std)
+                    tv_base1 = tf_utils.normalize_and_zero_center_slice(tv_base1,
+                                                                        max=self._data_vals[self._use_modalities[0]][0],
+                                                                        normalize_std=True,
+                                                                        new_max=None,
+                                                                        mean=self._data_vals[self._use_modalities[0]][1],
+                                                                        std=self._data_vals[self._use_modalities[0]][2])
+                    tv_base2 = tf_utils.normalize_and_zero_center_slice(tv_base2,
+                                                                        max=self._data_vals[self._use_modalities[3]][0],
+                                                                        normalize_std=True,
+                                                                        new_max=None,
+                                                                        mean=self._data_vals[self._use_modalities[3]][1],
+                                                                        std=self._data_vals[self._use_modalities[3]][2])
+                    tv_base = (tv_base1 + tv_base2) / 2
+                elif self._segmentation_mask == Subtumral_Modes.CORE:
+                    tv_base = in_img[:, :, 2]
+                    tv_base = tf_utils.normalize_and_zero_center_slice(tv_base,
+                                                                        max=self._data_vals[self._use_modalities[2]][0],
+                                                                        normalize_std=True,
+                                                                        new_max=None,
+                                                                        mean=self._data_vals[self._use_modalities[2]][1],
+                                                                        std=self._data_vals[self._use_modalities[2]][2])
+                elif self._segmentation_mask == Subtumral_Modes.CORE:
+                    tv_base = in_img[:, :, 1]
+                    tv_base = tf_utils.normalize_and_zero_center_slice(tv_base,
+                                                                        max=self._data_vals[self._use_modalities[1]][0],
+                                                                        normalize_std=True,
+                                                                        new_max=None,
+                                                                        mean=self._data_vals[self._use_modalities[1]][1],
+                                                                        std=self._data_vals[self._use_modalities[1]][2])
+                else:
+                    raise ValueError()
+
                 tv_img = tf_utils.get_tv_smoothed(img=tv_base, tau=self.tv_tau, weight=self.tv_weight,
                                                   eps=self.tv_eps, m_itr=self.tv_nr_itr)
 
-            tv_img = tf_utils.normalize_and_zero_center_tensor(tv_img, max=self._data_max_value,
-                                                               new_max=self._data_norm_value,
-                                                               normalize_std=self._normalize_std)
             if self._mode == TrainingModes.TVFLOW_REGRESSION:
                 gt_img = tv_img
 

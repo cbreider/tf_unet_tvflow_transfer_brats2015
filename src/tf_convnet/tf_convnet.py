@@ -91,10 +91,10 @@ class ConvNetModel(object):
                 self.predicter = self.logits
                 self.error = tf.math.divide(tf.math.reduce_sum(tf.math.squared_difference(self.predicter, self.y)),
                                             tf.cast(tf.size(self.y), tf.float32))
-                self.error = tf.math.divide(self.error,
-                                            tf.math.square(tf.constant(self._max_tv_value)))
-                self.error_rate = tf.math.multiply(tf.constant(100.0), self.error)
-                self.accuracy = tf.constant(1.0) - self.error
+                #self.error = tf.math.divide(self.error,
+                #                            tf.math.square(tf.constant(self._max_tv_value)))
+                self.error_rate = tf.constant(0)
+                self.accuracy = tf.constant(0)
                 self.dice = tf.constant(0)
             else:
                 if self._n_class > 1:
@@ -123,14 +123,14 @@ class ConvNetModel(object):
                                              weights=self._class_weights)
 
             elif self.cost_function == Cost.DICE_SOFT:
-                loss = 1.0 - tfu.get_dice_loss(logits=self.logits, y=self.y, eps=1e-5, axis=[0, 1, 2, 3])
+                loss = 1.0 - tfu.get_dice_loss(logits=self.logits, y=self.y, eps=1e-5) #, axis=[0, 1, 2, 3])
 
             elif self.cost_function == Cost.DICE_LOG:
                 loss = - tf.math.log(tfu.get_dice_loss(
-                    logits=self.logits, y=self.y, eps=1e-5, axis=[0, 1, 2, 3]))
+                    logits=self.logits, y=self.y, eps=1e-5)) #, axis=[0, 1, 2, 3]))
 
             elif self.cost_function == Cost.MSE:
-                loss = tf.losses.mean_squared_error(self.logits, flat_labels)
+                loss = tf.losses.mean_squared_error(flat_logits, flat_labels)
 
             elif self.cost_function == Cost.TV:
                 loss = tf.losses.mean_squared_error(flat_logits, flat_labels)
