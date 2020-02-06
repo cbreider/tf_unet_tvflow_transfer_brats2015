@@ -181,7 +181,7 @@ class Trainer(object):
                 epoch = int(fl[1])
 
             pred_shape = self.run_validation(epoch, sess, init_step, summary_writer_validation, save_path, mini=True,
-                                             log=False if epoch != 0 else True)
+                                             log=False if epoch != 0 else True, save=False)
 
             avg_gradients = None
 
@@ -227,6 +227,7 @@ class Trainer(object):
                         self.norm_gradients_node.assign(norm_gradients).eval()
 
                     if step % self._display_step == 0:
+                        self.output_epoch_stats(epoch, np.mean(np.array(avg_score_vals_epoch)), lr)
                         self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
                                                     dutil.crop_to_shape(batch_y, pred_shape), write=True,
                                                     log_mini_batch_stats=self._log_mini_batch_stats)
@@ -240,12 +241,6 @@ class Trainer(object):
                                                                       avg_score_vals_batch[1], avg_score_vals_batch[2],
                                                                       avg_score_vals_batch[4], avg_score_vals_batch[5],
                                                                       avg_score_vals_batch[6]))
-                            # save epoch and step
-                            outF = open(step_file, "w")
-                            outF.write("{}".format(step+1))
-                            outF.write("\n")
-                            outF.write("{}".format(epoch))
-                            outF.close()
                         avg_score_vals_batch = []
 
                     if step % self._training_iters == 0 and step != 0:
@@ -253,6 +248,12 @@ class Trainer(object):
                         self.output_epoch_stats(epoch, np.mean(np.array(avg_score_vals_epoch)), lr)
                         avg_score_vals_epoch = []
                         self.run_validation(epoch, sess, step, summary_writer_validation, save_path)
+                        # save epoch and step
+                        outF = open(step_file, "w")
+                        outF.write("{}".format(step + 1))
+                        outF.write("\n")
+                        outF.write("{}".format(epoch))
+                        outF.close()
 
                 logging.info("Optimization Finished!")
 
@@ -273,7 +274,7 @@ class Trainer(object):
                 logging.error(str(e))
                 return None
 
-    def run_validation(self, epoch, sess, step, summary_writer, model_save_path, mini=False, log=True):
+    def run_validation(self, epoch, sess, step, summary_writer, model_save_path, mini=False, log=True, save=True):
         mini_size = 5
         vals = []
         dice_per_volume = []
@@ -346,8 +347,9 @@ class Trainer(object):
             "Dice per volume= {:.4f}, error= {:.2f}%, Accuracy {:.4f}, IoU= {:.4f}".format(
                 epoch, val_scores[0], val_scores[1], val_scores[2], dp,
                 val_scores[4], val_scores[5], val_scores[6]))
-        logging.info("Saving Session and Model ...")
-        save_path = self.net.save(sess, model_save_path)
+        if save:
+            logging.info("Saving Session and Model ...")
+            save_path = self.net.save(sess, model_save_path)
         return shape
 
     def write_tf_summary(self, step, vals, summary_writer, cost_val=None):
