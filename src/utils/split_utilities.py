@@ -54,7 +54,7 @@ class TrainingDataset(object):
 
     """Constructor"""
     def __init__(self, paths, data_config, mode,
-                 load_test_paths_only=False, new_split=True):
+                 load_test_paths_only=False, new_split=True, create_five_fold=False):
         """
         Inits a Dataset of training and validation images- Either creates it by reading files from a specific folder
         declared in "paths" or read a existing split form a .txt
@@ -212,7 +212,6 @@ class TrainingDataset(object):
         Creates a dictionary with segmentation and Brats2015 images with HGG and LGG
 
 
-        :param use_scale: use scale images from tvflow as gt instead of smoothed images
         :returns Dictionary with input and gt paths:
                 {"path/to/brats2015/Patient/Flair/slice.png" : "path/to/brats/Patient/gt/slice.png"}
         """
@@ -442,6 +441,19 @@ class TrainingDataset(object):
             i += 1
 
         return train_split, validation_split, test_split
+
+    def _split_patients_five_fold(self):
+        if not self._paths.is_loaded:
+            return None
+        directory = self._paths.raw_train_dir
+        if self._use_mha:
+            directory = self._paths.brats_train_dir
+            ext = self._paths.mha_ext
+
+        patient_paths = self._get_patient_folders(base_path=directory,
+                                                  gg=self._paths.high_grade_gliomas_folder)
+        patient_paths.extend(self._get_patient_folders(base_path=directory,
+                                                       gg=self._paths.low_grade_gliomas_folder))
 
     @staticmethod
     def _read_single_split_from_folder(file_name):
