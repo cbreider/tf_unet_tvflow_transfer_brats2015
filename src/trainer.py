@@ -55,6 +55,7 @@ class Trainer(object):
         self._restore_path = restore_path
         self._restore_mode = restore_mode
         self._display_step = self.config.display_step
+        self._log_mini_batch_stats = self.config.log_mini_batch_stats
 
     def _get_optimizer(self, global_step):
         if self.optimizer_name == Optimizer.MOMENTUM:
@@ -202,7 +203,8 @@ class Trainer(object):
                     # Run optimization op (backprop)
                     if step == 0:
                         self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
-                                                    dutil.crop_to_shape(batch_y, pred_shape), write=True)
+                                                    dutil.crop_to_shape(batch_y, pred_shape), write=True,
+                                                    log_mini_batch_stats=True)
                     _, loss, cs, dice, err, err_r, acc, lr, gradients = sess.run(
                         (self.optimizer, self.net.cost, self.net.cross_entropy, self.net.dice, self.net.error,
                          self.net.error_rate, self.net.accuracy, self.learning_rate_node, self.net.gradients_node),
@@ -220,7 +222,8 @@ class Trainer(object):
 
                     if step % self._display_step == 0:
                         self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
-                                                    dutil.crop_to_shape(batch_y, pred_shape), write=True)
+                                                    dutil.crop_to_shape(batch_y, pred_shape), write=True,
+                                                    log_mini_batch_stats=self._log_mini_batch_stats)
                         avg_score_vals = np.mean(np.array(avg_score_vals), axis=0)
                         self.write_tf_summary(step, avg_score_vals, summary_writer_training)
                         if step != 0:
@@ -366,13 +369,15 @@ class Trainer(object):
         logging.info(
             "Epoch {:}, Average loss: {:.4f}, learning rate: {:.9f}".format(epoch, (total_loss / training_iters), lr))
 
-    def output_minibatch_stats(self, sess, summary_writer, step, batch_x, batch_y, write=False):
+    def output_minibatch_stats(self, sess, summary_writer, step, batch_x, batch_y, write=False,
+                               log_mini_batch_stats=False):
 
         loss, acc, err, predictions, dice, ce = self.run_summary(sess, summary_writer,
                                                                  step, batch_x, batch_y, write=write)
-        logging.info(
-            "Iter {:}, Minibatch Loss= {:.4f}, cross entropy = {:.4f}, Dice= {:.4f}, "
-            "error= {:.2f}% Accuracy= {:.4f}".format(step, loss, ce, dice, err, acc))
+        if log_mini_batch_stats:
+            logging.info(
+                "Iter {:}, Minibatch Loss= {:.4f}, cross entropy = {:.4f}, Dice= {:.4f}, "
+                "error= {:.2f}% Accuracy= {:.4f}".format(step, loss, ce, dice, err, acc))
 
     def run_summary(self, sess, summary_writer, step, batch_x, batch_y, write=True):
         # Calculate batch loss and accuracy

@@ -16,7 +16,7 @@ from src.utils.enum_params import Optimizer, Cost, Activation_Func, TV_clusterin
 
 class DataParams:
     """ Data parameters"""
-    batch_size_train = 2            # batch size used for training
+    batch_size_train = 16            # batch size used for training
     batch_size_val = 1             # batch size used for validation
     buffer_size_train = 20         # buffer size for tf training data pipeline (only used for tv training)
     buffer_size_val = 64           # buffer size for tf validation data pipeline (only used for tv training)
@@ -109,17 +109,18 @@ class ConvNetParams:
 
 class TrainingParams:
     """ Training parameters"""
-    num_epochs = 100000             # number of training epochs
-    training_iters = 10000           # iterations per epoch
-    display_step = 500              # number of iterations between
-    label_smothing = 0              # smooth label values int gt to confuse network # TODO ?
-    optimizer = Optimizer.ADAM      # Optimizer to use. Choose from class Optimizer(Enum):
     batch_size_train = DataParams.batch_size_train            # batch size used for training
     batch_size_val = DataParams.batch_size_val             # batch size used for validation
     buffer_size_train = DataParams.buffer_size_train # buffer size for tf training data pipeline (only used for tv training)
     buffer_size_val = DataParams.buffer_size_val # buffer size for tf validation data pipeline (only used for tv training)
     norm_grads = False              # norm gradients in summary
     write_graph = True              # write graph in tf summary
+    log_mini_batch_stats = False
+    num_epochs = 100             # number of training epochs
+    training_iters = 3000           # iterations per epoch
+    display_step = 150              # number of iterations between
+    label_smothing = 0              # smooth label values int gt to confuse network # TODO ?
+    optimizer = Optimizer.ADAM      # Optimizer to use. Choose from class Optimizer(Enum):
     keep_prob_dopout = 0.8          # keep prob for dropout
 
     adam_args = dict(learning_rate=0.0001,  # Hyperparameters for Adam optimzer
