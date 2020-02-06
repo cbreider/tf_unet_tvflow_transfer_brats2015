@@ -32,11 +32,10 @@ def distort_imgs(scan, ground_truth, displacement_sigma=25):
     combined = tf.concat([scan, ground_truth], axis=2)
     image_shape = tf.shape(scan)
 
-    #displacement_val = np.random.randn(3, 2, 3) * dispacement_sigma
+    # displacement_val = np.random.randn(3, 2, 3) * dispacement_sigma
     # construct TensorFlow input and top gradient
     displacement = tf.random.normal(shape=[2, 2, 2]) * displacement_sigma
     combined_deform = etf.deform_grid(combined, displacement, order=3, axis=(0, 1), prefilter=False)
-
 
     size = tf.random.uniform((), minval=tf.cast(tf.cast(image_shape[0], tf.float32) * 0.7, tf.int32),
                              maxval=tf.cast(tf.cast(image_shape[0], tf.float32), tf.int32),
@@ -54,8 +53,10 @@ def distort_imgs(scan, ground_truth, displacement_sigma=25):
     combined_flip = tf.image.random_flip_left_right(combined_rot)
     combined_flip = tf.image.random_flip_up_down(combined_flip)
 
-    im = tf.image.random_brightness(tf.image.resize_images(combined_flip[:, :, :last_image_dim],
-                                                           size=[image_shape[0], image_shape[1]]), 0.3)
+    #im = tf.image.random_brightness(tf.image.resize_images(combined_flip[:, :, :last_image_dim],
+    #                                                       size=[image_shape[0], image_shape[1]]), 0.3)
+
+    im = tf.image.resize_images(combined_flip[:, :, :last_image_dim], size=[image_shape[0], image_shape[1]])
     gt = tf.image.resize_images(combined_flip[:, :, last_image_dim:], size=[image_shape[0], image_shape[1]])
     return im, gt
 

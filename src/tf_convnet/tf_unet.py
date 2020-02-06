@@ -49,9 +49,9 @@ def create_2d_unet(x, keep_prob, channels, n_class, n_layers=5, features_root=64
     :param act_func_out: Activation function for out map
     """
 
-    logging.info("Building Unet with,"
+    logging.info("Building Unet with, "
                  "Layers {layers}, "
-                 "features {features}, "
+                 "Root feature size {features}, "
                  "filter size {filter_size}x{filter_size}, "
                  "pool size: {pool_size}x{pool_size}".format(layers=n_layers,
                                                              features=features_root,

@@ -71,7 +71,8 @@ class ConvNetModel(object):
                                    bn=self._batch_norm,
                                    add_residual_layer=self._add_residual_layer,
                                    use_scale_image_as_gt=self._use_scale_image_as_gt,
-                                   act_func_out=self._activation_func_out)
+                                   act_func_out=self._activation_func_out,
+                                   features_root=self._features_root)
 
         self.cost = self._get_cost()
 
@@ -116,6 +117,8 @@ class ConvNetModel(object):
         """
         Constructs the cost function, either cross_entropy, weighted cross_entropy or dice_coefficient
         """
+        logging.info("Cost: {}".format(self.cost_function.name))
+
         with tf.name_scope("cost"):
 
             if self.cost_function == Cost.BATCH_DICE_LOG or self.cost_function == Cost.BATCH_DICE_SOFT or \

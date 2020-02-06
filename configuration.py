@@ -18,8 +18,8 @@ class DataParams:
     """ Data parameters"""
     batch_size_train = 16            # batch size used for training
     batch_size_val = 1             # batch size used for validation
-    buffer_size_train = 20         # buffer size for tf training data pipeline (only used for tv training)
-    buffer_size_val = 64           # buffer size for tf validation data pipeline (only used for tv training)
+    buffer_size_train = 64         # buffer size for tf training data pipeline (only used for tv training)
+    buffer_size_val = 20           # buffer size for tf validation data pipeline (only used for tv training)
 
     # label values of BRATS2015 gt
     brats_label_values = [

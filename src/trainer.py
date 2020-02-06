@@ -59,28 +59,28 @@ class Trainer(object):
 
     def _get_optimizer(self, global_step):
         if self.optimizer_name == Optimizer.MOMENTUM:
-            learning_rate = self.config.momentum_args.pop("learning_rate", 0.2)
-            decay_rate = self.config.momentum_args.pop("decay_rate", 0.95)
-            momentum = self.config.momentum_args.pop("momentum", 0.2)
-            decay_steps = self.config.momentum_args.pop("decay_steps", 10000)
-            self.learning_rate_node = tf.train.exponential_decay(learning_rate=learning_rate,
-                                                                 global_step=global_step,
-                                                                 decay_steps=decay_steps,
-                                                                 decay_rate=decay_rate,
+            self.learning_rate = self.config.momentum_args.pop("learning_rate", 0.2)
+            self.decay_rate = self.config.momentum_args.pop("decay_rate", 0.95)
+            self.momentum = self.config.momentum_args.pop("momentum", 0.2)
+            self.decay_steps = self.config.momentum_args.pop("decay_steps", 10000)
+            self.learning_rate_node = tf.train.exponential_decay(learning_rate=self.learning_rate,
+                                                                 global_step=self.global_step,
+                                                                 decay_steps=self.decay_steps,
+                                                                 decay_rate=self.decay_rate,
                                                                  staircase=True)
 
-            optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate_node, momentum=momentum,
+            optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate_node, momentum=self.momentum,
                                                    **self.config.momentum_args).minimize(self.net.cost,
                                                                                          global_step=global_step)
 
         elif self.optimizer_name == Optimizer.ADAM:
-            learning_rate = self.config.adam_args.pop("learning_rate", 0.001)
-            decay_rate = self.config.adam_args.pop("decay_rate", 0.95)
-            decay_steps = self.config.adam_args.pop("decay_steps", 10000)
-            self.learning_rate_node = tf.train.exponential_decay(learning_rate=learning_rate,
+            self.learning_rate = self.config.adam_args.pop("learning_rate", 0.001)
+            self.decay_rate = self.config.adam_args.pop("decay_rate", 0.95)
+            self.decay_steps = self.config.adam_args.pop("decay_steps", 10000)
+            self.learning_rate_node = tf.train.exponential_decay(learning_rate=self.learning_rate,
                                                                  global_step=global_step,
-                                                                 decay_steps=decay_steps,
-                                                                 decay_rate=decay_rate,
+                                                                 decay_steps=self.decay_steps,
+                                                                 decay_rate=self.decay_rate,
                                                                  staircase=True)
             optimizer = tf.train.AdamOptimizer(
                 learning_rate=self.learning_rate_node,
@@ -88,8 +88,8 @@ class Trainer(object):
                                                   global_step=global_step)
 
         elif self.optimizer_name == Optimizer.ADAGRAD:
-            learning_rate = self.config.adagrad_args.pop("learning_rate", 0.001)
-            self.learning_rate_node = tf.Variable(learning_rate, name="learning_rate")
+            self.learning_rate = self.config.adagrad_args.pop("learning_rate", 0.001)
+            self.learning_rate_node = tf.Variable(self.learning_rate, name="learning_rate")
 
             optimizer = tf.train.AdamOptimizer(
                                                 learning_rate=self.learning_rate_node,
@@ -124,14 +124,16 @@ class Trainer(object):
 
         """
 
+        init = self._initialize()
+
         logging.info(
             "Start optimizing model with,"
             "Optimizer: {}, "
+            "Learning rate {}, Decay rate {}, Decay steps {},"
             "Nr of Epochs: {}, "
-            "Nr of Training Iters: {},"
-            "Keep prob {}".format(self.optimizer_name, self._n_epochs, self._training_iters, self._dropout))
-
-        init = self._initialize()
+            "Epoch size: {},"
+            "Keep prob {}".format(self.optimizer_name, self.learning_rate, self.decay_rate, self.decay_steps,
+                                  self._n_epochs, self._training_iters, self._dropout))
 
         save_path = os.path.join(self.output_path, "model.ckpt")
         if self._n_epochs == 0:
@@ -171,7 +173,6 @@ class Trainer(object):
             step_file = os.path.join(self.output_path, "epoch.txt")
             init_step = 0
             epoch = 0
-            total_loss = 0
             s_train = 0
             if os.path.isfile(step_file) and self._restore_mode != RestoreMode.ONLY_BASE_NET:
                 f = open(step_file, "r")
@@ -188,8 +189,10 @@ class Trainer(object):
                 logging.info("Resuming Training at epoch {} and total step {}". format(epoch, init_step))
 
             epoch_size = int(self.data_provider_train.size / self.config.batch_size_train)
+
             logging.info("Start optimization...")
-            avg_score_vals = []
+            avg_score_vals_batch = []
+            avg_score_vals_epoch = []
             try:
                 for step in range(init_step, self._n_epochs*self._training_iters):
                     s_train += 1
@@ -205,45 +208,46 @@ class Trainer(object):
                         self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
                                                     dutil.crop_to_shape(batch_y, pred_shape), write=True,
                                                     log_mini_batch_stats=True)
-                    _, loss, cs, dice, err, err_r, acc, lr, gradients = sess.run(
+                    _, loss, cs, dice, err, err_r, acc, lr, gradients, pred= sess.run(
                         (self.optimizer, self.net.cost, self.net.cross_entropy, self.net.dice, self.net.error,
-                         self.net.error_rate, self.net.accuracy, self.learning_rate_node, self.net.gradients_node),
+                         self.net.error_rate, self.net.accuracy, self.learning_rate_node, self.net.gradients_node, self.net
+                         .predicter),
                         feed_dict={self.net.x: batch_x,
                                    self.net.y: dutil.crop_to_shape(batch_y, pred_shape),
                                    self.net.keep_prob: self._dropout})
-                    avg_score_vals.append([loss, cs, dice, err, err_r, acc])
+                    avg_score_vals_batch.append([loss, cs, dice, err, err_r, acc])
+                    avg_score_vals_epoch.append([loss, cs, dice, err_r, acc])
 
                     if self.net.summaries and self._norm_grads:
                         avg_gradients = _update_avg_gradients(avg_gradients, gradients, step)
                         norm_gradients = [np.linalg.norm(gradient) for gradient in avg_gradients]
                         self.norm_gradients_node.assign(norm_gradients).eval()
 
-                    total_loss += loss
-
                     if step % self._display_step == 0:
                         self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
                                                     dutil.crop_to_shape(batch_y, pred_shape), write=True,
                                                     log_mini_batch_stats=self._log_mini_batch_stats)
-                        avg_score_vals = np.mean(np.array(avg_score_vals), axis=0)
-                        self.write_tf_summary(step, avg_score_vals, summary_writer_training)
+                        avg_score_vals_batch = np.mean(np.array(avg_score_vals_batch), axis=0)
+                        self.write_tf_summary(step, avg_score_vals_batch, summary_writer_training)
+
                         if step != 0:
                             logging.info(
-                                "Iter {:}, Average loss= {:.6f}, cross entropy = {:.4f}, Dice= {:.4f}, "
-                                "error= {:.2f}%, Accuracy {:.4f}".format(step, avg_score_vals[0], avg_score_vals[1],
-                                                                         avg_score_vals[2], avg_score_vals[4],
-                                                                         avg_score_vals[5]))
+                                "Iter {:} Average: Loss= {:.6f}, Cross entropy = {:.4f}, Dice= {:.4f}, Error= {:.2f}%, "
+                                "Accuracy {:.4f}".format(step, avg_score_vals_batch[0], avg_score_vals_batch[1],
+                                                         avg_score_vals_batch[2], avg_score_vals_batch[4],
+                                                         avg_score_vals_batch[5]))
                             # save epoch and step
                             outF = open(step_file, "w")
                             outF.write("{}".format(step+1))
                             outF.write("\n")
                             outF.write("{}".format(epoch))
                             outF.close()
-                        avg_score_vals = []
+                        avg_score_vals_batch = []
 
                     if step % self._training_iters == 0 and step != 0:
                         epoch += 1
-                        self.output_epoch_stats(epoch, total_loss, self._training_iters, lr)
-                        total_loss = 0
+                        self.output_epoch_stats(epoch, np.mean(np.array(avg_score_vals_epoch)), self._training_iters, lr)
+                        avg_score_vals_epoch = []
                         self.run_validation(epoch, sess, step, summary_writer_validation, save_path)
 
                 logging.info("Optimization Finished!")
@@ -365,9 +369,11 @@ class Trainer(object):
                                                mode=1 if self.net.cost_function == Cost.MSE else 0)
         ioutil.save_image(img, "%s/%s.jpg" % (path, name))
 
-    def output_epoch_stats(self, epoch, total_loss, training_iters, lr):
+    def output_epoch_stats(self, epoch, val_scores, lr):
         logging.info(
-            "Epoch {:}, Average loss: {:.4f}, learning rate: {:.9f}".format(epoch, (total_loss / training_iters), lr))
+            "EPOCH {} Average: Loss= {:.6f}, Cross entropy = {:.4f}, Dice = {:.4f}, "
+            "Error= {:.2f}%, Accuracy {:.4f}, Learning rate {:.9f}".format(
+                epoch, val_scores[0], val_scores[1], val_scores[2], val_scores[3], val_scores[4], lr))
 
     def output_minibatch_stats(self, sess, summary_writer, step, batch_x, batch_y, write=False,
                                log_mini_batch_stats=False):
@@ -376,8 +382,8 @@ class Trainer(object):
                                                                  step, batch_x, batch_y, write=write)
         if log_mini_batch_stats:
             logging.info(
-                "Iter {:}, Minibatch Loss= {:.4f}, cross entropy = {:.4f}, Dice= {:.4f}, "
-                "error= {:.2f}% Accuracy= {:.4f}".format(step, loss, ce, dice, err, acc))
+                "Iter {:}, Minibatch Loss= {:.6f}, Cross entropy = {:.4f}, Dice= {:.4f}, "
+                "Error= {:.2f}% Accuracy= {:.4f}".format(step, loss, ce, dice, err, acc))
 
     def run_summary(self, sess, summary_writer, step, batch_x, batch_y, write=True):
         # Calculate batch loss and accuracy
