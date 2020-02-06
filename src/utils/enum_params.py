@@ -30,8 +30,8 @@ class Cost(Enum):
     DICE_LOG = 5            # -log(DICE)
     BATCH_DICE_SOFT = 6     # SOFT DICE treating bacth as 3D tensor
     BATCH_DICE_LOG = 7      # LOG DICE treating bacth as 3D tensor
-    DICE_SOFT_CE = 8
-    BATCH_DICE_SOFT_CE = 9
+    DICE_SOFT_CE = 8        # loss = cost_weight * dice_loss + (1-cost_weight) * cross_entropy_loss
+    BATCH_DICE_SOFT_CE = 9  # loss = cost_weight * batch_dice_loss + (1-cost_weight) * cross_entropy_loss
 
 
 class DataModes(Enum):

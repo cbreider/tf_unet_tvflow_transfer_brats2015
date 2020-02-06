@@ -31,7 +31,7 @@ class TFImageDataGenerator:
         self._in_img_size = self._data_config.raw_image_size
         self._set_img_size = self._data_config.set_image_size
         self._data_max_value = self._data_config.data_max_value
-        self._data_norm_value = self._data_config.norm_image_value
+        self._data_norm_value = self._data_config.norm_max_image_value
         self._raw_data = data
         self._shuffle = self._data_config.shuffle
         self._mode = mode  # type: TrainingModes
@@ -50,7 +50,8 @@ class TFImageDataGenerator:
         self.load_data_from_disk = False # not used any more
         self._load_tv_from_file = self._data_config.load_tv_from_file
         self.clustering_method = self._data_config.clustering_method
-        self._modalties_tv =  self._data_config.combine_modalities_for_tv
+        self._modalties_tv = self._data_config.combine_modalities_for_tv
+        self._disort_params = self._data_config.image_disort_params
 
         self._batch_size = None
         self._buffer_size = None
@@ -179,7 +180,7 @@ class TFImageDataGenerator:
                                                                          size=self._set_img_size, tvimg=tv_img)
 
         if self._do_augmentation:
-            in_img, gt_img = tf_utils.distort_imgs(in_img, gt_img)
+            in_img, gt_img = tf_utils.distort_imgs(in_img, gt_img, params=self._disort_params)
 
         in_img = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._use_modalities,
                                                                new_max=self._data_norm_value,

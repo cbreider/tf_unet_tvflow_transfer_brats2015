@@ -219,7 +219,7 @@ class Trainer(object):
                     avg_score_vals_epoch.append([loss, cs, dice, err_r, acc, iou])
 
                     #self.store_prediction("{}_{}".format(epoch, step), self.output_path,
-                    #                      batch_x, batch_x, batch_tv, pred)
+                    #                      batch_x, batch_y, batch_tv, pred)
 
                     if self.net.summaries and self._norm_grads:
                         avg_gradients = _update_avg_gradients(avg_gradients, gradients, step)

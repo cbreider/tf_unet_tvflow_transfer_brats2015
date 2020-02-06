@@ -17,13 +17,14 @@ import elasticdeform.tf as etf
 from src.utils.enum_params import Subtumral_Modes
 
 
-def distort_imgs(scan, ground_truth, displacement_sigma=25):
+def distort_imgs(scan, ground_truth, params=[[2, 3, 1], 25.0, 0.7]):
     """
     combined pre processing input and gt images
 
 
     :param scan: input image
     :param ground_truth: ground_truth image
+    :param params: params for image disorion and zoom
     :returns:cobmbined padded,cropped and flipped images
     """
     last_label_dim = tf.shape(ground_truth)[-1]
@@ -34,10 +35,10 @@ def distort_imgs(scan, ground_truth, displacement_sigma=25):
 
     # displacement_val = np.random.randn(3, 2, 3) * dispacement_sigma
     # construct TensorFlow input and top gradient
-    displacement = tf.random.normal(shape=[2, 2, 2]) * displacement_sigma
+    displacement = tf.random.normal(shape=params[0]) * params[1]
     combined_deform = etf.deform_grid(combined, displacement, order=3, axis=(0, 1), prefilter=False)
 
-    size = tf.random.uniform((), minval=tf.cast(tf.cast(image_shape[0], tf.float32) * 0.7, tf.int32),
+    size = tf.random.uniform((), minval=tf.cast(tf.cast(image_shape[0], tf.float32) * params[2], tf.int32),
                              maxval=tf.cast(tf.cast(image_shape[0], tf.float32), tf.int32),
                              dtype=tf.int32) # TODO  Zoom out?
     combined_crop = tf.random_crop(value=combined_deform,
