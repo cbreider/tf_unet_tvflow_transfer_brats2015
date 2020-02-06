@@ -531,6 +531,14 @@ def get_cross_entropy(logits, y, n_class, weights=None):
     return loss
 
 
+def get_iou_coe(pre, gt, axis=(1, 2, 3), smooth=1e-5):
+    inse = tf.reduce_sum(tf.multiply(pre, gt), axis=axis)  # AND
+    union = tf.reduce_sum(tf.cast(tf.add(pre, gt) >= 1, dtype=tf.float32), axis=axis)  # OR
+    batch_iou = (inse + smooth) / (union + smooth)
+    iou = tf.reduce_mean(batch_iou, name='iou_coe')
+    return iou
+
+
 def get_image_summary(img, idx=0):
     """
     Make an image summary for 4d tensor image with index idx

@@ -112,6 +112,7 @@ class ConvNetModel(object):
                 self.error_rate = tf.math.multiply(self.error, tf.constant(100.0))
                 self.dice = tfu.get_dice_score(pred=self.predicter, y=self.y, eps=1e-5,
                                                binary=self._two_classes_are_binary)
+                self.iou_coe = tfu.get_iou_coe(pre=self.predicter, gt=self.y)
 
     def _get_cost(self):
         """

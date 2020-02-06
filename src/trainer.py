@@ -201,22 +201,25 @@ class Trainer(object):
                         sess.run(self.data_provider_train.init_op)
                         s_train = 0
 
-                    batch_x, batch_y, __ = sess.run(self.data_provider_train.next_batch)
+                    batch_x, batch_y, batch_tv = sess.run(self.data_provider_train.next_batch)
 
                     # Run optimization op (backprop)
                     if step == 0:
                         self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
                                                     dutil.crop_to_shape(batch_y, pred_shape), write=True,
                                                     log_mini_batch_stats=True)
-                    _, loss, cs, dice, err, err_r, acc, lr, gradients, pred= sess.run(
+                    _, loss, cs, dice, err, err_r, acc, lr, gradients, pred, iou = sess.run(
                         (self.optimizer, self.net.cost, self.net.cross_entropy, self.net.dice, self.net.error,
-                         self.net.error_rate, self.net.accuracy, self.learning_rate_node, self.net.gradients_node, self.net
-                         .predicter),
+                         self.net.error_rate, self.net.accuracy, self.learning_rate_node, self.net.gradients_node,
+                         self.net.predicter, self.net.iou_coe),
                         feed_dict={self.net.x: batch_x,
                                    self.net.y: dutil.crop_to_shape(batch_y, pred_shape),
                                    self.net.keep_prob: self._dropout})
-                    avg_score_vals_batch.append([loss, cs, dice, err, err_r, acc])
-                    avg_score_vals_epoch.append([loss, cs, dice, err_r, acc])
+                    avg_score_vals_batch.append([loss, cs, dice, err, err_r, acc, iou])
+                    avg_score_vals_epoch.append([loss, cs, dice, err_r, acc, iou])
+
+                    #self.store_prediction("{}_{}".format(epoch, step), self.output_path,
+                    #                      batch_x, batch_x, batch_tv, pred)
 
                     if self.net.summaries and self._norm_grads:
                         avg_gradients = _update_avg_gradients(avg_gradients, gradients, step)
@@ -233,9 +236,10 @@ class Trainer(object):
                         if step != 0:
                             logging.info(
                                 "Iter {:} Average: Loss= {:.6f}, Cross entropy = {:.4f}, Dice= {:.4f}, Error= {:.2f}%, "
-                                "Accuracy {:.4f}".format(step, avg_score_vals_batch[0], avg_score_vals_batch[1],
-                                                         avg_score_vals_batch[2], avg_score_vals_batch[4],
-                                                         avg_score_vals_batch[5]))
+                                "Accuracy= {:.4f}, IoU= {:.4f}".format(step, avg_score_vals_batch[0],
+                                                                      avg_score_vals_batch[1], avg_score_vals_batch[2],
+                                                                      avg_score_vals_batch[4], avg_score_vals_batch[5],
+                                                                      avg_score_vals_batch[6]))
                             # save epoch and step
                             outF = open(step_file, "w")
                             outF.write("{}".format(step+1))
@@ -287,16 +291,16 @@ class Trainer(object):
 
         for i in range(int(self.data_provider_val.size / self.config.batch_size_val)):
             test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
-            __, loss, acc, err, err_r, prediction, dice, ce, feature = sess.run(
+            __, loss, acc, err, err_r, prediction, dice, ce, iou, feature = sess.run(
                 [self.summary_op, self.net.cost,
                  self.net.accuracy, self.net.error, self.net.error_rate,
                  self.net.predicter, self.net.dice,
-                 self.net.cross_entropy, self.net.last_feature_map],
+                 self.net.cross_entropy, self.net.iou_coe, self.net.last_feature_map],
                 feed_dict={self.net.x: test_x,
                            self.net.y: test_y,
                            self.net.keep_prob: 1.})
 
-            vals.append([loss, ce, dice, err, err_r, acc])
+            vals.append([loss, ce, dice, err, err_r, acc, iou])
             data[0].append(test_x)
             data[1].append(test_y)
             data[2].append(test_tv)
@@ -338,10 +342,10 @@ class Trainer(object):
         if log:
             self.write_tf_summary(step, val_scores, summary_writer, cost_val=["dice_per_volume", dp])
         logging.info(
-            "EPOCH {} Per Slice: Verification loss= {:.6f}, cross entropy = {:.4f}, Dice per slice = {:.4f}, "
-            "Dice per volume = {:.4f}, error= {:.2f}%, Accuracy {:.4f}".format(
+            "EPOCH {} Per Slice: Verification loss= {:.6f}, cross entropy= {:.4f}, Dice per slice= {:.4f}, "
+            "Dice per volume= {:.4f}, error= {:.2f}%, Accuracy {:.4f}, IoU= {:.4f}".format(
                 epoch, val_scores[0], val_scores[1], val_scores[2], dp,
-                val_scores[4], val_scores[5]))
+                val_scores[4], val_scores[5], val_scores[6]))
         logging.info("Saving Session and Model ...")
         save_path = self.net.save(sess, model_save_path)
         return shape
@@ -371,9 +375,9 @@ class Trainer(object):
 
     def output_epoch_stats(self, epoch, val_scores, lr):
         logging.info(
-            "EPOCH {} Average: Loss= {:.6f}, Cross entropy = {:.4f}, Dice = {:.4f}, "
-            "Error= {:.2f}%, Accuracy {:.4f}, Learning rate {:.9f}".format(
-                epoch, val_scores[0], val_scores[1], val_scores[2], val_scores[3], val_scores[4], lr))
+            "EPOCH {} Average: Loss= {:.6f}, Cross entropy= {:.4f}, Dice= {:.4f}, "
+            "Error= {:.2f}%, Accuracy= {:.4f}, IoU= {:.4f}, Learning rate= {:.9f}".format(
+                epoch, val_scores[0], val_scores[1], val_scores[2], val_scores[3], val_scores[4], val_scores[5], lr))
 
     def output_minibatch_stats(self, sess, summary_writer, step, batch_x, batch_y, write=False,
                                log_mini_batch_stats=False):
