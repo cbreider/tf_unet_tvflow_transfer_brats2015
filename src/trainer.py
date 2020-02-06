@@ -227,11 +227,11 @@ class Trainer(object):
                         self.norm_gradients_node.assign(norm_gradients).eval()
 
                     if step % self._display_step == 0:
-                        self.output_epoch_stats(epoch, np.mean(np.array(avg_score_vals_epoch)), lr)
                         self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
                                                     dutil.crop_to_shape(batch_y, pred_shape), write=True,
                                                     log_mini_batch_stats=self._log_mini_batch_stats)
                         avg_score_vals_batch = np.mean(np.array(avg_score_vals_batch), axis=0)
+                        print(avg_score_vals_batch.shape)
                         self.write_tf_summary(step, avg_score_vals_batch, summary_writer_training)
 
                         if step != 0:
@@ -245,7 +245,7 @@ class Trainer(object):
 
                     if step % self._training_iters == 0 and step != 0:
                         epoch += 1
-                        self.output_epoch_stats(epoch, np.mean(np.array(avg_score_vals_epoch)), lr)
+                        self.output_epoch_stats(epoch, np.mean(np.array(avg_score_vals_epoch), axis=0), lr)
                         avg_score_vals_epoch = []
                         self.run_validation(epoch, sess, step, summary_writer_validation, save_path)
                         # save epoch and step
