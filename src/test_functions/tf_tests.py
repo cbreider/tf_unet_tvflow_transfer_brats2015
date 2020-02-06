@@ -9,16 +9,42 @@ img = np.array(plt.imread(
 img2 = np.array(plt.imread(
     "/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0003_1/VSD.Brain.XX.O.MR_T2.54527/VSD.Brain.XX.O.MR_T2.54527_82.png"))
 
-res = (img + img2) / 2
+img3 = np.array(plt.imread(
+    "/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0003_1/VSD.Brain.XX.O.MR_T1c.54526/VSD.Brain.XX.O.MR_T1c.54526_82.png"))
+
+img4 = np.array(plt.imread(
+    "/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0003_1/VSD.Brain.XX.O.MR_T1.54525/VSD.Brain.XX.O.MR_T1.54525_82.png"))
+
+
+res = (img + img2 + img3 + img4) / 4
 res_tv = tv_denoise(res)
+
 img_tv = tv_denoise(img)
 img2_tv = tv_denoise(img2)
+img3_tv = tv_denoise(img3)
+img4_tv = tv_denoise(img4)
+
+nc = 15
+bin_size = 1.0 / float(nc)
+hard_cl_cen = np.array([(float(c) + 0.5) * bin_size for c in range(0, nc)])
+hard_cl_cen = hard_cl_cen
+in_arr = np.repeat(np.expand_dims(res_tv, 2), nc, axis=2)
+# get hard bin assignmnets:
+dist = np.subtract(in_arr, hard_cl_cen)
+dist = np.square(dist)
+hard_assign = np.argmin(dist, axis=2)
+
 plt.matshow(img)
 plt.matshow(img2)
+plt.matshow(img3)
+plt.matshow(img4)
 plt.matshow(res)
 plt.matshow(img_tv)
 plt.matshow(img2_tv)
+plt.matshow(img3_tv)
+plt.matshow(img4_tv)
 plt.matshow(res_tv)
+plt.matshow(hard_assign)
 plt.show()
 
 img = np.reshape(img, (240, 240, 1))

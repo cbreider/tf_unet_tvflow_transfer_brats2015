@@ -67,6 +67,7 @@ class DataParams:
     nr_of_classes = 1
     use_mha_files_instead = False
     load_tv_from_file = False
+    combine_modalities_for_tv = [modalities[0], modalities[1], modalities[2], modalities[3]]  # modalities used for tv. None for preset
 
     clustering_method = TV_clustering_method.STATIC_BINNING
 

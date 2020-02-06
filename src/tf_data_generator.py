@@ -50,6 +50,7 @@ class TFImageDataGenerator:
         self.load_data_from_disk = False # not used any more
         self._load_tv_from_file = self._data_config.load_tv_from_file
         self.clustering_method = self._data_config.clustering_method
+        self._modalties_tv =  self._data_config.combine_modalities_for_tv
 
         self._batch_size = None
         self._buffer_size = None
@@ -104,7 +105,15 @@ class TFImageDataGenerator:
             if self._load_tv_from_file:
                 tv_img = tf_utils.load_png_image(gt_ob, nr_channels=self._nr_channels, img_size=self._in_img_size)
             else:
-                if self._segmentation_mask == Subtumral_Modes.COMPLETE:  # todo add case
+                if self._modalties_tv:
+                    tv_base = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._modalties_tv,
+                                                                       new_max=self._data_norm_value,
+                                                                       normalize_std=self._normalize_std,
+                                                                       data_vals=self._data_vals)
+                    tv_base = tf.reduce_mean(tv_base, axis=2)
+                    tv_base = tf.expand_dims(tv_base, axis=2)
+
+                elif self._segmentation_mask == Subtumral_Modes.COMPLETE:  # todo add case
                     tv_base1 = tf.expand_dims(in_img[:, :, 0], axis=2)  # flair + t2
                     tv_base2 = tf.expand_dims(in_img[:, :, 3], axis=2)
                     v = self._data_vals[self._use_modalities[i]]
