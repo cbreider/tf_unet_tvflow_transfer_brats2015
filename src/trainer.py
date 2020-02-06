@@ -270,10 +270,6 @@ class Trainer(object):
                 logging.info("Done! Bye Bye")
                 return save_path
 
-            except Exception as e:
-                logging.error(str(e))
-                return None
-
     def run_validation(self, epoch, sess, step, summary_writer, model_save_path, mini=False, log=True, save=True):
         mini_size = 5
         vals = []
@@ -361,6 +357,7 @@ class Trainer(object):
         if not self.net.cost == Cost.MSE:
             summary.value.add(tag='cross_entropy', simple_value=vals[1])
             summary.value.add(tag='dice', simple_value=vals[2])
+            summary.value.add(tag='IoU', simple_value=vals[6])
         if cost_val is not None:
             summary.value.add(tag=cost_val[0], simple_value=cost_val[1])
 
