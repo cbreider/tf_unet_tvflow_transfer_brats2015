@@ -86,8 +86,8 @@ class DataParams:
     # Ration of Nr Training images to Val images (optioanl test) if new random split is created. Musst sum up to 1
     split_train_val_ratio = [0.8, 0.2]
     # split_train_val_ratio = [0.75, 0.05, 0.2]
-    # use only a subset of training images. if 0 all data is used
-    nr_of_samples = 0
+    # use only a subset of training images. values from >0.0 - 1.0 (1.0 for all traing data)
+    training_data_portion = 1.0
     # set True if pre computed tv images should be red from disc. If False tv is computed in data pipeline
     load_tv_from_file = False
     # choose if you want to use tv scale image instead of smoothed (only tv training and only if load_tv_from_file=True)

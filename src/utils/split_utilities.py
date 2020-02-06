@@ -19,6 +19,7 @@ from configuration import DataParams
 import random
 import re
 import collections
+import src.utils.io_utils as ioutil
 
 
 class TestFilePaths(object):
@@ -54,7 +55,7 @@ class TrainingDataset(object):
 
     """Constructor"""
     def __init__(self, paths, data_config, mode,
-                 load_test_paths_only=False, new_split=True, create_five_fold=False):
+                 load_test_paths_only=False, new_split=True, is_five_fold=False, five_fold_idx=1):
         """
         Inits a Dataset of training and validation images- Either creates it by reading files from a specific folder
         declared in "paths" or read a existing split form a .txt
@@ -72,16 +73,20 @@ class TrainingDataset(object):
         self._use_scale = self._data_config.use_scale_image_as_gt
         self._load_only_mid_scans = self._data_config.use_only_spatial_range
         self._split_ratio = self._data_config.split_train_val_ratio
-        self._nr_of_samples = self._data_config.nr_of_samples
+        self._training_sample_portion = self._data_config.training_data_portion
         self._use_mha = self._data_config.use_mha_files_instead
         self._use_modalities = self._data_config.use_modalities
         self._load_tv_from_file = self._data_config.load_tv_from_file
         self.split_name = ""
-        self._split_file_extension = '.txt'
+        self._split_file_extension = '.json'
         self._base_name = '_split'
         self._tvflow_mode = "tvflow"
         self._seg_mode = "seg"
         self._tvseg_mode ="tv_seg"
+        self._five_fold_folder = "five_folds"
+        self._five_fold_file = "fold"
+        self._is_five_fold = is_five_fold
+        self._five_fold_idx = five_fold_idx
         self.validation_paths = dict()
         self.train_paths = dict()
         self.test_paths = dict()
@@ -99,15 +104,7 @@ class TrainingDataset(object):
             if sum(self._split_ratio) != 1.0:
                 raise ValueError()
             self._create_new_split()
-            if self._load_only_mid_scans and len(self._load_only_mid_scans) == 2:
-                tmp = dict()
-                keep_out = []
-                keep_out.extend(["_{}.".format(i) for i in range(0, self._load_only_mid_scans[0])])
-                keep_out.extend(["_{}.".format(i) for i in range(self._load_only_mid_scans[1] + 1, 155 + 1)])
-                for k in self.train_paths.keys():
-                    if not any(st in k for st in keep_out):
-                        tmp[k] = self.train_paths[k]
-                self.train_paths = tmp
+            self.train_paths = self._prune_dict(self.train_paths)
 
             logging.info("Created dataset of {train} training samples and {validation} validation samples.".format(
                 train=len(self.train_paths),
@@ -115,21 +112,28 @@ class TrainingDataset(object):
             ))
         else:
             self._read_train_and_val_splits_from_folder()
-            if self._load_only_mid_scans and len(self._load_only_mid_scans) == 2:
-                tmp = dict()
-                keep_out = []
-                keep_out.extend(["_{}.".format(i) for i in range(0, self._load_only_mid_scans[0])])
-                keep_out.extend(["_{}.".format(i) for i in range(self._load_only_mid_scans[1] + 1, 155 + 1)])
-                for k in self.train_paths.keys():
-                    if not any(st in k for st in keep_out):
-                        tmp[k] = self.train_paths[k]
-                self.train_paths = tmp
+            self.train_paths = self._prune_dict(self.train_paths)
 
             logging.info("Loaded dataset of {train} training samples and {validation} validation samples from {path}.".format(
                 train=len(self.train_paths),
                 validation=len(self.validation_paths),
                 path=self._paths.split_path
             ))
+
+    def _prune_dict(self, paths):
+        if self._load_only_mid_scans and len(self._load_only_mid_scans) == 2:
+            tmp = dict()
+            keep_out = []
+            keep_out.extend(["_{}.".format(i) for i in range(0, self._load_only_mid_scans[0])])
+            keep_out.extend(["_{}.".format(i) for i in range(self._load_only_mid_scans[1] + 1, 155 + 1)])
+            for k in paths.keys():
+                if not any(st in k for st in keep_out):
+                    tmp[k] = paths[k]
+            paths = tmp
+
+        return paths
+
+
 
     def _create_new_split(self):
         """Creates and sets a new split training paths and validtaion paths
@@ -139,13 +143,15 @@ class TrainingDataset(object):
         validation_split = dict()
         test_split = dict()
         # mode
+        if self._is_five_fold:
+            self._split_patients_five_fold()
+            return
+
         if (self._mode == TrainingModes.TVFLOW_REGRESSION or self._mode == TrainingModes.TVFLOW_SEGMENTATION) \
                 and self._load_tv_from_file:
             split = self._get_raw_to_tvflow_file_paths_dict(use_scale=self._use_scale)
             #random.shuffle(split) # Not in use dict.items() is random
-            total = self._nr_of_samples
-            if self._nr_of_samples == 0:
-                total = len(split)
+            total = len(split)
             train_split_size = total * self._split_ratio[0]
             val_split_size = total * self._split_ratio[1]
             b_test_split = len(self._split_ratio) == 3
@@ -240,7 +246,6 @@ class TrainingDataset(object):
         test_dict.update(self._get_paths_dict_seg_single(patient_paths=test_split,
                                                           ext_key=ext))
         train_k = list(train_dict.keys())
-        val_k = list(val_dict.keys())
         random.shuffle(train_k)
         rand_train_dict = dict()
         for key in train_k:
@@ -252,7 +257,7 @@ class TrainingDataset(object):
         gg_path = os.path.join(base_path, gg)
         patient_names = os.listdir(gg_path)
         patient_paths = [os.path.join(gg_path, patient) for patient in patient_names]
-        return  patient_paths
+        return patient_paths
 
     def _get_paths_dict_tvflow_single(self, base_path_key, base_path_value, ext_key=".png", ext_val=".png",
                                       gg="HGG", without_gt=False):
@@ -368,17 +373,16 @@ class TrainingDataset(object):
 
         return file_dict
 
-    def _safe_and_archive_split(self, split, file_name):
+    def _safe_and_archive_split(self, split, file_name, is_five_fold=False):
         """
         saves a split as txt and add it to an archive
-
 
         :param split: slit to archive
         :param file_name: base file name
         """
         now = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
         archive_base_folder = os.path.join(self._paths.split_path, 'archive')
-        archive_folder = os.path.join(archive_base_folder, now)
+        archive_folder = os.path.join(archive_base_folder, "{}{}".format("five_fold" if is_five_fold else "", now))
         if not os.path.exists(archive_base_folder):
             os.makedirs(archive_base_folder)
         if not os.path.exists(archive_folder):
@@ -392,12 +396,28 @@ class TrainingDataset(object):
         """
         reads a training and validation dataset from txt
         """
-        train = self._read_single_split_from_folder(os.path.join(self._paths.split_path,
+        if self._is_five_fold:
+            train = self._read_single_split_from_folder(os.path.join(self._paths.split_path,
+                                                                    "{}_{}".format(self._five_fold_file,
+                                                                                   self._five_fold_idx)))["training"]
+            validation = self._read_single_split_from_folder(os.path.join(self._paths.split_path,
+                                                                    "{}_{}".format(self._five_fold_file,
+                                                                                   self._five_fold_idx)))["validation"]
+            train = self.prune_patients(train)
+            train_tmp = self._get_paths_dict_seg_single(train)
+            validation = self._get_paths_dict_seg_single(validation)
+            train_k = list(train_tmp.keys())
+            random.shuffle(train_k)
+            train = dict()
+            for key in train_k:
+                train.update({key: train_tmp[key]})
+        else:
+            train = self._read_single_split_from_folder(os.path.join(self._paths.split_path,
                                                                  "split_{}_train{}".format(self.split_name,
                                                                                            self._split_file_extension)))
-        validation = self._read_single_split_from_folder(
-            os.path.join(self._paths.split_path,
-                         "split_{}_validation{}".format(self.split_name, self._split_file_extension)))
+            validation = self._read_single_split_from_folder(
+                os.path.join(self._paths.split_path,
+                             "split_{}_validation{}".format(self.split_name, self._split_file_extension)))
 
         self.train_paths = train
         self.validation_paths = validation
@@ -406,19 +426,21 @@ class TrainingDataset(object):
         """
         reads a test from txt
         """
-        test = self._read_single_split_from_folder(os.path.join(self._paths.split_path,
+        if self._is_five_fold:
+            test = self._read_single_split_from_folder(os.path.join(self._paths.split_path,
+                                                                    "{}_{}".format(self._five_fold_file,
+                                                                                   self._five_fold_idx)))["testing"]
+            self.test_paths = self._get_paths_dict_seg_single(test)
+        else:
+            test = self._read_single_split_from_folder(os.path.join(self._paths.split_path,
                                                                  "split_{}_test{}".format(self.split_name,
                                                                                            self._split_file_extension)))
-        self.test_paths = test
+            self.test_paths = test
 
     def _split_patients(self, patient_paths):
         shuffle(patient_paths)
-        total = self._nr_of_samples
-        if self._nr_of_samples == 0:
-            total = len(patient_paths)
+        total = len(patient_paths)
         train_split_size = len(patient_paths) * self._split_ratio[0]
-        if self._nr_of_samples > train_split_size:
-            raise ValueError()
 
         val_split_size = len(patient_paths) * self._split_ratio[1]
         b_test_split = len(self._split_ratio) == 3
@@ -439,10 +461,12 @@ class TrainingDataset(object):
             elif i <= val_split_size + train_split_size + test_split_size and b_test_split:
                 test_split.append(p)
             i += 1
-
+        train_split = self._prune_dict(train_split)
         return train_split, validation_split, test_split
 
     def _split_patients_five_fold(self):
+        nr_folds = 5
+        folds = []
         if not self._paths.is_loaded:
             return None
         directory = self._paths.raw_train_dir
@@ -450,10 +474,39 @@ class TrainingDataset(object):
             directory = self._paths.brats_train_dir
             ext = self._paths.mha_ext
 
-        patient_paths = self._get_patient_folders(base_path=directory,
-                                                  gg=self._paths.high_grade_gliomas_folder)
-        patient_paths.extend(self._get_patient_folders(base_path=directory,
-                                                       gg=self._paths.low_grade_gliomas_folder))
+        patient_paths_hgg = self._get_patient_folders(base_path=directory, gg=self._paths.high_grade_gliomas_folder)
+        patient_paths_lgg = self._get_patient_folders(base_path=directory, gg=self._paths.low_grade_gliomas_folder)
+        shuffle(patient_paths_hgg)
+        shuffle(patient_paths_lgg)
+
+        folds_hgg = ioutil.chunk_list(patient_paths_hgg, nr_folds)
+        folds_lgg = ioutil.chunk_list(patient_paths_lgg, nr_folds)
+        tmp = []
+        for i in range(nr_folds):
+            tmp.append(folds_hgg[i] + folds_lgg[nr_folds-1-i])
+
+        for i in range(nr_folds):
+            train = [x for j,x in enumerate(tmp) if j!=i]
+            l_train = len(train)
+            val = train[:int(l_train*self._split_ratio[1])]
+            train = train[int(l_train*self._split_ratio[1]):]
+            test = tmp[i]
+
+            assert(not (set(train) & set(test) or (set(train) & set(val)) or (set(test) & set(val))))
+
+            folds.append({"training": train, "validation": val, "testing": test})
+            self._safe_and_archive_split(folds[i], "{}_{}".format(self._five_fold_file, i), is_five_fold=True)
+
+        self.validation_paths = self._get_paths_dict_seg_single(folds[self._five_fold_idx-1]["validation"])
+        patients_train = folds[self._five_fold_idx-1]["training"]
+        patients_train = self.prune_patients(patients_train)
+        train_tmp = self._get_paths_dict_seg_single(patients_train)
+        train_k = list(train_tmp.keys())
+        random.shuffle(train_k)
+        train = dict()
+        for key in train_k:
+            train.update({key: train_tmp[key]})
+        self.train_paths = train
 
     @staticmethod
     def _read_single_split_from_folder(file_name):
@@ -468,6 +521,13 @@ class TrainingDataset(object):
         data = file.read()
         split = json.loads(data)
         return split
+
+    def prune_patients(self, patients):
+        if 1.0 > self._training_sample_portion > 0.0:
+            return patients[:int(float(len(patients)) * self._training_sample_portion)]
+        else:
+            return patients
+
 
     def atoi(self, text):
         return int(text) if text.isdigit() else text

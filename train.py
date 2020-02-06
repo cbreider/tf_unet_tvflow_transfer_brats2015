@@ -49,6 +49,9 @@ if __name__ == "__main__":
                         help="Mode of restoring session. 1=Complete Session, 2=Without Out Layer, 3=Complete Net. "
                              "Only used if restore_path is given",
                         type=int, default=1)
+    parser.add_argument('--take_fold_nr', type=int, default=0,
+                        help='use fold with nr x from five fold split. If also --create_new_split is given a new '
+                             'five fold is made')
 
     args = parser.parse_args()
     create_new_training_split = False
@@ -57,6 +60,8 @@ if __name__ == "__main__":
     caffemodel_path = None
     train_mode = TrainingModes(args.mode)
     restore_mode = None
+
+    fold_nr = args.take_fold_nr
 
     if args.create_new_split:
         create_new_training_split = True
@@ -95,7 +100,9 @@ if __name__ == "__main__":
     logging.info("Allocating '{}'".format(data_paths.tf_out_path))
 
     file_paths = TrainingDataset(paths=data_paths, mode=train_mode, data_config=config.DataParams,
-                                 new_split=create_new_training_split)
+                                 new_split=create_new_training_split,
+                                 is_five_fold=True if fold_nr > 0 else False,
+                                 five_fold_idx=fold_nr)
 
     training_data = ImageData(data=file_paths.train_paths,
                               mode=DataModes.TRAINING,

@@ -87,6 +87,24 @@ def chunk_dict(dict_in, num_seq):
     return out
 
 
+def chunk_list_size(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
+
+def chunk_list(seq, num):
+    avg = len(seq) / float(num)
+    out = []
+    last = 0.0
+
+    while last < len(seq):
+        out.append(seq[int(last):int(last + avg)])
+        last += avg
+
+    return out
+
+
 def shuffle_lists(list_one, list_two):
     """Conjoined shuffling of the list of paths and labels."""
     if len(list_one) == len(list_two):

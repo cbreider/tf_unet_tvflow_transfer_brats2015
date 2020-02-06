@@ -249,11 +249,7 @@ class Trainer(object):
                         avg_score_vals_epoch = []
                         self.run_validation(epoch, sess, step, summary_writer_validation, save_path)
                         # save epoch and step
-                        outF = open(step_file, "w")
-                        outF.write("{}".format(step + 1))
-                        outF.write("\n")
-                        outF.write("{}".format(epoch))
-                        outF.close()
+                        self.save_step_nr(step_file, step, epoch)
 
                 logging.info("Optimization Finished!")
 
@@ -265,10 +261,18 @@ class Trainer(object):
                 if save:
                     logging.info("Saving session model...")
                     save_path = self.net.save(sess, save_path)
+                    self.save_step_nr(step_file, step, epoch)
                 else:
                     logging.info("Quitting without saving...")
                 logging.info("Done! Bye Bye")
                 return save_path
+
+    def save_step_nr(self, step_file, step, epoch):
+        outF = open(step_file, "w")
+        outF.write("{}".format(step + 1))
+        outF.write("\n")
+        outF.write("{}".format(epoch))
+        outF.close()
 
     def run_validation(self, epoch, sess, step, summary_writer, model_save_path, mini=False, log=True, save=True):
         mini_size = 5

@@ -45,6 +45,8 @@ if __name__ == "__main__":
                         help='save all predictions as mha to model_path')
     parser.add_argument('--save_feature_maps', action='store_true',
                         help='saves the feature maps of the last CNN layer')
+    parser.add_argument('--take_fold_nr', type=int, default=0,
+                        help='use_fold')
 
     args = parser.parse_args()
 
@@ -66,6 +68,8 @@ if __name__ == "__main__":
         save_fmaps = True
     if args.cuda_device >= 0:
         cuda_selector.set_cuda_gpu(args.cuda_device)
+    fold_nr = args.take_fold_nr
+
 
     # tf.enable_eager_execution()
     tf.reset_default_graph()
@@ -77,12 +81,15 @@ if __name__ == "__main__":
 
     log.init_logger(type="test", path=data_paths.tf_out_path)
     logging.info("Allocating '{}'".format(data_paths.tf_out_path))
+
     if not use_Brats_Testing:
         file_paths = TrainingDataset(paths=data_paths,
                                      mode=TrainingModes.SEGMENTATION,
                                      data_config=config.DataParams,
                                      load_test_paths_only=True,
-                                     new_split=False)
+                                     new_split=False,
+                                     is_five_fold=True if fold_nr > 0 else False,
+                                     five_fold_idx=fold_nr)
 
     out_path = os.path.join(model_path, "predictions")
     if not os.path.exists(out_path):
