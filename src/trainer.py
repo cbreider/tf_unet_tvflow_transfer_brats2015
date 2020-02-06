@@ -250,7 +250,7 @@ class Trainer(object):
 
                     if step % self._training_iters == 0 and step != 0:
                         epoch += 1
-                        self.output_epoch_stats(epoch, np.mean(np.array(avg_score_vals_epoch)), self._training_iters, lr)
+                        self.output_epoch_stats(epoch, np.mean(np.array(avg_score_vals_epoch)), lr)
                         avg_score_vals_epoch = []
                         self.run_validation(epoch, sess, step, summary_writer_validation, save_path)
 
