@@ -6,7 +6,7 @@ Lab Visualisation & Medical Image Analysis SS2019
 Institute of Computer Science II
 
 Author: Christian Breiderhoff
-2019
+2019-2020
 """
 
 
@@ -198,6 +198,10 @@ class TrainingParams:
     keep_prob_dopout = 0.8
     # initial learning rate
     initial_learning_rate = 0.0001
+    # store output images of validation
+    store_val_images = True
+    # store last feature maps  from cnn during validation ( only for middle scan)
+    store_val_feature_maps = True
 
     # Hyperparameters for Adam optimzer
     adam_args = dict(learning_rate=initial_learning_rate,

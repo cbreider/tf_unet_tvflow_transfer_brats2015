@@ -6,8 +6,9 @@ Lab Visualisation & Medical Image Analysis SS2019
 Institute of Computer Science II
 
 Author: Christian Breiderhoff
-2019
+2019-2020
 """
+
 import os
 import datetime
 import json
@@ -132,8 +133,6 @@ class TrainingDataset(object):
             paths = tmp
 
         return paths
-
-
 
     def _create_new_split(self):
         """Creates and sets a new split training paths and validtaion paths
@@ -397,12 +396,13 @@ class TrainingDataset(object):
         reads a training and validation dataset from txt
         """
         if self._is_five_fold:
-            train = self._read_single_split_from_folder(os.path.join(self._paths.split_path,
-                                                                    "{}_{}".format(self._five_fold_file,
-                                                                                   self._five_fold_idx)))["training"]
-            validation = self._read_single_split_from_folder(os.path.join(self._paths.split_path,
-                                                                    "{}_{}".format(self._five_fold_file,
-                                                                                   self._five_fold_idx)))["validation"]
+            split = self._read_single_split_from_folder(os.path.join(self._paths.split_path,
+                                                                    "{}_{}{}".format(self._five_fold_file,
+                                                                                     self._five_fold_idx,
+                                                                                     self._split_file_extension)))
+            train = split["training"]
+            validation = split["validation"]
+
             train = self.prune_patients(train)
             train_tmp = self._get_paths_dict_seg_single(train)
             validation = self._get_paths_dict_seg_single(validation)
@@ -461,7 +461,7 @@ class TrainingDataset(object):
             elif i <= val_split_size + train_split_size + test_split_size and b_test_split:
                 test_split.append(p)
             i += 1
-        train_split = self._prune_dict(train_split)
+        train_split = self.prune_patients(train_split)
         return train_split, validation_split, test_split
 
     def _split_patients_five_fold(self):
@@ -487,12 +487,15 @@ class TrainingDataset(object):
 
         for i in range(nr_folds):
             train = [x for j,x in enumerate(tmp) if j!=i]
+            train = [y for x in train for y in x]
             l_train = len(train)
             val = train[:int(l_train*self._split_ratio[1])]
             train = train[int(l_train*self._split_ratio[1]):]
             test = tmp[i]
 
-            assert(not (set(train) & set(test) or (set(train) & set(val)) or (set(test) & set(val))))
+            assert(not any(x in test for x in train))
+            assert(not any(x in val for x in train))
+            assert(not any(x in val for x in test))
 
             folds.append({"training": train, "validation": val, "testing": test})
             self._safe_and_archive_split(folds[i], "{}_{}".format(self._five_fold_file, i), is_five_fold=True)

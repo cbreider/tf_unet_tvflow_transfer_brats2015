@@ -4,8 +4,7 @@ Lab Visualization & Medical Image Analysis SS2019
 Institute of Computer Science II
 
 Author: Christian Breiderhoff
-created on June 2019
-
+created  2019-2020
 
 Python3 tool to pre train Unet on total variation smoothed images (regression with MSE), to enhance segmentation performance on brats 2015 dataset.
 

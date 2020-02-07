@@ -6,7 +6,7 @@ Lab Visualisation & Medical Image Analysis SS2019
 Institute of Computer Science II
 
 Author: Christian Breiderhoff
-2019
+2019-2020
 
 adapted from jakeret
 source: https://github.com/jakeret/tf_unet.git

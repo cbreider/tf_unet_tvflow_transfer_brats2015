@@ -6,7 +6,7 @@ Lab Visualisation & Medical Image Analysis SS2019
 Institute of Computer Science II
 
 Author: Christian Breiderhoff
-2019
+2019-2020
 """
 
 import tensorflow as tf
@@ -56,6 +56,8 @@ class Trainer(object):
         self._restore_mode = restore_mode
         self._display_step = self.config.display_step
         self._log_mini_batch_stats = self.config.log_mini_batch_stats
+        self._store_feature_maps = self.config.store_val_feature_maps
+        self._store_result_images = self.config.store_val_images
 
     def _get_optimizer(self, global_step):
         if self.optimizer_name == Optimizer.MOMENTUM:
@@ -230,8 +232,9 @@ class Trainer(object):
                         self.output_minibatch_stats(sess, summary_writer_training, step, batch_x,
                                                     dutil.crop_to_shape(batch_y, pred_shape), write=True,
                                                     log_mini_batch_stats=self._log_mini_batch_stats)
+
                         avg_score_vals_batch = np.mean(np.array(avg_score_vals_batch), axis=0)
-                        print(avg_score_vals_batch.shape)
+
                         self.write_tf_summary(step, avg_score_vals_batch, summary_writer_training)
 
                         if step != 0:
@@ -311,21 +314,22 @@ class Trainer(object):
 
             if len(data[1]) == 155:
                 dice_per_volume.append(dutil.get_hard_dice_score(np.array(data[1]), np.array(data[:][3])))
-                self.store_prediction("{}_{}".format(epoch, itr), out_p,
+                if self._store_result_images:
+                    self.store_prediction("{}_{}".format(epoch, itr), out_p,
                                       np.squeeze(np.array(data[0]), axis=1), np.squeeze(np.array(data[1]), axis=1),
                                       np.squeeze(np.array(data[2]), axis=1), np.squeeze(np.array(data[3]), axis=1))
 
                 # safe one feature_map
-                size = [8, 8]
-                a = np.array(data[4][75])
-                fmap = dutil.revert_zero_centering(np.squeeze(np.array(data[4][75]), axis=0))
-                map_s = [fmap.shape[0], fmap.shape[1]]
-                im = fmap.reshape(map_s[0], map_s[0], size[0], size[1]
+                if self._store_feature_maps:
+                    size = [8, 8]
+                    fmap = dutil.revert_zero_centering(np.squeeze(np.array(data[4][75]), axis=0))
+                    map_s = [fmap.shape[0], fmap.shape[1]]
+                    im = fmap.reshape(map_s[0], map_s[0], size[0], size[1]
                                   ).transpose(2, 0, 3, 1
                                               ).reshape(size[0] * map_s[0], size[1] * map_s[1])
-                # histogram normalization
-                #im = util.image_histogram_equalization(im)[0]
-                ioutil.save_image(im, os.path.join(out_p, "{}_{}_fmap.jpg".format(epoch, itr)))
+                    # histogram normalization
+                    #im = util.image_histogram_equalization(im)[0]
+                    ioutil.save_image(im, os.path.join(out_p, "{}_{}_fmap.jpg".format(epoch, itr)))
 
                 data = [[], [], [],  [], []]
                 itr += 1
@@ -335,9 +339,10 @@ class Trainer(object):
             ioutil.progress(i, set_size if not mini else (mini_size * 155))
 
         if len(data[1]) > 0:
-            self.store_prediction("{}_{}".format(epoch, itr), out_p,
-                              np.squeeze(np.array(data[0]), axis=1), np.squeeze(np.array(data[1]), axis=1),
-                              np.squeeze(np.array(data[2]), axis=1), np.squeeze(np.array(data[3]), axis=1))
+            if self._store_result_images:
+                self.store_prediction("{}_{}".format(epoch, itr), out_p,
+                                np.squeeze(np.array(data[0]), axis=1), np.squeeze(np.array(data[1]), axis=1),
+                                np.squeeze(np.array(data[2]), axis=1), np.squeeze(np.array(data[3]), axis=1))
         val_scores = np.mean(np.array(vals), axis=0)
         dp = np.mean(np.array(dice_per_volume))
         if log:

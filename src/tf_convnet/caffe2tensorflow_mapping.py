@@ -6,7 +6,7 @@ Lab Visualisation & Medical Image Analysis SS2019
 Institute of Computer Science II
 
 Author: Christian Breiderhoff
-2019
+2019-2020
 """
 
 import h5py
