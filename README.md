@@ -8,6 +8,7 @@ created  2019-2020
 
 Python3 tool to pre train Unet on total variation smoothed images (regression with MSE), to enhance segmentation performance on brats 2015 dataset.
 
+This Projects is still under development so check out for changes some time.
 ## Requirements
 
 Written in python 3.5
