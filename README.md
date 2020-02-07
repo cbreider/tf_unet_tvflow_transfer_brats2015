@@ -52,7 +52,7 @@ The Brats dataset should be provided as follows:
 
   - Image Scan ata / Segmentation ground truth data: *./../Dataset/2D-Slices/png/raw/...[Default Brats2015 path schema] *
   - TV smoothed Data: *./../Dataset/2D-Slices/png/tvflow/... [Default Brats2015 path schema] *
-  - Split configuration as text: *./../Dataset/splits/...*
+  - Split configuration as json: *./../Dataset/splits/...*
  
  You can easily provide your own paths. To do so please have a look at *src/utils/path_utils.py*
 
