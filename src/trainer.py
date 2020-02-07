@@ -185,7 +185,7 @@ class Trainer(object):
                 epoch = int(fl[1])
 
             pred_shape, __ = self.run_validtaion(sess, epoch, init_step, summary_writer_validation,
-                                             log=True if epoch == 0 else False)
+                                             log=True if epoch == 0 else False, mini=True)
 
             avg_gradients = None
 
@@ -287,13 +287,13 @@ class Trainer(object):
         outF.write("{}".format(epoch))
         outF.close()
 
-    def run_validtaion(self, sess, epoch, step, summary_writer, log=True):
+    def run_validtaion(self, sess, epoch, step, summary_writer, log=True, mini=False):
         logging.info("Running Validation for epoch {}...".format(epoch))
         epoch_out_path = os.path.join(self.output_path, "Epoch_{}".format(epoch))
 
         pred_shape, validation_results = Validator(sess, self.net, self.data_provider_val,
                                                    epoch_out_path, mode=self.mode,
-                                                   nr=epoch).run_validation()
+                                                   nr=epoch, mini_validation=mini).run_validation()
         if log:
             self.write_tf_summary(step, validation_results, summary_writer,
                                   cost_val=["dice_per_volume", validation_results[7]])
