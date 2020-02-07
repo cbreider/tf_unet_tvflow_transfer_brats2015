@@ -19,6 +19,7 @@ from src.tf_convnet.caffe2tensorflow_mapping import load_pre_trained_caffe_varia
 from src.utils.enum_params import Cost, Optimizer, RestoreMode, TrainingModes
 from src.tf_data_pipeline_wrapper import  ImageData
 from configuration import TrainingParams
+from src.validator import Validator
 
 
 class Trainer(object):
@@ -58,6 +59,7 @@ class Trainer(object):
         self._log_mini_batch_stats = self.config.log_mini_batch_stats
         self._store_feature_maps = self.config.store_val_feature_maps
         self._store_result_images = self.config.store_val_images
+        self._early_stopping = self.config.early_stopping
 
     def _get_optimizer(self, global_step):
         if self.optimizer_name == Optimizer.MOMENTUM:
@@ -182,19 +184,19 @@ class Trainer(object):
                 init_step = int(fl[0])
                 epoch = int(fl[1])
 
-            pred_shape = self.run_validation(epoch, sess, init_step, summary_writer_validation, save_path, mini=True,
-                                             log=False if epoch != 0 else True, save=False)
+            pred_shape, __ = self.run_validtaion(sess, epoch, init_step, summary_writer_validation,
+                                             log=True if epoch == 0 else False)
 
             avg_gradients = None
 
             if init_step != 0 and self._restore_path is not None:
                 logging.info("Resuming Training at epoch {} and total step {}". format(epoch, init_step))
 
-            epoch_size = int(self.data_provider_train.size / self.config.batch_size_train)
-
             logging.info("Start optimization...")
             avg_score_vals_batch = []
             avg_score_vals_epoch = []
+            last_validation_scores = [np.finfo(np.float), np.finfo(np.float), np.finfo(np.float)]
+
             try:
                 for step in range(init_step, self._n_epochs*self._training_iters):
                     s_train += 1
@@ -248,11 +250,19 @@ class Trainer(object):
 
                     if step % self._training_iters == 0 and step != 0:
                         epoch += 1
-                        self.output_epoch_stats(epoch, np.mean(np.array(avg_score_vals_epoch), axis=0), lr)
+                        self.output_training_epoch_stats(epoch, np.mean(np.array(avg_score_vals_epoch), axis=0), lr)
                         avg_score_vals_epoch = []
-                        self.run_validation(epoch, sess, step, summary_writer_validation, save_path)
+                        pred_shape, val_score = self.run_validtaion(sess, epoch, init_step, summary_writer_validation)
+                        logging.info("Saving Session and Model ...")
+                        save_path = self.net.save(sess, self.output_path)
                         # save epoch and step
                         self.save_step_nr(step_file, step, epoch)
+
+                        if (last_validation_scores[0] < val_score > last_validation_scores[1]) and self._early_stopping:
+                            logging.info("Stooping training because of validation convergence...")
+                            break
+                        last_validation_scores[0] = last_validation_scores[1]
+                        last_validation_scores[1] = val_score
 
                 logging.info("Optimization Finished!")
 
@@ -277,85 +287,24 @@ class Trainer(object):
         outF.write("{}".format(epoch))
         outF.close()
 
-    def run_validation(self, epoch, sess, step, summary_writer, model_save_path, mini=False, log=True, save=True):
-        mini_size = 5
-        vals = []
-        dice_per_volume = []
-        data = [[], [], [],  [], []] # x, y, tv, pred, feature maps
-        shape = []
-        out_p = os.path.join(self.output_path, "Epoch_{}".format(epoch))
-        itr = 0
-        if not os.path.exists(out_p):
-            os.makedirs(out_p)
-        sess.run(self.data_provider_val.init_op)
+    def run_validtaion(self, sess, epoch, step, summary_writer, log=True):
         logging.info("Running Validation for epoch {}...".format(epoch))
+        epoch_out_path = os.path.join(self.output_path, "Epoch_{}".format(epoch))
 
-        set_size = int(self.data_provider_val.size / self.config.batch_size_val)
-        ioutil.progress(0, set_size if not mini else (mini_size * 155))
-
-        for i in range(int(self.data_provider_val.size / self.config.batch_size_val)):
-            test_x, test_y, test_tv = sess.run(self.data_provider_val.next_batch)
-            __, loss, acc, err, err_r, prediction, dice, ce, iou, feature = sess.run(
-                [self.summary_op, self.net.cost,
-                 self.net.accuracy, self.net.error, self.net.error_rate,
-                 self.net.predicter, self.net.dice,
-                 self.net.cross_entropy, self.net.iou_coe, self.net.last_feature_map],
-                feed_dict={self.net.x: test_x,
-                           self.net.y: test_y,
-                           self.net.keep_prob: 1.})
-
-            vals.append([loss, ce, dice, err, err_r, acc, iou])
-            data[0].append(test_x)
-            data[1].append(test_y)
-            data[2].append(test_tv)
-            data[3].append(prediction)
-            data[4].append(feature)
-            shape = prediction.shape
-
-            if len(data[1]) == 155:
-                dice_per_volume.append(dutil.get_hard_dice_score(np.array(data[1]), np.array(data[:][3])))
-                if self._store_result_images:
-                    self.store_prediction("{}_{}".format(epoch, itr), out_p,
-                                      np.squeeze(np.array(data[0]), axis=1), np.squeeze(np.array(data[1]), axis=1),
-                                      np.squeeze(np.array(data[2]), axis=1), np.squeeze(np.array(data[3]), axis=1))
-
-                # safe one feature_map
-                if self._store_feature_maps:
-                    size = [8, 8]
-                    fmap = dutil.revert_zero_centering(np.squeeze(np.array(data[4][75]), axis=0))
-                    map_s = [fmap.shape[0], fmap.shape[1]]
-                    im = fmap.reshape(map_s[0], map_s[0], size[0], size[1]
-                                  ).transpose(2, 0, 3, 1
-                                              ).reshape(size[0] * map_s[0], size[1] * map_s[1])
-                    # histogram normalization
-                    #im = util.image_histogram_equalization(im)[0]
-                    ioutil.save_image(im, os.path.join(out_p, "{}_{}_fmap.jpg".format(epoch, itr)))
-
-                data = [[], [], [],  [], []]
-                itr += 1
-                if mini and itr == mini_size:
-                    break
-
-            ioutil.progress(i, set_size if not mini else (mini_size * 155))
-
-        if len(data[1]) > 0:
-            if self._store_result_images:
-                self.store_prediction("{}_{}".format(epoch, itr), out_p,
-                                np.squeeze(np.array(data[0]), axis=1), np.squeeze(np.array(data[1]), axis=1),
-                                np.squeeze(np.array(data[2]), axis=1), np.squeeze(np.array(data[3]), axis=1))
-        val_scores = np.mean(np.array(vals), axis=0)
-        dp = np.mean(np.array(dice_per_volume))
+        pred_shape, validation_results = Validator(sess, self.net, self.data_provider_val,
+                                                   epoch_out_path, mode=self.mode,
+                                                   nr=epoch).run_validation()
         if log:
-            self.write_tf_summary(step, val_scores, summary_writer, cost_val=["dice_per_volume", dp])
+            self.write_tf_summary(step, validation_results, summary_writer,
+                                  cost_val=["dice_per_volume", validation_results[7]])
         logging.info(
-            "EPOCH {} Per Slice: Verification loss= {:.6f}, cross entropy= {:.4f}, Dice per slice= {:.4f}, "
+            "EPOCH {} Verification: Loss= {:.6f}, Cross entropy= {:.4f}, Dice per slice= {:.4f}, "
             "Dice per volume= {:.4f}, error= {:.2f}%, Accuracy {:.4f}, IoU= {:.4f}".format(
-                epoch, val_scores[0], val_scores[1], val_scores[2], dp,
-                val_scores[4], val_scores[5], val_scores[6]))
-        if save:
-            logging.info("Saving Session and Model ...")
-            save_path = self.net.save(sess, model_save_path)
-        return shape
+                epoch, validation_results[0], validation_results[1], validation_results[2],
+                validation_results[7], validation_results[4], validation_results[5],
+                validation_results[6]))
+
+        return pred_shape, validation_results[0]
 
     def write_tf_summary(self, step, vals, summary_writer, cost_val=None):
         summary = tf.Summary()
@@ -373,15 +322,7 @@ class Trainer(object):
         summary_writer.add_summary(summary, step)
         summary_writer.flush()
 
-    def store_prediction(self, name, path, batch_x, batch_y, batch_tv, prediction):
-        if self.mode == TrainingModes.TVFLOW_SEGMENTATION:
-            img = dutil.combine_img_prediction_tvclustering(data=batch_x, gt=batch_y, tv=batch_tv, pred=prediction)
-        else:
-            img = dutil.combine_img_prediction(batch_x, batch_y, prediction,
-                                               mode=1 if self.net.cost_function == Cost.MSE else 0)
-        ioutil.save_image(img, "%s/%s.jpg" % (path, name))
-
-    def output_epoch_stats(self, epoch, val_scores, lr):
+    def output_training_epoch_stats(self, epoch, val_scores, lr):
         logging.info(
             "EPOCH {} Average: Loss= {:.6f}, Cross entropy= {:.4f}, Dice= {:.4f}, "
             "Error= {:.2f}%, Accuracy= {:.4f}, IoU= {:.4f}, Learning rate= {:.9f}".format(

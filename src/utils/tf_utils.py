@@ -481,7 +481,7 @@ def get_dice_score(pred, y, eps=1e-7, axis=[1, 2], binary=False, class_axis=3, w
     return dice
 
 
-def get_dice_loss(logits, y, loss_type='jaccard', axis=[1, 2], class_axis=3, eps=1e-7, weight=False):
+def get_dice_loss(logits, y, loss_type='sorensen', axis=[1, 2], class_axis=3, eps=1e-7, weight=False):
     """
     calculates the (multiclass) dice score over a given batch of samples. In multiclass prediction (n_class > 1)
     the dice score is the average dice score over all classes
@@ -506,6 +506,9 @@ def get_dice_loss(logits, y, loss_type='jaccard', axis=[1, 2], class_axis=3, eps
     if loss_type == 'jaccard':
         pred = pred * pred
         y = y * y
+    elif loss_type == 'sorensen':
+        pred = pred
+        y = y
 
     denominator = tf.cast(tf.reduce_sum(y, axis=axis) + tf.reduce_sum(pred, axis=axis), tf.float32)
     dice_ = ((2 * numerator) + eps) / (denominator + eps)

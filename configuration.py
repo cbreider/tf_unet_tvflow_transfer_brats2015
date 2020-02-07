@@ -202,6 +202,8 @@ class TrainingParams:
     store_val_images = True
     # store last feature maps  from cnn during validation ( only for middle scan)
     store_val_feature_maps = True
+    # stop training if validation loss has not decreased over last three epochs
+    early_stopping = False
 
     # Hyperparameters for Adam optimzer
     adam_args = dict(learning_rate=initial_learning_rate,
