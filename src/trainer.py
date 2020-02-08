@@ -184,8 +184,8 @@ class Trainer(object):
                 init_step = int(fl[0])
                 epoch = int(fl[1])
 
-            pred_shape, __ = self.run_validtaion(sess, epoch, init_step, summary_writer_validation,
-                                             log=True if epoch == 0 else False, mini=True)
+            pred_shape, init_loss = self.run_validtaion(sess, epoch, init_step, summary_writer_validation,
+                                                        log=True if epoch == 0 else False)
 
             avg_gradients = None
 
@@ -195,7 +195,7 @@ class Trainer(object):
             logging.info("Start optimization...")
             avg_score_vals_batch = []
             avg_score_vals_epoch = []
-            last_validation_scores = [np.finfo(np.float), np.finfo(np.float), np.finfo(np.float)]
+            last_validation_scores = [init_loss, init_loss]
 
             try:
                 for step in range(init_step, self._n_epochs*self._training_iters):
@@ -252,9 +252,9 @@ class Trainer(object):
                         epoch += 1
                         self.output_training_epoch_stats(epoch, np.mean(np.array(avg_score_vals_epoch), axis=0), lr)
                         avg_score_vals_epoch = []
-                        pred_shape, val_score = self.run_validtaion(sess, epoch, init_step, summary_writer_validation)
+                        pred_shape, val_score = self.run_validtaion(sess, epoch, step, summary_writer_validation)
                         logging.info("Saving Session and Model ...")
-                        save_path = self.net.save(sess, self.output_path)
+                        save_path = self.net.save(sess, save_path)
                         # save epoch and step
                         self.save_step_nr(step_file, step, epoch)
 
@@ -287,13 +287,14 @@ class Trainer(object):
         outF.write("{}".format(epoch))
         outF.close()
 
-    def run_validtaion(self, sess, epoch, step, summary_writer, log=True, mini=False):
+    def run_validtaion(self, sess, epoch, step, summary_writer, log=True, mini_validation=False):
         logging.info("Running Validation for epoch {}...".format(epoch))
         epoch_out_path = os.path.join(self.output_path, "Epoch_{}".format(epoch))
 
         pred_shape, validation_results = Validator(sess, self.net, self.data_provider_val,
-                                                   epoch_out_path, mode=self.mode,
-                                                   nr=epoch, mini_validation=mini).run_validation()
+                                                   epoch_out_path, mode=self.mode, mini_validation=mini_validation,
+                                                   nr=epoch, store_feature_maps=self._store_feature_maps,
+                                                   store_predictions=self._store_result_images).run_validation()
         if log:
             self.write_tf_summary(step, validation_results, summary_writer,
                                   cost_val=["dice_per_volume", validation_results[7]])

@@ -82,7 +82,8 @@ class Validator(object):
                 if self._store_predictions:
                     self.store_prediction("{}_{}".format(self._nr, itr), self._mode, self._output_path,
                                           np.squeeze(np.array(data[0]), axis=1), np.squeeze(np.array(data[1]), axis=1),
-                                          np.squeeze(np.array(data[2]), axis=1), np.squeeze(np.array(data[3]), axis=1))
+                                          np.squeeze(np.array(data[2]), axis=1), np.squeeze(np.array(data[3]), axis=1),
+                                          gt_is_one_hot=False if self._conv_net.cost == Cost.MSE else True)
 
                 # safe one feature_map
                 if self._store_fmaps:
@@ -106,7 +107,8 @@ class Validator(object):
             if self._store_predictions:
                 self.store_prediction("{}_{}".format(self._nr, itr), self._mode, self._output_path,
                                       np.squeeze(np.array(data[0]), axis=1), np.squeeze(np.array(data[1]), axis=1),
-                                      np.squeeze(np.array(data[2]), axis=1), np.squeeze(np.array(data[3]), axis=1))
+                                      np.squeeze(np.array(data[2]), axis=1), np.squeeze(np.array(data[3]), axis=1),
+                                      gt_is_one_hot=False if self._conv_net.cost == Cost.MSE else True)
         val_scores = np.mean(np.array(vals), axis=0)
         dp = np.mean(np.array(dice_per_volume))
 
@@ -118,5 +120,5 @@ class Validator(object):
             img = dutil.combine_img_prediction_tvclustering(data=batch_x, gt=batch_y, tv=batch_tv, pred=prediction)
         else:
             img = dutil.combine_img_prediction(batch_x, batch_y, prediction,
-                                               mode=1 if gt_is_one_hot else 0)
+                                               mode=0 if gt_is_one_hot else 1)
         ioutil.save_image(img, "%s/%s.jpg" % (path, name))

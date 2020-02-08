@@ -125,9 +125,9 @@ class ConvNetModel(object):
 
             if self.cost_function == Cost.BATCH_DICE_LOG or self.cost_function == Cost.BATCH_DICE_SOFT or \
                     self.cost_function == Cost.BATCH_DICE_SOFT_CE:
-                axis = [0, 1, 2, 3]
+                axis = (0, 1, 2, 3)
             else:
-                axis = [1, 2]
+                axis = (1, 2)
 
             flat_logits = tf.reshape(self.logits, [-1, self._n_class])
             flat_labels = tf.reshape(self.y, [-1, self._n_class])
@@ -136,10 +136,10 @@ class ConvNetModel(object):
                                              weights=self._class_weights)
 
             elif self.cost_function == Cost.DICE_SOFT or self.cost_function == Cost.BATCH_DICE_SOFT:
-                loss = 1.0 - tfu.get_dice_loss(logits=self.logits, y=self.y, eps=1e-5, axis=axis)
+                loss = 1.0 - tfu.get_dice_loss(logits=self.logits, y=self.y, eps=1e-2, axis=axis)
 
             elif self.cost_function == Cost.DICE_SOFT_CE or self.cost_function == Cost.BATCH_DICE_SOFT_CE:
-                loss = self._loss_weight * (1.0 - tfu.get_dice_loss(logits=self.logits, y=self.y, eps=1e-5, axis=axis))
+                loss = self._loss_weight * (1.0 - tfu.get_dice_loss(logits=self.logits, y=self.y, eps=1e-2, axis=axis))
                 loss += (1.0 - self._loss_weight) * tfu.get_cross_entropy(logits=flat_logits, y=flat_labels,
                                                                           n_class=self._n_class,
                                                                           weights=self._class_weights)
@@ -181,7 +181,7 @@ class ConvNetModel(object):
             # Restore model weights from previously saved model
             self.restore(sess, model_path)
 
-            y_dummy = np.empty((x_test.shape[0], x_test.shape[1], x_test.shape[2], self.n_class))
+            y_dummy = np.empty((x_test.shape[0], x_test.shape[1], x_test.shape[2], self._n_class))
             prediction = sess.run(self.predicter, feed_dict={self.x: x_test, self.y: y_dummy, self.keep_prob: 1.})
 
         return prediction
