@@ -15,7 +15,7 @@ import logging
 import numpy as np
 import elasticdeform.tf as etf
 from src.utils.enum_params import Subtumral_Modes
-
+import tensorflow_addons as tfa
 
 def distort_imgs(scan, ground_truth, params=[[2, 3, 1], 25.0, 0.7]):
     """
@@ -49,7 +49,8 @@ def distort_imgs(scan, ground_truth, params=[[2, 3, 1], 25.0, 0.7]):
      #                                  size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0)),
      #                       lambda: combined)
 
-    combined_rot = tf.image.rot90(combined_crop, tf.random_uniform(shape=[], minval=0, maxval=4, dtype=tf.int32))
+    combined_rot = tfa.image.rotate(combined_crop, tf.random_uniform(shape=[], minval=-0.5, maxval=0.5, dtype=tf.float32))
+    #combined_rot = tf.image.rot90(combined_crop, tf.random_uniform(shape=[], minval=0, maxval=4, dtype=tf.int32))
 
     combined_flip = tf.image.random_flip_left_right(combined_rot)
     combined_flip = tf.image.random_flip_up_down(combined_flip)
