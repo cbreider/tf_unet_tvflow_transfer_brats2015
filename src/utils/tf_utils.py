@@ -434,6 +434,9 @@ def normalize_and_zero_center_slice(tensor, max, normalize_std, new_max=None, me
     else:
         out = tensor
 
+    if max is None:
+        max = tf.reduce_max(out)
+
     #set black elemts to random
     #zero = tf.constant(0, dtype=tf.float32)
     #where_zero = tf.equal(out, zero)

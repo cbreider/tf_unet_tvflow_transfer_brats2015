@@ -50,6 +50,7 @@ class Subtumral_Modes(Enum):
     COMPLETE = 1
     CORE = 2
     ENHANCING = 3
+    ALL = 4
 
 
 class TrainingModes(Enum):

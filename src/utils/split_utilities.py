@@ -431,7 +431,7 @@ class TrainingDataset(object):
         """
         if self._is_five_fold:
             test = self._read_single_split_from_folder(os.path.join(self._paths.split_path,
-                                                                    "{}_{}".format(self._five_fold_file,
+                                                                    "{}_{}.json".format(self._five_fold_file,
                                                                                    self._five_fold_idx)))["testing"]
             self.test_paths = self._get_paths_dict_seg_single(test)
         else:

@@ -118,7 +118,6 @@ class TFImageDataGenerator:
                 elif self._segmentation_mask == Subtumral_Modes.COMPLETE:  # todo add case
                     tv_base1 = tf.expand_dims(in_img[:, :, 0], axis=2)  # flair + t2
                     tv_base2 = tf.expand_dims(in_img[:, :, 3], axis=2)
-                    v = self._data_vals[self._use_modalities[i]]
                     tv_base1 = tf_utils.normalize_and_zero_center_slice(tv_base1,
                                                                         max=self._data_vals[self._use_modalities[0]][0],
                                                                         normalize_std=True,
@@ -189,7 +188,11 @@ class TFImageDataGenerator:
                                                                data_vals=self._data_vals)
 
         if self._mode == TrainingModes.SEGMENTATION:
-            gt_img = tf_utils.to_one_hot_brats(gt_img, mask_mode=self._segmentation_mask, depth=self._nr_of_classes)
+            if self._segmentation_mask == Subtumral_Modes.ALL:
+                gt_img = tf.reshape(gt_img, [tf.shape(gt_img)[0], tf.shape(gt_img)[1]])
+                gt_img = tf.one_hot(tf.cast(gt_img, tf.int32), depth=self._nr_of_classes)
+            else:
+                gt_img = tf_utils.to_one_hot_brats(gt_img, mask_mode=self._segmentation_mask, depth=self._nr_of_classes)
 
         elif self._mode == TrainingModes.TVFLOW_SEGMENTATION:
             gt_img = tf.reshape(gt_img, [tf.shape(gt_img)[0], tf.shape(gt_img)[1]])
@@ -224,7 +227,7 @@ class TFTrainingImageDataGenerator(TFImageDataGenerator):
 
         # create dataset
         tmp_data = tf.data.Dataset.from_tensor_slices((self._input_data, self._gt_data))
-        tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=5)
+        tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=6)
         # shuffle the first `buffer_size` elements of the dataset
         tmp_data = tmp_data.prefetch(buffer_size=self._buffer_size)
         if self._shuffle:
@@ -260,7 +263,7 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
 
         # create dataset
         tmp_data = tf.data.Dataset.from_tensor_slices((self._input_data, self._gt_data))
-        tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=1)
+        tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=3)
         tmp_data = tmp_data.prefetch(buffer_size=self._buffer_size)
         # shuffle the first `buffer_size` elements of the dataset
         # create a new dataset with batches of images

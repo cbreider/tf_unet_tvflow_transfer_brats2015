@@ -1,0 +1,1 @@
+This are just some functions I wrote to test some stuff. I edited them over time and do not keep care if everything is working here. Please keep that in mined

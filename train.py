@@ -136,10 +136,11 @@ if __name__ == "__main__":
                                          new_split=False, load_test_paths_only=True,
                                          is_five_fold=True if fold_nr > 0 else False,
                                          five_fold_idx=fold_nr)
-            test_data = validation_data = ImageData(data=file_paths_test.test_paths,
+            test_data = ImageData(data=file_paths_test.test_paths,
                                                     mode=DataModes.VALIDATION,
                                                     train_mode=train_mode,
                                                     data_config=config.DataParams)
+            test_data.create()
             logging.info("Loaded {} test smaples".format(test_data.size))
         except:
             logging.ERROR("Failed to load test dataset. Skipping testing!!!")
