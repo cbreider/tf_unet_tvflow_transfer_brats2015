@@ -41,10 +41,10 @@ class DataParams:
     modalities = ["mr_flair", "mr_t1", "mr_t1c", "mr_t2"]
 
     # values (pre computed) per modality of all mri (training set) scans:  [max, mean, variance]
-    data_values = {modalities[0]: [9971, 59.5775, 217.8138],
-                   modalities[1]: [11737, 79.6471, 272.0175],
-                   modalities[2]: [11737, 81.787, 273.7927],
-                   modalities[3]: [15281, 97.9302, 314.4067]}
+    data_values = {modalities[0]: [9971.0, 373.4186, 436.8327],
+                   modalities[1]: [11737.0, 498.3364, 514.9137],
+                   modalities[2]: [11737.0, 512.1146, 560.1438],
+                   modalities[3]: [15281.0, 609.6377, 507.4553]}
     # to norm every sclice by its own values uncomment this
     #data_values = {modalities[0]: [None, None, None],
     #               modalities[1]: [None, None, None],
@@ -85,7 +85,7 @@ class DataParams:
     # normalize standard deviation for images during pre processing
     normailze_std = True
     # value to which images should be normed to during pre processing. If None original max vales are kept
-    norm_max_image_value = 5.0
+    norm_max_image_value = None
     # Max value of input images (uint16)
     data_max_value = 65535.0
     # nr of folds for k fold cross validation
@@ -110,7 +110,7 @@ class DataParams:
     # number of channels of generated input images (grayscale)
     nr_of_input_modalities = len(use_modalities) * nr_of_image_channels
     # nr of classes of segmentation map (binary for gt segmentation, more for tv segmentation)
-    nr_of_classes = 5
+    nr_of_classes = 1
     # do not use tf data pipeline. Load all images into RAM before. Not used, because eats up all memory
     use_mha_files_instead = False
     # modalities used and combined for tv. None for preset (COMPLETE = flair+T2, CORE=T1c, ENHANCING=T1)
@@ -152,9 +152,9 @@ class ConvNetParams:
     batch_normalization = True
     # weight for each class if Cross Entropy loss is chosen. length must correspond to nr of classes.
     # None to not use any weighting
-    class_weights = None #[3.0]
+    class_weights = [1.5]
     # lambda value for l2 regualizer. Set None do not use l2 regularizer
-    regularizer = 0.0000001
+    regularizer = None
     # tv regularize for TV loss. oly used if Cost funcion is TV
     tv_regularizer = 0.01
     # Add residual layer/skip layer at the end output = input + last_layer (only for tv regression). NOT useful
