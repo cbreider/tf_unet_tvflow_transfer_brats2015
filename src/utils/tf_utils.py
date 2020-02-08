@@ -430,10 +430,10 @@ def normalize_and_zero_center_slice(tensor, max, normalize_std, new_max=None, me
         if mean is None or std is None:
             mean, std = tf.nn.moments(tensor, axes=[0, 1, 2])
         out = tf.math.divide((tensor - mean), tf.math.sqrt(std))
-        max = (max - mean) / std
+        if max is not None:
+            max = (max - mean) / std
     else:
         out = tensor
-
     if max is None:
         max = tf.reduce_max(out)
 
