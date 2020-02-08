@@ -34,8 +34,8 @@ class DataParams:
         0  # everything else
     ]
 
-    # mask for segmentation training: Complete, core or enhancing
-    segmentation_mask = Subtumral_Modes.ALL
+    # mask for segmentation training: Complete, core or enhancing. Or ALL if all five classes should be separatly predicted
+    segmentation_mask = Subtumral_Modes.COMPLETE
 
     # key for the four different modalities
     modalities = ["mr_flair", "mr_t1", "mr_t1c", "mr_t2"]
@@ -143,7 +143,7 @@ class ConvNetParams:
     # size of max pooling pool_size x pool_size
     pool_size = 2
     # Cost function to use. Choose from class Cost(Enum)
-    cost_function = Cost.BATCH_DICE_SOFT
+    cost_function = Cost.CROSS_ENTROPY
     # weighting if BATCH_DICE_SOFT_CE is chosen. loss = cost_weight * Dice_loss + (1-cost_weight) * cross_entropy_loss
     cost_weight = 0.8
     # Use padding to preserve feature map size and prevent downscaling
