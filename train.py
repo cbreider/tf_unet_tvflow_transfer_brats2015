@@ -52,6 +52,11 @@ if __name__ == "__main__":
     parser.add_argument('--take_fold_nr', type=int, default=0,
                         help='use fold with nr x from five fold split. If also --create_new_split is given a new '
                              'five fold is made')
+    parser.add_argument('--include_testing', action='store_true',
+                        help='Run evaluation on test set after optimization is finished')
+    parser.add_argument('--data_path', type=str, default=None,
+                        help='Path to the Brats training dataset. Files have to be 2D images and ordered in the same way'
+                             '(HGG/LGG --> Patient --> modality--> *.png). Default ../dataset/2d/slices/png/raw/train')
 
     args = parser.parse_args()
     create_new_training_split = False
@@ -60,7 +65,8 @@ if __name__ == "__main__":
     caffemodel_path = None
     train_mode = TrainingModes(args.mode)
     restore_mode = None
-
+    include_testing = False
+    data_path = "default"
     fold_nr = args.take_fold_nr
 
     if args.create_new_split:
@@ -75,12 +81,17 @@ if __name__ == "__main__":
         caffemodel_path = args.caffemodel_path
     if args.cuda_device >= 0:
         cuda_selector.set_cuda_gpu(args.cuda_device)
+    if args.include_testing:
+        include_testing = True
+    if args.data_path:
+        data_path = args.data_path
+
 
 
     # tf.enable_eager_execution()
     tf.reset_default_graph()
 
-    data_paths = DataPaths(data_path="default", mode=train_mode.name,
+    data_paths = DataPaths(data_path=data_path, mode=train_mode.name,
                            tumor_mode=config.DataParams.segmentation_mask.name)
     data_paths.load_data_paths(mkdirs=True, restore_dir=restore_path if (restore_mode == RestoreMode.COMPLETE_SESSION
                                                                          or restore_mode == RestoreMode.COMPLETE_NET)
@@ -102,7 +113,8 @@ if __name__ == "__main__":
     file_paths = TrainingDataset(paths=data_paths, mode=train_mode, data_config=config.DataParams,
                                  new_split=create_new_training_split,
                                  is_five_fold=True if fold_nr > 0 else False,
-                                 five_fold_idx=fold_nr)
+                                 five_fold_idx=fold_nr, nr_of_folds=config.DataParams.nr_k_folds,
+                                 k_fold_nr_val_samples=config.DataParams.k_fold_nr_val_samples)
 
     training_data = ImageData(data=file_paths.train_paths,
                               mode=DataModes.TRAINING,
@@ -117,6 +129,21 @@ if __name__ == "__main__":
     training_data.create()
     validation_data.create()
 
+    test_data = None
+    if include_testing:
+        try:
+            file_paths_test = TrainingDataset(paths=data_paths, mode=train_mode, data_config=config.DataParams,
+                                         new_split=False, load_test_paths_only=True,
+                                         is_five_fold=True if fold_nr > 0 else False,
+                                         five_fold_idx=fold_nr)
+            test_data = validation_data = ImageData(data=file_paths_test.test_paths,
+                                                    mode=DataModes.VALIDATION,
+                                                    train_mode=train_mode,
+                                                    data_config=config.DataParams)
+            logging.info("Loaded {} test smaples".format(test_data.size))
+        except:
+            logging.ERROR("Failed to load test dataset. Skipping testing!!!")
+
     net = tf_convnet.ConvNetModel(convnet_config=config.ConvNetParams, create_summaries=create_summaries)
 
     opt_args = None
@@ -130,7 +157,7 @@ if __name__ == "__main__":
     trainer = trainer.Trainer(net=net, data_provider_train=training_data, data_provider_val=validation_data,
                               out_path=data_paths.tf_out_path, train_config=config.TrainingParams,
                               restore_path=restore_path, caffemodel_path=caffemodel_path,
-                              restore_mode=restore_mode, mode=train_mode)
+                              restore_mode=restore_mode, mode=train_mode, data_provider_test=test_data, fold_nr=fold_nr)
 
     path = trainer.train()
 

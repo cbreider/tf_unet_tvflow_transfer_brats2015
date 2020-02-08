@@ -20,12 +20,12 @@ from src.utils.enum_params import Cost, Optimizer, RestoreMode, TrainingModes
 from src.tf_data_pipeline_wrapper import  ImageData
 from configuration import TrainingParams
 from src.validator import Validator
-
+import src.validator as vali
 
 class Trainer(object):
 
     def __init__(self, net, data_provider_train, data_provider_val, out_path, train_config, mode,  restore_path=None,
-                 caffemodel_path=None, restore_mode=RestoreMode.COMPLETE_SESSION):
+                 caffemodel_path=None, restore_mode=RestoreMode.COMPLETE_SESSION, data_provider_test=None, fold_nr=0):
 
         """
         Trains a convnet instance
@@ -60,6 +60,8 @@ class Trainer(object):
         self._store_feature_maps = self.config.store_val_feature_maps
         self._store_result_images = self.config.store_val_images
         self._early_stopping = self.config.early_stopping
+        self.data_provider_test = data_provider_test
+        self._fold_nr = fold_nr
 
     def _get_optimizer(self, global_step):
         if self.optimizer_name == Optimizer.MOMENTUM:
@@ -265,6 +267,10 @@ class Trainer(object):
                         last_validation_scores[1] = val_score
 
                 logging.info("Optimization Finished!")
+
+                if self.data_provider_test:
+                    vali.run_test(sess, net=self.net, data_provider_test=self.data_provider_test, mode=self.mode,
+                                  nr=self._fold_nr)
 
                 return save_path
 

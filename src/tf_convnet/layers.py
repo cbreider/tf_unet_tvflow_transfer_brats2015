@@ -28,7 +28,7 @@ def weight_variable_devonc(shape, stddev=0.1, name="weight_devonc", trainable=Tr
 
 
 def bias_variable(shape, name="bias", trainable=True):
-    initial = tf.constant(0.1, shape=shape)
+    initial = tf.constant(0.0, shape=shape)
     return tf.Variable(initial, name=name, trainable=trainable)
 
 

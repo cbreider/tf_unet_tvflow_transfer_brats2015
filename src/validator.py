@@ -14,6 +14,38 @@ import src.utils.data_utils as dutil
 import src.utils.io_utils as ioutil
 import numpy as np
 from src.utils.enum_params import Cost, Optimizer, RestoreMode, TrainingModes
+import logging
+
+
+def run_test(sess, net, data_provider_test, mode, nr):
+    logging.info("Running evaluation on {} test images ....".format(data_provider_test.size))
+    test_out_path = "Test_{}".format(nr)
+    pred_shape, validation_results = Validator(sess, net, data_provider_test,
+                                               test_out_path, mode=mode, mini_validation=False,
+                                               nr=nr, store_feature_maps=True,
+                                               store_predictions=True).run_validation()
+    logging.info(
+        "Test results: Loss= {:.6f}, Cross entropy= {:.4f}, Dice per slice= {:.4f}, "
+        "Dice per volume= {:.4f}, error= {:.2f}%, Accuracy {:.4f}, IoU= {:.4f}".format(
+            validation_results[0], validation_results[1], validation_results[2],
+            validation_results[7], validation_results[4], validation_results[5],
+            validation_results[6]))
+
+    outF = open(os.path.join(test_out_path, "results.txt"), "w")
+
+    outF.write("ERROR: {}".format(validation_results[4]))
+    outF.write("\n")
+    outF.write("ACCURACY: {}".format(validation_results[5]))
+    outF.write("\n")
+    outF.write("CROSS ENTROPY: {}".format(validation_results[1]))
+    outF.write("\n")
+    outF.write("DICE per slice: {}".format(validation_results[2]))
+    outF.write("\n")
+    outF.write("DICE per patient: {}".format(validation_results[7]))
+    outF.write("\n")
+    outF.write("IoU: {}".format(validation_results[6]))
+    outF.write("\n")
+    outF.close()
 
 
 class Validator(object):

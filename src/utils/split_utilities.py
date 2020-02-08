@@ -56,7 +56,8 @@ class TrainingDataset(object):
 
     """Constructor"""
     def __init__(self, paths, data_config, mode,
-                 load_test_paths_only=False, new_split=True, is_five_fold=False, five_fold_idx=1):
+                 load_test_paths_only=False, new_split=True, is_five_fold=False, five_fold_idx=1, nr_of_folds=5,
+                 k_fold_nr_val_samples=20):
         """
         Inits a Dataset of training and validation images- Either creates it by reading files from a specific folder
         declared in "paths" or read a existing split form a .txt
@@ -91,6 +92,8 @@ class TrainingDataset(object):
         self.validation_paths = dict()
         self.train_paths = dict()
         self.test_paths = dict()
+        self.nr_of_folds = nr_of_folds
+        self.k_fold_nr_val_samples = k_fold_nr_val_samples
 
         if self._mode == TrainingModes.TVFLOW_REGRESSION:
             self.split_name = self._tvflow_mode
@@ -143,7 +146,7 @@ class TrainingDataset(object):
         test_split = dict()
         # mode
         if self._is_five_fold:
-            self._split_patients_five_fold()
+            self._split_patients_k_fold()
             return
 
         if (self._mode == TrainingModes.TVFLOW_REGRESSION or self._mode == TrainingModes.TVFLOW_SEGMENTATION) \
@@ -464,8 +467,8 @@ class TrainingDataset(object):
         train_split = self.prune_patients(train_split)
         return train_split, validation_split, test_split
 
-    def _split_patients_five_fold(self):
-        nr_folds = 5
+    def _split_patients_k_fold(self):
+        nr_folds = self.nr_of_folds
         folds = []
         if not self._paths.is_loaded:
             return None
@@ -488,9 +491,8 @@ class TrainingDataset(object):
         for i in range(nr_folds):
             train = [x for j,x in enumerate(tmp) if j!=i]
             train = [y for x in train for y in x]
-            l_train = len(train)
-            val = train[:int(l_train*self._split_ratio[1])]
-            train = train[int(l_train*self._split_ratio[1]):]
+            val = train[:self.k_fold_nr_val_samples]
+            train = train[self.k_fold_nr_val_samples:]
             test = tmp[i]
 
             assert(not any(x in test for x in train))

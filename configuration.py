@@ -83,7 +83,12 @@ class DataParams:
     norm_max_image_value = None
     # Max value of input images (uint16)
     data_max_value = 65535.0
-    # Ration of Nr Training images to Val images (optioanl test) if new random split is created. Musst sum up to 1
+    # nr of folds for k fold cross validation
+    nr_k_folds = 5
+    # nr of validation samples taken from training set in k fold cross validtaion
+    k_fold_nr_val_samples = 20
+    # Ration of Nr iraining images to Val images (optioanl test) if new random split is created. Only used if not k fold
+    # argumnet is passed (k_fold cross validation is not used). Must sum up to 1
     split_train_val_ratio = [0.8, 0.2]
     # split_train_val_ratio = [0.75, 0.05, 0.2]
     # use only a subset of training images. values from >0.0 - 1.0 (1.0 for all traing data)
@@ -125,9 +130,9 @@ class ConvNetParams:
     # type of CNN. In the moment only 2D unet available
     conv_net_type = ConvNetType.U_NET_2D
     # number of encoder layers including bottom layer (5 for original U-net)
-    num_layers = 5
+    num_layers = 2
     # number of feature maps/kernels in the first layer (original 64)
-    feat_root = 64
+    feat_root = 16
     # kernel size = filter_size x filter_size
     filter_size = 3
     # size of max pooling pool_size x pool_size
