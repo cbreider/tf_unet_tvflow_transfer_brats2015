@@ -149,10 +149,10 @@ class ConvNetParams:
     # Use padding to preserve feature map size and prevent downscaling
     padding = True
     # Use Batch normalization Yes/No
-    batch_normalization = True
+    batch_normalization = False
     # weight for each class if Cross Entropy loss is chosen. length must correspond to nr of classes.
     # None to not use any weighting
-    class_weights = [1.5]
+    class_weights = [2.0]
     # lambda value for l2 regualizer. Set None do not use l2 regularizer
     regularizer = None
     # tv regularize for TV loss. oly used if Cost funcion is TV
