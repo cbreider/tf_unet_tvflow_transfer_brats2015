@@ -81,7 +81,7 @@ class DataParams:
     # parameters for image distortion
     image_disort_params = [[2, 3, 3],  # displacement vector [img dim, plane, heigh
                            10.0,  # sigma deformation magnitude
-                           0.7]  # max zoom factor
+                           0.8]  # max zoom factor
     # normalize standard deviation for images during pre processing
     normailze_std = True
     # value to which images should be normed to during pre processing. If None original max vales are kept
@@ -104,7 +104,7 @@ class DataParams:
     use_scale_image_as_gt = False
     # use only slices use_only_spatial_range[0] to use_only_spatial_range[1] because it is unlikely to be tumor regions
     # in the outer scans. use_only_spatial_range=None to use all scans
-    use_only_spatial_range = [30, 130]
+    use_only_spatial_range = None #[30, 130]
     # modalities used for training
     use_modalities = [modalities[0], modalities[1], modalities[2], modalities[3]]
     # number of channels of generated input images (grayscale)
