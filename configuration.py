@@ -169,7 +169,7 @@ class ConvNetParams:
     # number of channels of generated input images (grayscale)
     nr_input_channels = DataParams.nr_of_input_modalities
     # nr of output classes
-    nr_of_classes = DataParams.nr_of_classessss
+    nr_of_classes = DataParams.nr_of_classes
     # choose if you want to use tv scale image instead of smoothed (only tv training and only if load_tv_from_file=True)
     use_scale_as_gt = DataParams.use_scale_image_as_gt
     # max value of TV images in regression
