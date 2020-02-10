@@ -494,9 +494,9 @@ def get_dice_log_loss(logits, y, axis=(1, 2), smooth=1.0, exclude_zero_label=Fal
     logits = tf.cast(logits, tf.float32)
     y = tf.cast(y, tf.float32)
     if logits.get_shape().as_list()[3] > 1: # multiclass
-        pred = tf.nn.softmax(logits)
+        prediction = tf.nn.softmax(logits)
         if exclude_zero_label:
-            pred = pred[:, :, :, 1:]
+            prediction = prediction[:, :, :, 1:]
             y = y[:, :, :, 1:]
     else: # binary
         prediction = tf.nn.sigmoid(logits)

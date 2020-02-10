@@ -80,7 +80,7 @@ class DataParams:
     do_image_augmentation_val = False
     # parameters for image distortion
     image_disort_params = [[2, 3, 3],  # displacement vector [img dim, plane, heigh
-                           10.0,  # sigma deformation magnitude
+                           5.0,  # sigma deformation magnitude
                            0.8]  # max zoom factor
     # normalize standard deviation for images during pre processing
     normailze_std = True
@@ -135,9 +135,9 @@ class ConvNetParams:
     # type of CNN. In the moment only 2D unet available
     conv_net_type = ConvNetType.U_NET_2D
     # number of encoder layers including bottom layer (5 for original U-net)
-    num_layers = 5
+    num_layers = 2
     # number of feature maps/kernels in the first layer (original 64)
-    feat_root = 64
+    feat_root = 16
     # kernel size = filter_size x filter_size
     filter_size = 3
     # size of max pooling pool_size x pool_size
@@ -209,7 +209,7 @@ class TrainingParams:
     # store output images of validation
     store_val_images = True
     # store last feature maps  from cnn during validation ( only for middle scan)
-    store_val_feature_maps = True
+    store_val_feature_maps = False
     # stop training if validation loss has not decreased over last three epochs
     early_stopping = False
 
