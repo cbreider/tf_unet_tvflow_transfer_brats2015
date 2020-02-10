@@ -135,9 +135,9 @@ class ConvNetParams:
     # type of CNN. In the moment only 2D unet available
     conv_net_type = ConvNetType.U_NET_2D
     # number of encoder layers including bottom layer (5 for original U-net)
-    num_layers = 2
+    num_layers = 5
     # number of feature maps/kernels in the first layer (original 64)
-    feat_root = 16
+    feat_root = 64
     # kernel size = filter_size x filter_size
     filter_size = 3
     # size of max pooling pool_size x pool_size
