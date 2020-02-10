@@ -17,7 +17,7 @@ class DataParams:
     """ Data parameters"""
 
     # batch size used for training
-    batch_size_train = 16
+    batch_size_train = 8
     # batch size used for validation. Attention: Due to implementation only 1 is possible at the moment
     batch_size_val = 1
     # buffer size for tf training data pipeline
@@ -195,7 +195,7 @@ class TrainingParams:
     # number of training epochs
     num_epochs = 100
     # iterations per epoch
-    training_iters = 2200
+    training_iters = 40000
     # number of iterations between each
     display_step = 200
     # smooth label values int gt to confuse network. Not used  TODO ?

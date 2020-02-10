@@ -452,7 +452,7 @@ def normalize_and_zero_center_slice(tensor, max, normalize_std, new_max=None, me
     return out
 
 
-def get_dice_score(pred, y, eps=1e-7, axis=(1, 2), class_axis=3, weights=None):
+def get_dice_score(pred, y, eps=1e-7, axis=(1, 2), weights=None):
     """
     calculates the (multiclass) dice score over a given batch of samples. In multiclass prediction (n_class > 1)
     the dice score is the average dice score over all classes
