@@ -108,10 +108,32 @@ class TFImageDataGenerator:
                 tv_img = tf_utils.load_png_image(gt_ob, nr_channels=self._nr_channels, img_size=self._in_img_size)
             else:
                 if self._modalties_tv:
+                    tvs = []
                     tv_base = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._modalties_tv,
                                                                        new_max=self._data_norm_value,
                                                                        normalize_std=self._normalize_std,
                                                                        data_vals=self._data_vals)
+                    for i in range(len(self._modalties_tv)):
+                        tvs._img = tf_utils.get_tv_smoothed(img=tv_base[:, :, i], tau=self.tv_tau, weight=self.tv_weight,
+                                                          eps=self.tv_eps, m_itr=self.tv_nr_itr)
+                        if self._mode == TrainingModes.TVFLOW_REGRESSION:
+                            gt_img = tv_img
+
+                        elif self._mode == TrainingModes.TVFLOW_SEGMENTATION:
+                            if self.clustering_method == TV_clustering_method.STATIC_BINNING:
+                                gt_img = tf_utils.get_fixed_bin_clustering(image=tv_img, n_bins=self._nr_of_classes)
+                            elif self.clustering_method == TV_clustering_method.STATIC_CLUSTERS:
+                                gt_img = tf_utils.get_static_clustering(image=tv_img,
+                                                                        cluster_centers=self.static_cluster_center)
+                            elif self.clustering_method == TV_clustering_method.K_MEANS:
+                                gt_img = tf_utils.get_kmeans(img=tv_img, clusters_n=self._nr_of_classes,
+                                                             iteration_n=self.km_nr_itr)
+                            elif self.clustering_method == TV_clustering_method.MEAN_SHIFT:
+                                gt_img = tf_utils.get_meanshift_clustering(image=tv_img, ms_itr=self.mean_shift_n_itr,
+                                                                           win_r=self.mean_shift_win_size,
+                                                                           n_clusters=self._nr_of_classes,
+                                                                           bin_seeding=self.mean_shift_bin_seeding)
+
                     tv_base = tf.reduce_mean(tv_base, axis=2)
                     tv_base = tf.expand_dims(tv_base, axis=2)
 
