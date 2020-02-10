@@ -101,19 +101,36 @@ class TV_clustering_method(Enum):
 
 class Scores(Enum):
     LOSS = "Loss"
-    CE = "Cross Entropy"
-    ERROR = "Error"
-    ACC = "Accuracy"
+    CE = "CE"
+    ERROR = "Err"
+    ACC = "Acc"
     IOU = "IoU"
     DSC = "DSC"
-    DSC_COMP = "DSC Complete"
-    DSC_CORE = "DSC Score Core"
-    DSC_EN = "DSC Enhancing"
-    DSCP = "DSC pP"
-    DSCP_COMP = "DSC Complete pP"
-    DSCP_CORE = "DSC Core pP"
-    DSCP_EN = "DSC Enhancing pP"
-    IOUP = "IoU pP"
-    LR = "Learning-Rate"
+    DSC_COMP = "DSC Comp."
+    DSC_CORE = "DSC Core"
+    DSC_EN = "DSC Enhan."
+    DSCP = "DSCpP"
+    DSCP_COMP = "DSCpP Comp."
+    DSCP_CORE = "DSCpP Core"
+    DSCP_EN = "DSCpP Enhan."
+    IOUP = "IoUpP"
+    LR = "LR"
 
 
+ScoresLong = {
+    Scores.LOSS: "Loss",
+    Scores.CE: "Cross Entropy",
+    Scores.ERROR: "Error",
+    Scores.ACC: "Accuracy",
+    Scores.IOU: "IoU",
+    Scores.DSC: "Dice Score",
+    Scores.DSC_COMP: "Dice Score Complete",
+    Scores.DSC_CORE: "Dice Score Core",
+    Scores.DSC_EN: "Dice Score Enhancing",
+    Scores.DSCP: "Dice Score per Patient",
+    Scores.DSCP_COMP: "Dice Score Complete per Patient",
+    Scores.DSCP_CORE: "Dice Score Core per Patient",
+    Scores.DSCP_EN: "Dice Score Enhancing per Patient",
+    Scores.IOUP: "IoU per Patient",
+    Scores.LR: "Learning-Rate"
+}

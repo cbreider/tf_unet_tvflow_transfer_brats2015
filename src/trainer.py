@@ -16,7 +16,7 @@ import src.utils.data_utils as dutil
 import src.utils.io_utils as ioutil
 import numpy as np
 from src.tf_convnet.caffe2tensorflow_mapping import load_pre_trained_caffe_variables
-from src.utils.enum_params import Cost, Optimizer, RestoreMode, TrainingModes, Scores
+from src.utils.enum_params import Cost, Optimizer, RestoreMode, TrainingModes, Scores, ScoresLong
 from src.tf_data_pipeline_wrapper import ImageData
 from configuration import TrainingParams
 from src.validator import Validator
@@ -370,7 +370,7 @@ class Trainer(object):
         summary = tf.Summary()
         for k, v in scores.items():
             if v != -1.:
-                summary.value.add(tag=k.value, simple_value=v)
+                summary.value.add(tag=ScoresLong[k], simple_value=v)
 
         summary_writer.add_summary(summary, step)
         summary_writer.flush()
@@ -380,7 +380,7 @@ class Trainer(object):
         l_string = base
         for k, v in scores.items():
             if v != -1.:
-                l_string = "{} {}= {:.6f},".format(l_string, k.value, v)
+                l_string = "{} {}={:.6f},".format(l_string, k.value, v)
         l_string = l_string[:-1]
         logging.info(l_string)
 
