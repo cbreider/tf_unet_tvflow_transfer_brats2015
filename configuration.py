@@ -195,7 +195,7 @@ class TrainingParams:
     # number of training epochs
     num_epochs = 100
     # iterations per epoch
-    training_iters = 40000
+    training_iters = 4000
     # number of iterations between each
     display_step = 200
     # smooth label values int gt to confuse network. Not used  TODO ?
