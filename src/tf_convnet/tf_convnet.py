@@ -100,38 +100,31 @@ class ConvNetModel(object):
                     self.pred_slice = tf.cast(tf.argmax(self.predicter, axis=3), tf.float32)
                     self.y_slice = tf.cast(tf.argmax(self.y, axis=3), tf.float32)
                     self.correct_pred = tf.equal(self.pred_slice, self.y_slice)
+                    if self._mode == TrainingModes.BRATS_SEGMENTATION and self._n_class == 5:
+                        pred_complete = tf.cast(tf.greater(self.pred_slice, 0.), tf.float32)
+                        pred_core = tf.cast(tf.logical_or(tf.logical_or(tf.equal(self.pred_slice, 1.),
+                                                                        tf.equal(self.pred_slice, 3.)),
+                                                          tf.equal(self.pred_slice, 4.)), tf.float32)
+                        pred_enhancing = tf.cast(tf.equal(self.pred_slice, 4.), tf.float32)
+                        y_complete = tf.cast(tf.greater(self.y_slice, 0.), tf.float32)
+                        y_core = tf.cast(tf.logical_or(tf.logical_or(tf.equal(self.y_slice, 1.),
+                                                                     tf.equal(self.y_slice, 3.)),
+                                                       tf.equal(self.y_slice, 4.)), tf.float32)
+                        y_enhancing = tf.cast(tf.equal(self.y_slice, 4.), tf.float32)
+                        self.dice_complete = tfu.get_dice_score(pred=pred_complete, y=y_complete, eps=1e-5)
+                        self.dice_core = tfu.get_dice_score(pred=pred_core, y=y_core, eps=1e-5)
+                        self.dice_enhancing = tfu.get_dice_score(pred=pred_enhancing, y=y_enhancing, eps=1e-5)
                 else:
                     self.predicter = tf.cast(tf.nn.sigmoid(self.logits) > 0.5, tf.float32)
                     self.correct_pred = tf.equal(self.predicter, self.y)
 
-                if self._mode == TrainingModes.BRATS_SEGMENTATION and self._n_class == 5:
-                    pred_complete = tf.cast(tf.greater(self.pred_slice, 0.), tf.float32)
-                    pred_core = tf.cast(tf.logical_or(tf.logical_or(tf.equal(self.pred_slice, 1.),
-                                                                    tf.equal(self.pred_slice, 3.)),
-                                                      tf.equal(self.pred_slice, 4.)), tf.float32)
-                    pred_enhancing = tf.cast(tf.equal(self.pred_slice, 4.), tf.float32)
-                    y_complete = tf.cast(tf.greater(self.y_slice, 0.), tf.float32)
-                    y_core = tf.cast(tf.logical_or(tf.logical_or(tf.equal(self.y_slice, 1.),
-                                                                 tf.equal(self.y_slice, 3.)),
-                                                   tf.equal(self.y_slice, 4.)), tf.float32)
-                    y_enhancing = tf.cast(tf.equal(self.y_slice, 4.), tf.float32)
-                    self.dice_complete = tfu.get_dice_score(pred=pred_complete, y=y_complete, eps=1e-5)
-                    self.dice_core = tfu.get_dice_score(pred=pred_core, y=y_core, eps=1e-5)
-                    self.dice_enhancing = tfu.get_dice_score(pred=pred_enhancing, y=y_enhancing, eps=1e-5)
-                    pred_wo_zero = self.predicter[:, :, :, 1:]
-                    y_wo_zero = self.y[:, :, :, 1:]
-                    self.dice = tfu.get_dice_score(pred=pred_wo_zero, y=y_wo_zero,
-                                                   eps=1e-5, weights=None)
-                    self.iou_coe = tfu.get_iou_coe(pre=pred_wo_zero, gt=y_wo_zero)
-                    self.correct_pred = tf.equal(pred_wo_zero, y_wo_zero)
-                else:
-                    self.dice = tfu.get_dice_score(pred=self.predicter, y=self.y,
-                                               eps=1e-5, weights=None)
-                    self.iou_coe = tfu.get_iou_coe(pre=self.predicter, gt=self.y)
                 self.cross_entropy = tfu.get_cross_entropy(logits=tf.reshape(self.logits, [-1, self._n_class]),
                                                            y=tf.reshape(self.y, [-1, self._n_class]),
                                                            n_class=self._n_class,
                                                            weights=None)
+                self.iou_coe = tfu.get_iou_coe(pre=self.predicter, gt=self.y)
+                self.dice = tfu.get_dice_score(pred=self.predicter, y=self.y,
+                                               eps=1e-5, weights=None)
                 self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
                 self.error = tf.constant(1.0) - self.accuracy
 
