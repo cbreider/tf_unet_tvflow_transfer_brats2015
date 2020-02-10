@@ -149,9 +149,9 @@ class ConvNetParams:
     # size of max pooling pool_size x pool_size
     pool_size = 2
     # Cost function to use. Choose from class Cost(Enum)
-    cost_function = Cost.BATCH_DICE_SOFT
+    cost_function = Cost.BATCH_DICE_SOFT_CE
     # weighting if BATCH_DICE_SOFT_CE is chosen. loss = cost_weight * Dice_loss + (1-cost_weight) * cross_entropy_loss
-    cost_weight = 0.8
+    cost_weight = 0.5
     # Use padding to preserve feature map size and prevent downscaling
     padding = True
     # Use Batch normalization Yes/No
