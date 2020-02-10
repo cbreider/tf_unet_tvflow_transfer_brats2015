@@ -17,7 +17,7 @@ class DataParams:
     """ Data parameters"""
 
     # batch size used for training
-    batch_size_train = 8
+    batch_size_train = 16
     # batch size used for validation. Attention: Due to implementation only 1 is possible at the moment
     batch_size_val = 1
     # buffer size for tf training data pipeline
