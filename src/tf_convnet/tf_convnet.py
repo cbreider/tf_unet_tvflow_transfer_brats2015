@@ -47,7 +47,8 @@ class ConvNetModel(object):
         self._use_scale_image_as_gt = self._convnet_config.use_scale_as_gt
         self._activation_func_out = self._convnet_config.activation_func_out
         self._tv_regularizer = self._convnet_config.tv_regularizer
-        self._class_weights = self._convnet_config.class_weights
+        self._class_weights_ce = self._convnet_config.class_weights_ce
+        self._class_weights_dice = self._convnet_config.class_weights_dice
         self._regularizer = self._convnet_config.regularizer
         self._max_tv_value = self._convnet_config.max_tv_value
         self._loss_weight = self._convnet_config.cost_weight
@@ -156,19 +157,19 @@ class ConvNetModel(object):
             flat_labels = tf.reshape(self.y, [-1, self._n_class])
             if self.cost_function == Cost.CROSS_ENTROPY:
                 loss = tfu.get_cross_entropy(logits=flat_logits, y=flat_labels, n_class=self._n_class,
-                                             weights=self._class_weights)
+                                             weights=self._class_weights_ce)
 
             elif self.cost_function == Cost.DICE_SOFT or self.cost_function == Cost.BATCH_DICE_SOFT:
                 loss = 1.0 - tfu.get_dice_loss(logits=self.logits, y=self.y, eps=1e-2, axis=axis,
-                                               weights=self._class_weights, exclude_zero_label=exclude_zero_label)
+                                               weights=self._class_weights_dice, exclude_zero_label=exclude_zero_label)
 
             elif self.cost_function == Cost.DICE_SOFT_CE or self.cost_function == Cost.BATCH_DICE_SOFT_CE:
                 loss = self._loss_weight * (1.0 - tfu.get_dice_loss(logits=self.logits, y=self.y, eps=1e-2, axis=axis,
-                                                                    weights=self._class_weights,
+                                                                    weights=self._class_weights_dice,
                                                                     exclude_zero_label=exclude_zero_label))
                 loss += (1.0 - self._loss_weight) * tfu.get_cross_entropy(logits=flat_logits, y=flat_labels,
                                                                           n_class=self._n_class,
-                                                                          weights=self._class_weights)
+                                                                          weights=self._class_weights_ce)
 
             elif self.cost_function == Cost.DICE_LOG or self.cost_function == Cost.BATCH_DICE_LOG:
                 loss = tfu.get_dice_log_loss(self.logits, self.y, axis=axis, exclude_zero_label=exclude_zero_label)
