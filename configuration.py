@@ -135,15 +135,15 @@ class ConvNetParams:
     # type of CNN. In the moment only 2D unet available
     conv_net_type = ConvNetType.U_NET_2D
     # number of encoder layers including bottom layer (5 for original U-net)
-    num_layers = 5
+    num_layers = 2
     # number of feature maps/kernels in the first layer (original 64)
-    feat_root = 64
+    feat_root = 16
     # kernel size = filter_size x filter_size
     filter_size = 3
     # size of max pooling pool_size x pool_size
     pool_size = 2
     # Cost function to use. Choose from class Cost(Enum)
-    cost_function = Cost.BATCH_DICE_SOFT_CE
+    cost_function = Cost.BATCH_DICE_SOFT
     # weighting if BATCH_DICE_SOFT_CE is chosen. loss = cost_weight * Dice_loss + (1-cost_weight) * cross_entropy_loss
     cost_weight = 0.8
     # Use padding to preserve feature map size and prevent downscaling
@@ -152,7 +152,7 @@ class ConvNetParams:
     batch_normalization = False
     # weight for each class if Cross Entropy loss is chosen. length must correspond to nr of classes.
     # None to not use any weighting
-    class_weights = [0.01, 1.0, 1.0, 1.0, 1.0]
+    class_weights =  None # [0.01, 1.0, 1.0, 1.0, 1.0]
     # lambda value for l2 regualizer. Set None do not use l2 regularizer
     regularizer = None
     # tv regularize for TV loss. oly used if Cost funcion is TV

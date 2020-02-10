@@ -80,14 +80,7 @@ class ConvNetModel(object):
         self.gradients_node = tf.gradients(self.cost, self.variables)
         self.last_feature_map = lfs
 
-        with tf.name_scope("cross_entropy"):
-            if self.cost_function == Cost.MSE:
-                self.cross_entropy = tf.constant(0)  # cross entropy for regression useless
-            else:
-                self.cross_entropy = tfu.get_cross_entropy(logits=tf.reshape(self.logits, [-1, self._n_class]),
-                                                           y=tf.reshape(self.y, [-1, self._n_class]),
-                                                           n_class=self._n_class,
-                                                           weights=None)
+
         with tf.name_scope("results"):
             self.dice_core = tf.constant(-1.)
             self.dice_complete = tf.constant(-1.)
@@ -95,41 +88,53 @@ class ConvNetModel(object):
             self.iou_coe = tf.constant(-1.)
             self.accuracy = tf.constant(-1.)
             self.dice = tf.constant(-1.)
+            self.cross_entropy = tf.constant(-1.)
             if self.cost_function == Cost.MSE:
                 self.correct_pred = tf.constant(0)  # makes no sense for regression
                 self.predicter = self.logits
                 self.error = tf.math.divide(tf.math.reduce_sum(tf.math.squared_difference(self.predicter, self.y)),
                                             tf.cast(tf.size(self.y), tf.float32))
-                #self.error = tf.math.divide(self.error,
-                #                            tf.math.square(tf.constant(self._max_tv_value)))
-
             else:
                 if self._n_class > 1:
                     self.predicter = tf.nn.softmax(self.logits, axis=3)
                     self.pred_slice = tf.cast(tf.argmax(self.predicter, axis=3), tf.float32)
                     self.y_slice = tf.cast(tf.argmax(self.y, axis=3), tf.float32)
                     self.correct_pred = tf.equal(self.pred_slice, self.y_slice)
-                    if self._mode == TrainingModes.BRATS_SEGMENTATION:
-                        pred_complete = tf.cast(tf.greater(self.pred_slice, 0.), tf.float32)
-                        pred_core = tf.cast(tf.logical_or(tf.logical_or(tf.equal(self.pred_slice, 1.),
-                                                            tf.equal(self.pred_slice, 3.)),
-                                                  tf.equal(self.pred_slice, 4.)), tf.float32)
-                        pred_enhancing = tf.cast(tf.equal(self.pred_slice, 4.), tf.float32)
-                        y_complete = tf.cast(tf.greater(self.y_slice, 0.), tf.float32)
-                        y_core = tf.cast(tf.logical_or(tf.logical_or(tf.equal(self.y_slice, 1.),
-                                                                     tf.equal(self.y_slice, 3.)),
-                                                       tf.equal(self.y_slice, 4.)), tf.float32)
-                        y_enhancing = tf.cast(tf.equal(self.y_slice, 4.), tf.float32)
-                    self.dice_complete = tfu.get_dice_score(pred=pred_complete, y=y_complete, eps=1e-5)
-                    self.dice_core = tfu.get_dice_score(pred=pred_core, y=y_core, eps=1e-5)
-                    self.dice_enhancing = tfu.get_dice_score(pred=pred_enhancing, y=y_enhancing, eps=1e-5)
                 else:
                     self.predicter = tf.cast(tf.nn.sigmoid(self.logits) > 0.5, tf.float32)
                     self.correct_pred = tf.equal(self.predicter, self.y)
-                self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
+
+                if self._mode == TrainingModes.BRATS_SEGMENTATION:
+                    pred_complete = tf.cast(tf.greater(self.pred_slice, 0.), tf.float32)
+                    pred_core = tf.cast(tf.logical_or(tf.logical_or(tf.equal(self.pred_slice, 1.),
+                                                                    tf.equal(self.pred_slice, 3.)),
+                                                      tf.equal(self.pred_slice, 4.)), tf.float32)
+                    pred_enhancing = tf.cast(tf.equal(self.pred_slice, 4.), tf.float32)
+                    y_complete = tf.cast(tf.greater(self.y_slice, 0.), tf.float32)
+                    y_core = tf.cast(tf.logical_or(tf.logical_or(tf.equal(self.y_slice, 1.),
+                                                                 tf.equal(self.y_slice, 3.)),
+                                                   tf.equal(self.y_slice, 4.)), tf.float32)
+                    y_enhancing = tf.cast(tf.equal(self.y_slice, 4.), tf.float32)
+                    self.dice_complete = tfu.get_dice_score(pred=pred_complete, y=y_complete, eps=1e-5)
+                    self.dice_core = tfu.get_dice_score(pred=pred_core, y=y_core, eps=1e-5)
+                    self.dice_enhancing = tfu.get_dice_score(pred=pred_enhancing, y=y_enhancing, eps=1e-5)
+                    pred_wo_zero = self.predicter[:, :, :, 1:]
+                    y_wo_zero = self.y[:, :, :, 1:]
+                    self.dice = tfu.get_dice_score(pred=pred_wo_zero, y=y_wo_zero,
+                                                   eps=1e-5, weights=None)
+                    self.iou_coe = tfu.get_iou_coe(pre=pred_wo_zero, gt=y_wo_zero)
+                    self.correct_pred = tf.equal(y_wo_zero, y_wo_zero)
+                    self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
+                else:
+                    self.cross_entropy = tfu.get_cross_entropy(logits=tf.reshape(self.logits, [-1, self._n_class]),
+                                                           y=tf.reshape(self.y, [-1, self._n_class]),
+                                                           n_class=self._n_class,
+                                                           weights=None)
+                    self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
+                    self.dice = tfu.get_dice_score(pred=self.predicter, y=self.y,
+                                               eps=1e-5, weights=None)
+                    self.iou_coe = tfu.get_iou_coe(pre=self.predicter, gt=self.y)
                 self.error = tf.constant(1.0) - self.accuracy
-                self.dice = tfu.get_dice_score(pred=self.predicter, y=self.y, eps=1e-5, weights=self._class_weights)
-                self.iou_coe = tfu.get_iou_coe(pre=self.predicter, gt=self.y)
 
     def _get_cost(self):
         """
@@ -150,6 +155,10 @@ class ConvNetModel(object):
                     axis = (1, 2, 3)
                 else:
                     axis = (1, 2)
+            if self._mode == TrainingModes.BRATS_SEGMENTATION:
+                exclude_zero_label = True
+            else:
+                exclude_zero_label = False
 
             flat_logits = tf.reshape(self.logits, [-1, self._n_class])
             flat_labels = tf.reshape(self.y, [-1, self._n_class])
@@ -159,17 +168,18 @@ class ConvNetModel(object):
 
             elif self.cost_function == Cost.DICE_SOFT or self.cost_function == Cost.BATCH_DICE_SOFT:
                 loss = 1.0 - tfu.get_dice_loss(logits=self.logits, y=self.y, eps=1e-2, axis=axis,
-                                               weights=self._class_weights)
+                                               weights=self._class_weights, exclude_zero_label=exclude_zero_label)
 
             elif self.cost_function == Cost.DICE_SOFT_CE or self.cost_function == Cost.BATCH_DICE_SOFT_CE:
                 loss = self._loss_weight * (1.0 - tfu.get_dice_loss(logits=self.logits, y=self.y, eps=1e-2, axis=axis,
-                                                                    weights=self._class_weights))
+                                                                    weights=self._class_weights,
+                                                                    exclude_zero_label=exclude_zero_label))
                 loss += (1.0 - self._loss_weight) * tfu.get_cross_entropy(logits=flat_logits, y=flat_labels,
                                                                           n_class=self._n_class,
                                                                           weights=self._class_weights)
 
             elif self.cost_function == Cost.DICE_LOG or self.cost_function == Cost.BATCH_DICE_LOG:
-                loss = tfu.get_dice_log_loss(self.logits, self.y, axis=axis)
+                loss = tfu.get_dice_log_loss(self.logits, self.y, axis=axis, exclude_zero_label=exclude_zero_label)
 
             elif self.cost_function == Cost.MSE:
                 loss = tf.losses.mean_squared_error(flat_logits, flat_labels)

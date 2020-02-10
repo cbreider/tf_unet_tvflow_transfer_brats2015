@@ -484,7 +484,7 @@ def get_dice_score(pred, y, eps=1e-7, axis=(1, 2), weights=None):
     return dice
 
 
-def get_dice_log_loss(logits, y, axis=(1, 2), smooth=1.0, class_axis=3):
+def get_dice_log_loss(logits, y, axis=(1, 2), smooth=1.0, exclude_zero_label=False):
     """
     Sorenson (Soft) Dice loss
     Using -log(Dice) as the loss since it is better behaved.
@@ -494,7 +494,10 @@ def get_dice_log_loss(logits, y, axis=(1, 2), smooth=1.0, class_axis=3):
     logits = tf.cast(logits, tf.float32)
     y = tf.cast(y, tf.float32)
     if logits.get_shape().as_list()[3] > 1: # multiclass
-        prediction = pixel_wise_softmax(logits, axis=class_axis)
+        pred = tf.nn.softmax(logits)
+        if exclude_zero_label:
+            pred = pred[:, :, :, 1:]
+            y = y[:, :, :, 1:]
     else: # binary
         prediction = tf.nn.sigmoid(logits)
     intersection = tf.reduce_sum(prediction * y, axis=axis)
@@ -507,7 +510,7 @@ def get_dice_log_loss(logits, y, axis=(1, 2), smooth=1.0, class_axis=3):
     return dice_loss
 
 
-def get_dice_loss(logits, y, loss_type='jaccard', axis=(1, 2), class_axis=3, eps=1e-5, weights=None):
+def get_dice_loss(logits, y, loss_type='jaccard', axis=(1, 2), eps=1e-5, weights=None, exclude_zero_label=False):
     """
     calculates the (multiclass) dice score over a given batch of samples. In multiclass prediction (n_class > 1)
     the dice score is the average dice score over all classes
@@ -523,7 +526,10 @@ def get_dice_loss(logits, y, loss_type='jaccard', axis=(1, 2), class_axis=3, eps
     :returns: Dice score Tensor shape ():
     """
     if logits.get_shape().as_list()[3] > 1: # multiclass
-        pred = pixel_wise_softmax(logits, axis=class_axis)
+        pred = tf.nn.softmax(logits)
+        if exclude_zero_label:
+            pred = pred[:, :, :, 1:]
+            y = y[:, :, :, 1:]
     else: # binary
         pred = tf.nn.sigmoid(logits)
 

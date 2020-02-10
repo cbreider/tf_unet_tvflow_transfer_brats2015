@@ -212,7 +212,8 @@ class Trainer(object):
                     batch_x, batch_y, batch_tv = sess.run(self.data_provider_train.next_batch)
 
                     if step == 0:
-                        self.output_minibatch_stats(sess, step, batch_x, dutil.crop_to_shape(batch_y, pred_shape))
+                        self.output_minibatch_stats(sess, step, batch_x, dutil.crop_to_shape(batch_y, pred_shape),
+                                                    summary_writer=summary_writer_training)
 
                     # Run optimization op (backprop)
                     _, loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing, lr, gradients, pred = sess.run(
@@ -224,8 +225,8 @@ class Trainer(object):
                                    self.net.y: dutil.crop_to_shape(batch_y, pred_shape),
                                    self.net.keep_prob: self._dropout})
 
-                    avg_score_vals_batch.append([loss, cs, err, acc, iou, dice, d_core, d_core, d_enhancing])
-                    avg_score_vals_epoch.append([loss, cs, err, acc, iou, dice, d_core, d_core, d_enhancing])
+                    avg_score_vals_batch.append([loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing])
+                    avg_score_vals_epoch.append([loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing])
 
                     #self.store_prediction("{}_{}".format(epoch, step), self.output_path,
                     #                      batch_x, batch_y, batch_tv, pred)
@@ -334,7 +335,7 @@ class Trainer(object):
 
         self.write_log_string("Epoch {} Training Average:".format(epoch), scores)
 
-    def output_minibatch_stats(self, sess, step, batch_x, batch_y):
+    def output_minibatch_stats(self, sess, step, batch_x, batch_y, summary_writer=None):
 
         loss, ce, err, acc, iou, dice, d_complete, d_core, d_enhancing = sess.run(
             (self.net.cost, self.net.cross_entropy, self.net.error, self.net.accuracy,
@@ -356,6 +357,8 @@ class Trainer(object):
         scores[Scores.DSC_EN] = d_enhancing
 
         self.write_log_string("Iter {:} Minibatch:".format(step), scores)
+        if summary_writer:
+            self.write_tf_summary_scores(step, scores, summary_writer=summary_writer)
 
     def run_summary(self, sess, summary_writer, step, batch_x, batch_y):
         # Calculate batch loss and accuracy

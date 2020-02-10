@@ -122,7 +122,14 @@ class Validator(object):
                     dice_complete = dutil.get_hard_dice_score(pred=pred_complete, gt=y_complete, eps=1e-5)
                     dice_core = dutil.get_hard_dice_score(pred=pred_core, gt=y_core, eps=1e-5)
                     dice_enhancing = dutil.get_hard_dice_score(pred=pred_enhancing, gt=y_enhancing, eps=1e-5)
-                dice_overall = dutil.get_hard_dice_score(np.array(data[1]), np.array(data[3]))
+
+                # exclude label zero
+                if self._mode == TrainingModes.BRATS_SEGMENTATION:
+                    dice_overall = dutil.get_hard_dice_score(np.array(data[1])[:, :, :, 1:],
+                                                             np.array(data[3])[:, :, :, 1:])
+                else:
+                    dice_overall = dutil.get_hard_dice_score(np.array(data[1]),
+                                                             np.array(data[3]))
 
                 dices_per_volume.append([dice_overall, dice_complete, dice_core, dice_enhancing])
 
