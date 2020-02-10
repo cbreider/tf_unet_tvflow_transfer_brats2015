@@ -15,7 +15,7 @@ import logging
 
 def init_logger(type="train", path=""):
 
-    log_formatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+    log_formatter = logging.Formatter("%(asctime)s %(message)s")
     root_logger = logging.getLogger()
     root_logger.handlers = []
     root_logger.setLevel(logging.DEBUG)
