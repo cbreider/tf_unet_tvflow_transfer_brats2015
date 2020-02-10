@@ -70,7 +70,7 @@ class Validator(object):
         self._batch_size = 1
 
     def run_validation(self):
-        mini_size = 1
+        mini_size = 5
         vals = []
         dices_per_volume = []
         data = [[], [], [], [], []]  # x, y, tv, pred, feature maps
