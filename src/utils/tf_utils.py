@@ -52,10 +52,10 @@ def distort_imgs(scan, ground_truth, params=[[2, 3, 1], 25.0, 0.7]):
      #                                  size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0)),
      #                       lambda: combined)
 
-    combined_rot = rotate_image_tensor(combined_crop,
-                                       angle=tf.random_uniform(shape=[], minval=-0.5, maxval=0.5, dtype=tf.float32),
-                                       img_size=[image_shape[0], image_shape[1]])
-    #combined_rot = tf.image.rot90(combined_crop, tf.random_uniform(shape=[], minval=0, maxval=4, dtype=tf.int32))
+    #combined_rot = rotate_image_tensor(combined_crop,
+    #                                   angle=tf.random_uniform(shape=[], minval=-0.5, maxval=0.5, dtype=tf.float32),
+     #                                  img_size=[image_shape[0], image_shape[1]])
+    combined_rot = tf.image.rot90(combined_crop, tf.random_uniform(shape=[], minval=0, maxval=4, dtype=tf.int32))
 
     im = tf.image.random_brightness(tf.image.resize_images(combined_rot[:, :, :last_image_dim],
                                                            size=[image_shape[0], image_shape[1]]), 0.05)
