@@ -101,7 +101,7 @@ class TFImageDataGenerator:
             slices.append(tf_utils.load_png_image(input_ob[i], nr_channels=self._nr_channels,
                                                       img_size=self._in_img_size))
         in_img = tf.concat(slices, axis=2)
-        if self._mode == TrainingModes.SEGMENTATION:
+        if self._mode == TrainingModes.BRATS_SEGMENTATION:
             gt_img = tf_utils.load_png_image(gt_ob, nr_channels=self._nr_channels, img_size=self._in_img_size)
         elif self._mode == TrainingModes.TVFLOW_SEGMENTATION or self._mode == TrainingModes.TVFLOW_REGRESSION:
             if self._load_tv_from_file:
@@ -187,7 +187,7 @@ class TFImageDataGenerator:
                                                                normalize_std=self._normalize_std,
                                                                data_vals=self._data_vals)
 
-        if self._mode == TrainingModes.SEGMENTATION:
+        if self._mode == TrainingModes.BRATS_SEGMENTATION:
             if self._segmentation_mask == Subtumral_Modes.ALL:
                 gt_img = tf.reshape(gt_img, [tf.shape(gt_img)[0], tf.shape(gt_img)[1]])
                 gt_img = tf.one_hot(tf.cast(gt_img, tf.int32), depth=self._nr_of_classes)

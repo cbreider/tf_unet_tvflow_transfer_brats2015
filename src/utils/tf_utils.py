@@ -452,7 +452,7 @@ def normalize_and_zero_center_slice(tensor, max, normalize_std, new_max=None, me
     return out
 
 
-def get_dice_score(pred, y, eps=1e-7, axis=(1, 2), binary=False, class_axis=3, weight=False):
+def get_dice_score(pred, y, eps=1e-7, axis=(1, 2), class_axis=3, weights=None):
     """
     calculates the (multiclass) dice score over a given batch of samples. In multiclass prediction (n_class > 1)
     the dice score is the average dice score over all classes
@@ -460,26 +460,23 @@ def get_dice_score(pred, y, eps=1e-7, axis=(1, 2), binary=False, class_axis=3, w
     :param pred: prediction tensor [batch_size, img_size1, img_size2, _nclasses] must be one hot encoded
     :param y: max value of input image as it could be
     :param eps: smoothing coeffient
-    :param binary: bool indicating wether the 2 class case should be treated as binary case (class 0 negatives)
     :param weight: bool wether weight classes (not implemented)
     :param axis: axis to sum over
     :param class_axis: axis of class assignments
     :returns: Dice score Tensor shape ():
     """
-    if pred.get_shape().as_list()[3] == 2 and binary:
-        pred = tf.expand_dims(tf.argmax(pred, axis=3), axis=class_axis)
-        y = tf.expand_dims(tf.argmax(y, axis=class_axis), axis=class_axis)
+    pred = tf.cast(pred, tf.float32)
+    y = tf.cast(y, tf.float32)
     numerator = tf.cast(tf.reduce_sum(y * pred, axis=axis), tf.float32)
     denominator = tf.cast(tf.reduce_sum(y, axis=axis) + tf.reduce_sum(pred, axis=axis), tf.float32)
 
-    if weight:# TODO Wighting useful for multiclass?
-        raise NotImplementedError()
-        #weights = 1.0 / (tf.reduce_sum(y, axis=[1, 2, 3]))
-        #numerator_per_class = tf.reduce_sum(weights * numerator_per_class)
-        #denominator_per_class = tf.reduce_sum(weights * denominator_per_class)
-
     # calc dice per image and class (shape = [batch_size, n_class])
     dice = ((2 * numerator) + eps) / (denominator + eps)
+
+    if weights:
+        if axis == (1, 2): # dice per slice
+            dice = tf.reduce_mean(dice, axis=0)
+        dice = weights * dice
 
     # calc dice (shape = []) average over all classes and images
     dice = tf.reduce_mean(dice)
@@ -494,6 +491,8 @@ def get_dice_log_loss(logits, y, axis=(1, 2), smooth=1.0, class_axis=3):
     Also, the log allows avoidance of the division which
     can help prevent underflow when the numbers are very small.
     """
+    logits = tf.cast(logits, tf.float32)
+    y = tf.cast(y, tf.float32)
     if logits.get_shape().as_list()[3] > 1: # multiclass
         prediction = pixel_wise_softmax(logits, axis=class_axis)
     else: # binary
@@ -508,7 +507,7 @@ def get_dice_log_loss(logits, y, axis=(1, 2), smooth=1.0, class_axis=3):
     return dice_loss
 
 
-def get_dice_loss(logits, y, loss_type='jaccard', axis=(1, 2), class_axis=3, eps=1e-5, weight=False):
+def get_dice_loss(logits, y, loss_type='jaccard', axis=(1, 2), class_axis=3, eps=1e-5, weights=None):
     """
     calculates the (multiclass) dice score over a given batch of samples. In multiclass prediction (n_class > 1)
     the dice score is the average dice score over all classes
@@ -539,6 +538,11 @@ def get_dice_loss(logits, y, loss_type='jaccard', axis=(1, 2), class_axis=3, eps
 
     denominator = tf.cast(tf.reduce_sum(y, axis=axis) + tf.reduce_sum(pred, axis=axis), tf.float32)
     dice_ = ((2 * numerator) + eps) / (denominator + eps)
+    if weights:
+        if axis == (1, 2): # dice per slice
+            dice_ = tf.reduce_mean(dice_, axis=0)
+        dice_ = weights * dice_
+
     dice = tf.reduce_mean(dice_)
     return dice
 
@@ -562,9 +566,9 @@ def get_cross_entropy(logits, y, n_class, weights=None):
     return loss
 
 
-def get_iou_coe(pre, gt, axis=(1, 2, 3), smooth=1e-5):
+def get_iou_coe(pre, gt, axis=(1, 2), smooth=1e-5):
     inse = tf.reduce_sum(tf.multiply(pre, gt), axis=axis)  # AND
-    union = tf.reduce_sum(tf.cast(tf.add(pre, gt) >= 1, dtype=tf.float32), axis=axis)  # OR
+    union = tf.reduce_sum(tf.cast(tf.add(pre, gt) >= 1., dtype=tf.float32), axis=axis)  # OR
     batch_iou = (inse + smooth) / (union + smooth)
     iou = tf.reduce_mean(batch_iou, name='iou_coe')
     return iou

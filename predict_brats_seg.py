@@ -83,7 +83,7 @@ if __name__ == "__main__":
 
     if not use_Brats_Testing:
         file_paths = TrainingDataset(paths=data_paths,
-                                     mode=TrainingModes.SEGMENTATION,
+                                     mode=TrainingModes.BRATS_SEGMENTATION,
                                      data_config=config.DataParams,
                                      load_test_paths_only=True,
                                      new_split=False,
@@ -94,12 +94,13 @@ if __name__ == "__main__":
     if not os.path.exists(out_path):
         os.makedirs(out_path)
 
-    data = ImageData(data=file_paths.test_paths, mode=DataModes.VALIDATION, train_mode=TrainingModes.SEGMENTATION,
+    data = ImageData(data=file_paths.test_paths, mode=DataModes.VALIDATION, train_mode=TrainingModes.BRATS_SEGMENTATION,
                      data_config=config.DataParams)
 
     data.create()
 
-    net = ConvNetModel(convnet_config=config.ConvNetParams, create_summaries=True)
+    net = ConvNetModel(convnet_config=config.ConvNetParams, mode=TrainingModes.BRATS_SEGMENTATION,
+                       create_summaries=True)
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -108,7 +109,7 @@ if __name__ == "__main__":
             net.restore(sess, ckpt.model_checkpoint_path, restore_mode=RestoreMode.COMPLETE_SESSION)
         sess.run(data.init_op)
         if not use_Brats_Testing:
-            vali.run_test(sess, net, data_provider_test=data, mode=TrainingModes.SEGMENTATION, nr=fold_nr)
+            vali.run_test(sess, net, data_provider_test=data, mode=TrainingModes.BRATS_SEGMENTATION, nr=fold_nr)
 
 
 

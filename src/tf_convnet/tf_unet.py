@@ -49,21 +49,17 @@ def create_2d_unet(x, keep_prob, channels, n_class, n_layers=5, features_root=64
     :param act_func_out: Activation function for out map
     """
 
-    logging.info("Building Unet with, "
-                 "Layers {layers}, "
-                 "Root feature size {features}, "
-                 "filter size {filter_size}x{filter_size}, "
-                 "pool size: {pool_size}x{pool_size}".format(layers=n_layers,
+    logging.info("Building Unet with: "
+                 "Layers= {layers}, "
+                 "Root feature size= {features}, "
+                 "Filter size= {filter_size}x{filter_size}, "
+                 "Pool size= {pool_size}x{pool_size}".format(layers=n_layers,
                                                              features=features_root,
                                                              filter_size=filter_size,
                                                              pool_size=pool_size))
 
-    # Placeholder for the input image
-    with tf.name_scope("preprocessing"):
-        nx = tf.shape(x)[1]
-        ny = tf.shape(x)[2]
-        x_image = tf.reshape(x, tf.stack([-1, nx, ny, channels]))
-        in_node = x_image
+
+    in_node = x
 
     weights = []
     biases = []
@@ -181,9 +177,9 @@ def create_2d_unet(x, keep_prob, channels, n_class, n_layers=5, features_root=64
             if not padding == 'SAME':
                 raise ValueError("Residual Layer only possible with padding to preserve same size feature maps")
             if use_scale_image_as_gt:
-                output_map = x_image - output_map
+                output_map = x - output_map
             else:
-                output_map = output_map + x_image
+                output_map = output_map + x
         up_h_convs["out"] = output_map
 
     if summaries:

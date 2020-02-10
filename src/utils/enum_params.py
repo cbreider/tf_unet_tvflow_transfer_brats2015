@@ -59,7 +59,7 @@ class TrainingModes(Enum):
     """
     TVFLOW_REGRESSION = 1
     TVFLOW_SEGMENTATION = 2
-    SEGMENTATION = 3
+    BRATS_SEGMENTATION = 3
 
 
 class Optimizer(Enum):
@@ -97,3 +97,23 @@ class TV_clustering_method(Enum):
     STATIC_CLUSTERS = 2
     K_MEANS = 3
     MEAN_SHIFT = 4
+
+
+class Scores(Enum):
+    LOSS = "Loss"
+    CE = "Cross Entropy"
+    ERROR = "Error"
+    ACC = "Accuracy"
+    IOU = "IoU"
+    DSC = "Dice Score"
+    DSC_COMP = "Dice Score Complete"
+    DSC_CORE = "Dice Score Core"
+    DSC_EN = "Dice Score Enhancing"
+    DSCP = "Dice Score per Patient"
+    DSCP_COMP = "Dice Score Complete per Patient"
+    DSCP_CORE = "Dice Score Core per Patient"
+    DSCP_EN = "Dice Score Enhancing per Patient"
+    IOUP = "IoU per Patient"
+    LR = "Learning-Rate"
+
+

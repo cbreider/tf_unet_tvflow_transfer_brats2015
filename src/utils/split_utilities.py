@@ -97,7 +97,7 @@ class TrainingDataset(object):
 
         if self._mode == TrainingModes.TVFLOW_REGRESSION:
             self.split_name = self._tvflow_mode
-        elif self._mode == TrainingModes.SEGMENTATION:
+        elif self._mode == TrainingModes.BRATS_SEGMENTATION:
             self.split_name = self._seg_mode
         elif self._mode == self._mode == TrainingModes.TVFLOW_SEGMENTATION:
             self.split_name = self._tvseg_mode
@@ -172,7 +172,7 @@ class TrainingDataset(object):
                     test_split[k] = v
                 i += 1
 
-        elif self._mode == TrainingModes.SEGMENTATION or not self._load_tv_from_file:
+        elif self._mode == TrainingModes.BRATS_SEGMENTATION or not self._load_tv_from_file:
             train_split, validation_split, test_split = self._get_raw_to_seg_file_paths_dict()
         else:
             raise ValueError("Invalid mode '%s'." % self._mode)
@@ -360,7 +360,7 @@ class TrainingDataset(object):
 
                         file_path_gt_full = file_path_img.replace(file_path_in,
                                                               file_path_gt)
-                        if not os.path.exists(file_path_gt_full) and self._mode == TrainingModes.SEGMENTATION:
+                        if not os.path.exists(file_path_gt_full) and self._mode == TrainingModes.BRATS_SEGMENTATION:
                             continue
 
                         slices[i].append(file_path_img)

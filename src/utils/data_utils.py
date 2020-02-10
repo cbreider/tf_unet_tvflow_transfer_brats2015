@@ -581,7 +581,7 @@ def combine_img_prediction(data, gt, pred, mode=1, label_colors=None):
     return img
 
 
-def combine_img_prediction_tvclustering(data, tv, gt, pred):
+def combine_img_prediction_tvclustering(data, tv, gt, pred, mode, n_classes):
     """
     Combines the data, grouth thruth and the prediction into one rgb image
 
@@ -637,8 +637,13 @@ def revert_zero_centering(data):
     return np.array(images)
 
 
-def get_hard_dice_score(gt, pred, eps=1e-5):
-    return (2 * float(np.sum(gt * pred) + eps)) / (float(np.sum(gt) + np.sum(pred)) + eps)
+def get_hard_dice_score(pred, gt, axis=(1,2), eps=1e-5):
+    d = np.sum(gt * pred, axis=axis)
+    n1 = np.sum(gt, axis=axis)
+    n2 = np.sum(pred, axis=axis)
+    dice = (2 * d + eps) / (n1 + n2 + eps)
+    dice = np.mean(dice)
+    return dice
 
 
 def image_histogram_equalization(image, number_bins=256):

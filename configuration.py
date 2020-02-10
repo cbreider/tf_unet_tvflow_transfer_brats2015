@@ -35,7 +35,7 @@ class DataParams:
     ]
 
     # mask for segmentation training: Complete, core or enhancing. Or ALL if all five classes should be separatly predicted
-    segmentation_mask = Subtumral_Modes.COMPLETE
+    segmentation_mask = Subtumral_Modes.ALL
 
     # key for the four different modalities
     modalities = ["mr_flair", "mr_t1", "mr_t1c", "mr_t2"]
@@ -110,7 +110,7 @@ class DataParams:
     # number of channels of generated input images (grayscale)
     nr_of_input_modalities = len(use_modalities) * nr_of_image_channels
     # nr of classes of segmentation map (binary for gt segmentation, more for tv segmentation)
-    nr_of_classes = 1
+    nr_of_classes = 5
     # do not use tf data pipeline. Load all images into RAM before. Not used, because eats up all memory
     use_mha_files_instead = False
     # modalities used and combined for tv. None for preset (COMPLETE = flair+T2, CORE=T1c, ENHANCING=T1)
@@ -152,7 +152,7 @@ class ConvNetParams:
     batch_normalization = False
     # weight for each class if Cross Entropy loss is chosen. length must correspond to nr of classes.
     # None to not use any weighting
-    class_weights = [2.0]
+    class_weights = [0.01, 1.0, 1.0, 1.0, 1.0]
     # lambda value for l2 regualizer. Set None do not use l2 regularizer
     regularizer = None
     # tv regularize for TV loss. oly used if Cost funcion is TV
@@ -169,13 +169,11 @@ class ConvNetParams:
     # number of channels of generated input images (grayscale)
     nr_input_channels = DataParams.nr_of_input_modalities
     # nr of output classes
-    nr_of_classes = DataParams.nr_of_classes
+    nr_of_classes = DataParams.nr_of_classessss
     # choose if you want to use tv scale image instead of smoothed (only tv training and only if load_tv_from_file=True)
     use_scale_as_gt = DataParams.use_scale_image_as_gt
     # max value of TV images in regression
     max_tv_value = 1.0
-    # treat a two class output[x1, x2] (see nr_of_classes) as binary classifiaction 0 or 1 for the optimization
-    two_classe_as_binary = True
 
 
 class TrainingParams:
@@ -197,7 +195,7 @@ class TrainingParams:
     # number of training epochs
     num_epochs = 100
     # iterations per epoch
-    training_iters = 4000
+    training_iters = 2200
     # number of iterations between each
     display_step = 200
     # smooth label values int gt to confuse network. Not used  TODO ?

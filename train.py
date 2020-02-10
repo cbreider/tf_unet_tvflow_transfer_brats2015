@@ -145,7 +145,8 @@ if __name__ == "__main__":
         except:
             logging.ERROR("Failed to load test dataset. Skipping testing!!!")
 
-    net = tf_convnet.ConvNetModel(convnet_config=config.ConvNetParams, create_summaries=create_summaries)
+    net = tf_convnet.ConvNetModel(convnet_config=config.ConvNetParams, mode=train_mode,
+                                  create_summaries=create_summaries)
 
     opt_args = None
     if config.TrainingParams.optimizer == Optimizer.MOMENTUM:

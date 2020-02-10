@@ -13,8 +13,9 @@ import os
 import src.utils.data_utils as dutil
 import src.utils.io_utils as ioutil
 import numpy as np
-from src.utils.enum_params import Cost, Optimizer, RestoreMode, TrainingModes
+from src.utils.enum_params import Cost, TrainingModes, Scores
 import logging
+import collections
 
 
 def run_test(sess, net, data_provider_test, mode, nr):
@@ -24,27 +25,18 @@ def run_test(sess, net, data_provider_test, mode, nr):
                                                test_out_path, mode=mode, mini_validation=False,
                                                nr=nr, store_feature_maps=True,
                                                store_predictions=True).run_validation()
-    logging.info(
-        "Test results: Loss= {:.6f}, Cross entropy= {:.4f}, Dice per slice= {:.4f}, "
-        "Dice per volume= {:.4f}, error= {:.2f}%, Accuracy {:.4f}, IoU= {:.4f}".format(
-            validation_results[0], validation_results[1], validation_results[2],
-            validation_results[7], validation_results[4], validation_results[5],
-            validation_results[6]))
+    l_string = "TEST RESULTS:"
+    for k, v in validation_results.items():
+        if v != -1.:
+            l_string = "{} {}= {:.6f},".format(l_string, k.value, v)
+    l_string = l_string[:-1]
+    logging.info(l_string)
 
     outF = open(os.path.join(test_out_path, "results.txt"), "w")
-
-    outF.write("ERROR: {}".format(validation_results[4]))
-    outF.write("\n")
-    outF.write("ACCURACY: {}".format(validation_results[5]))
-    outF.write("\n")
-    outF.write("CROSS ENTROPY: {}".format(validation_results[1]))
-    outF.write("\n")
-    outF.write("DICE per slice: {}".format(validation_results[2]))
-    outF.write("\n")
-    outF.write("DICE per patient: {}".format(validation_results[7]))
-    outF.write("\n")
-    outF.write("IoU: {}".format(validation_results[6]))
-    outF.write("\n")
+    for k, v in validation_results.items():
+        if v != -1.:
+            outF.write("{}: {:6f}".format(k, v))
+            outF.write("\n")
     outF.close()
 
 
@@ -78,12 +70,15 @@ class Validator(object):
         self._batch_size = 1
 
     def run_validation(self):
-        mini_size = 5
+        mini_size = 1
         vals = []
-        dice_per_volume = []
+        dices_per_volume = []
         data = [[], [], [], [], []]  # x, y, tv, pred, feature maps
         shape = []
         itr = 0
+        dice_complete = -1.
+        dice_core = -1.
+        dice_enhancing = -1.
         if not os.path.exists(self._output_path):
             os.makedirs(self._output_path)
         self._tf_session.run(self._data_provider.init_op)
@@ -93,28 +88,47 @@ class Validator(object):
 
         for i in range(int(self._data_provider.size / self._batch_size)):
             test_x, test_y, test_tv = self._tf_session.run(self._data_provider.next_batch)
-            loss, acc, err, err_r, prediction, dice, ce, iou, feature = self._tf_session.run(
-                [self._conv_net.cost, self._conv_net.accuracy, self._conv_net.error, self._conv_net.error_rate,
+            loss, acc, err, prediction, dice, ce, iou, feature, d_complete, d_core, d_enhancing = self._tf_session.run(
+                [self._conv_net.cost, self._conv_net.accuracy, self._conv_net.error,
                  self._conv_net.predicter, self._conv_net.dice, self._conv_net.cross_entropy, self._conv_net.iou_coe,
-                 self._conv_net.last_feature_map],
+                 self._conv_net.last_feature_map, self._conv_net.dice_complete, self._conv_net.dice_core,
+                 self._conv_net.dice_enhancing],
                 feed_dict={self._conv_net.x: test_x,
                            self._conv_net.y: test_y,
                            self._conv_net.keep_prob: 1.})
 
-            vals.append([loss, ce, dice, err, err_r, acc, iou])
-            data[0].append(test_x)
-            data[1].append(test_y)
-            data[2].append(test_tv)
-            data[3].append(prediction)
+            vals.append([loss, ce, err, acc, iou, dice, d_complete, d_core, d_enhancing])
+            data[0].append(np.squeeze(np.array(test_x), axis=0))
+            data[1].append(np.squeeze(np.array(test_y), axis=0))
+            data[2].append(np.squeeze(np.array(test_tv), axis=0))
+            data[3].append(np.squeeze(np.array(prediction), axis=0))
             data[4].append(feature)
             shape = prediction.shape
 
             if len(data[1]) == 155:
-                dice_per_volume.append(dutil.get_hard_dice_score(np.array(data[1]), np.array(data[:][3])))
+                if self._mode == TrainingModes.BRATS_SEGMENTATION and np.shape(data[1])[3] > 1:
+
+                    pred_slice = np.argmax(np.array(data[3]), axis=3).astype(float)
+                    y_slice = np.argmax(np.array(data[1]), axis=3).astype(float)
+                    pred_complete = np.greater(pred_slice, 0.).astype(float)
+                    pred_core =np.logical_or(np.logical_or(np.equal(pred_slice, 1.),
+                                                            np.equal(pred_slice, 3.)),
+                                                  np.equal(pred_slice, 4.)).astype(float)
+                    pred_enhancing = np.equal(pred_slice, 4.).astype(float)
+                    y_complete = np.greater(y_slice, 0.).astype(float)
+                    y_core = np.logical_or(np.logical_or(np.equal(y_slice, 1.), np.equal(y_slice, 3.)),
+                                               np.equal(y_slice, 4.)).astype(float)
+                    y_enhancing = np.equal(y_slice, 4.).astype(float)
+                    dice_complete = dutil.get_hard_dice_score(pred=pred_complete, gt=y_complete, eps=1e-5)
+                    dice_core = dutil.get_hard_dice_score(pred=pred_core, gt=y_core, eps=1e-5)
+                    dice_enhancing = dutil.get_hard_dice_score(pred=pred_enhancing, gt=y_enhancing, eps=1e-5)
+                dice_overall = dutil.get_hard_dice_score(np.array(data[1]), np.array(data[3]))
+
+                dices_per_volume.append([dice_overall, dice_complete, dice_core, dice_enhancing])
+
                 if self._store_predictions:
                     self.store_prediction("{}_{}".format(self._nr, itr), self._mode, self._output_path,
-                                          np.squeeze(np.array(data[0]), axis=1), np.squeeze(np.array(data[1]), axis=1),
-                                          np.squeeze(np.array(data[2]), axis=1), np.squeeze(np.array(data[3]), axis=1),
+                                          np.array(data[0]), np.array(data[1]), np.array(data[2]), np.array(data[3]),
                                           gt_is_one_hot=False if self._conv_net.cost == Cost.MSE else True)
 
                 # safe one feature_map
@@ -138,13 +152,29 @@ class Validator(object):
         if len(data[1]) > 0:
             if self._store_predictions:
                 self.store_prediction("{}_{}".format(self._nr, itr), self._mode, self._output_path,
-                                      np.squeeze(np.array(data[0]), axis=1), np.squeeze(np.array(data[1]), axis=1),
-                                      np.squeeze(np.array(data[2]), axis=1), np.squeeze(np.array(data[3]), axis=1),
+                                      np.array(data[0]), np.array(data[1]), np.array(data[2]), np.array(data[3]),
                                       gt_is_one_hot=False if self._conv_net.cost == Cost.MSE else True)
-        val_scores = np.mean(np.array(vals), axis=0)
-        dp = np.mean(np.array(dice_per_volume))
+        sbatch = np.mean(np.array(vals), axis=0)
+        d_per_patient = np.mean(np.array(dices_per_volume), axis=0)
 
-        return shape, np.append(val_scores, dp)
+        scores = collections.OrderedDict()
+
+        scores[Scores.LOSS] = sbatch[0]
+        scores[Scores.CE] = sbatch[1]
+        scores[Scores.ERROR] = sbatch[2]
+        scores[Scores.ACC] = sbatch[3]
+        scores[Scores.IOU] = sbatch[4]
+        scores[Scores.DSC] = sbatch[5]
+        scores[Scores.DSC_COMP] = sbatch[6]
+        scores[Scores.DSC_CORE] = sbatch[7]
+        scores[Scores.DSC_EN] = sbatch[8]
+
+        scores[Scores.DSCP] = d_per_patient[0]
+        scores[Scores.DSCP_COMP] = d_per_patient[1]
+        scores[Scores.DSCP_CORE] = d_per_patient[2]
+        scores[Scores.DSCP_EN] = d_per_patient[3]
+
+        return shape, scores
 
     @staticmethod
     def store_prediction(name, mode, path, batch_x, batch_y, batch_tv, prediction, gt_is_one_hot=True):
