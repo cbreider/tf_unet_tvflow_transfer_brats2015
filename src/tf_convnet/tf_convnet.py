@@ -145,8 +145,7 @@ class ConvNetModel(object):
                                                                           weights=self._class_weights)
 
             elif self.cost_function == Cost.DICE_LOG or self.cost_function == Cost.BATCH_DICE_LOG:
-                loss = - tf.math.log(tfu.get_dice_loss(
-                    logits=self.logits, y=self.y, eps=1e-5, axis=axis))
+                loss = tfu.get_dice_log_loss(self.logits, self.y, axis=axis)
 
             elif self.cost_function == Cost.MSE:
                 loss = tf.losses.mean_squared_error(flat_logits, flat_labels)

@@ -33,10 +33,13 @@ def distort_imgs(scan, ground_truth, params=[[2, 3, 1], 25.0, 0.7]):
     combined = tf.concat([scan, ground_truth], axis=2)
     image_shape = tf.shape(scan)
 
+    combined_flip = tf.image.random_flip_left_right(combined)
+    combined_flip = tf.image.random_flip_up_down(combined_flip)
+
     # displacement_val = np.random.randn(3, 2, 3) * dispacement_sigma
     # construct TensorFlow input and top gradient
     displacement = tf.random.normal(shape=params[0]) * params[1]
-    combined_deform = etf.deform_grid(combined, displacement, order=3, axis=(0, 1), prefilter=False)
+    combined_deform = etf.deform_grid(combined_flip, displacement, order=3, axis=(0, 1), prefilter=False)
 
     size = tf.random.uniform((), minval=tf.cast(tf.cast(image_shape[0], tf.float32) * params[2], tf.int32),
                              maxval=tf.cast(tf.cast(image_shape[0], tf.float32), tf.int32),
@@ -49,16 +52,16 @@ def distort_imgs(scan, ground_truth, params=[[2, 3, 1], 25.0, 0.7]):
      #                                  size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0)),
      #                       lambda: combined)
 
-    combined_rot = tf.image.rot90(combined_crop, tf.random_uniform(shape=[], minval=0, maxval=4, dtype=tf.int32))
+    combined_rot = rotate_image_tensor(combined_crop,
+                                       angle=tf.random_uniform(shape=[], minval=-0.5, maxval=0.5, dtype=tf.float32),
+                                       img_size=[image_shape[0], image_shape[1]])
+    #combined_rot = tf.image.rot90(combined_crop, tf.random_uniform(shape=[], minval=0, maxval=4, dtype=tf.int32))
 
-    combined_flip = tf.image.random_flip_left_right(combined_rot)
-    combined_flip = tf.image.random_flip_up_down(combined_flip)
+    im = tf.image.random_brightness(tf.image.resize_images(combined_rot[:, :, :last_image_dim],
+                                                           size=[image_shape[0], image_shape[1]]), 0.05)
 
-    #im = tf.image.random_brightness(tf.image.resize_images(combined_flip[:, :, :last_image_dim],
-    #                                                       size=[image_shape[0], image_shape[1]]), 0.3)
-
-    im = tf.image.resize_images(combined_flip[:, :, :last_image_dim], size=[image_shape[0], image_shape[1]])
-    gt = tf.image.resize_images(combined_flip[:, :, last_image_dim:], size=[image_shape[0], image_shape[1]])
+    #im = tf.image.resize_images(combined_rot[:, :, :last_image_dim], size=[image_shape[0], image_shape[1]])
+    gt = tf.image.resize_images(combined_rot[:, :, last_image_dim:], size=[image_shape[0], image_shape[1]])
     return im, gt
 
 
@@ -484,6 +487,27 @@ def get_dice_score(pred, y, eps=1e-7, axis=(1, 2), binary=False, class_axis=3, w
     return dice
 
 
+def get_dice_log_loss(logits, y, axis=(1, 2), smooth=1.0, class_axis=3):
+    """
+    Sorenson (Soft) Dice loss
+    Using -log(Dice) as the loss since it is better behaved.
+    Also, the log allows avoidance of the division which
+    can help prevent underflow when the numbers are very small.
+    """
+    if logits.get_shape().as_list()[3] > 1: # multiclass
+        prediction = pixel_wise_softmax(logits, axis=class_axis)
+    else: # binary
+        prediction = tf.nn.sigmoid(logits)
+    intersection = tf.reduce_sum(prediction * y, axis=axis)
+    p = tf.reduce_sum(prediction, axis=axis)
+    t = tf.reduce_sum(y, axis=axis)
+    numerator = tf.reduce_mean(intersection + smooth)
+    denominator = tf.reduce_mean(t + p + smooth)
+    dice_loss = -tf.log(2.*numerator) + tf.log(denominator)
+
+    return dice_loss
+
+
 def get_dice_loss(logits, y, loss_type='jaccard', axis=(1, 2), class_axis=3, eps=1e-5, weight=False):
     """
     calculates the (multiclass) dice score over a given batch of samples. In multiclass prediction (n_class > 1)
@@ -570,3 +594,87 @@ def pixel_wise_softmax(output_map, axis=3):
         exponential_map = tf.exp(output_map - max_axis)
         normalize = tf.reduce_sum(exponential_map, axis=axis, keepdims=True)
         return exponential_map / normalize
+
+
+def rotate_image_tensor(image, angle, img_size, mode='black'):
+    """
+    Rotates a 3D tensor (HWD), which represents an image by given radian angle.
+
+    New image has the same size as the input image.
+
+    mode controls what happens to border pixels.
+    mode = 'black' results in black bars (value 0 in unknown areas)
+    mode = 'white' results in value 255 in unknown areas
+    mode = 'ones' results in value 1 in unknown areas
+    mode = 'repeat' keeps repeating the closest pixel known
+    """
+    s = image.get_shape().as_list()
+    assert len(s) == 3, "Input needs to be 3D."
+    assert (mode == 'repeat') or (mode == 'black') or (mode == 'white') or (mode == 'ones'), "Unknown boundary mode."
+    image_center = [tf.cast(img_size[0], tf.float32) / 2.0, tf.cast(img_size[0], tf.float32) / 2]
+
+    # Coordinates of new image
+    coord1 = tf.range(img_size[0])
+    coord2 = tf.range(img_size[1])
+
+    # Create vectors of those coordinates in order to vectorize the image
+    coord1_vec = tf.tile(coord1, [img_size[1]])
+
+    coord2_vec_unordered = tf.tile(coord2, [img_size[0]])
+    coord2_vec_unordered = tf.reshape(coord2_vec_unordered, [img_size[0], img_size[1]])
+    coord2_vec = tf.reshape(tf.transpose(coord2_vec_unordered, [1, 0]), [-1])
+
+    # center coordinates since rotation center is supposed to be in the image center
+    coord1_vec_centered = coord1_vec - image_center[0]
+    coord2_vec_centered = coord2_vec - image_center[1]
+
+    coord_new_centered = tf.cast(tf.pack([coord1_vec_centered, coord2_vec_centered]), tf.float32)
+
+    # Perform backward transformation of the image coordinates
+    rot_mat_inv = tf.dynamic_stitch([[0], [1], [2], [3]], [tf.cos(angle), tf.sin(angle), -tf.sin(angle), tf.cos(angle)])
+    rot_mat_inv = tf.reshape(rot_mat_inv, shape=[2, 2])
+    coord_old_centered = tf.matmul(rot_mat_inv, coord_new_centered)
+
+    # Find nearest neighbor in old image
+    coord1_old_nn = tf.cast(tf.round(coord_old_centered[0, :] + image_center[0]), tf.int32)
+    coord2_old_nn = tf.cast(tf.round(coord_old_centered[1, :] + image_center[1]), tf.int32)
+
+    # Clip values to stay inside image coordinates
+    if mode == 'repeat':
+        coord_old1_clipped = tf.minimum(tf.maximum(coord1_old_nn, 0), img_size[0]-1)
+        coord_old2_clipped = tf.minimum(tf.maximum(coord2_old_nn, 0), img_size[1]-1)
+    else:
+        outside_ind1 = tf.logical_or(tf.greater(coord1_old_nn, img_size[0]-1), tf.less(coord1_old_nn, 0))
+        outside_ind2 = tf.logical_or(tf.greater(coord2_old_nn, img_size[1]-1), tf.less(coord2_old_nn, 0))
+        outside_ind = tf.logical_or(outside_ind1, outside_ind2)
+
+        coord_old1_clipped = tf.boolean_mask(coord1_old_nn, tf.logical_not(outside_ind))
+        coord_old2_clipped = tf.boolean_mask(coord2_old_nn, tf.logical_not(outside_ind))
+
+        coord1_vec = tf.boolean_mask(coord1_vec, tf.logical_not(outside_ind))
+        coord2_vec = tf.boolean_mask(coord2_vec, tf.logical_not(outside_ind))
+
+    coord_old_clipped = tf.cast(tf.transpose(tf.pack([coord_old1_clipped, coord_old2_clipped]), [1, 0]), tf.int32)
+
+    # Coordinates of the new image
+    coord_new = tf.transpose(tf.cast(tf.pack([coord1_vec, coord2_vec]), tf.int32), [1, 0])
+
+    image_channel_list = tf.split(2, img_size[2], image)
+
+    image_rotated_channel_list = list()
+    for image_channel in image_channel_list:
+        image_chan_new_values = tf.gather_nd(tf.squeeze(image_channel), coord_old_clipped)
+
+        if (mode == 'black') or (mode == 'repeat'):
+            background_color = 0.0
+        elif mode == 'ones':
+            background_color = 1.0
+        elif mode == 'white':
+            background_color = 255.0
+
+        image_rotated_channel_list.append(tf.sparse_to_dense(coord_new, [img_size[0], img_size[1]], image_chan_new_values,
+                                                             background_color, validate_indices=False))
+
+    image_rotated = tf.transpose(tf.pack(image_rotated_channel_list), [1, 2, 0])
+
+    return image_rotated
