@@ -119,11 +119,11 @@ class Validator(object):
                     y_core = np.logical_or(np.logical_or(np.equal(y_slice, 1.), np.equal(y_slice, 3.)),
                                                np.equal(y_slice, 4.)).astype(float)
                     y_enhancing = np.equal(y_slice, 4.).astype(float)
-                    dice_complete = dutil.get_hard_dice_score(pred=pred_complete, gt=y_complete, eps=1e-5)
-                    dice_core = dutil.get_hard_dice_score(pred=pred_core, gt=y_core, eps=1e-5)
-                    dice_enhancing = dutil.get_hard_dice_score(pred=pred_enhancing, gt=y_enhancing, eps=1e-5)
+                    dice_complete = dutil.get_hard_dice_score(pred=pred_complete, gt=y_complete, eps=1e-5, axis=(0,1,2))
+                    dice_core = dutil.get_hard_dice_score(pred=pred_core, gt=y_core, eps=1e-5, axis=(0,1,2))
+                    dice_enhancing = dutil.get_hard_dice_score(pred=pred_enhancing, gt=y_enhancing, eps=1e-5, axis=(0,1,2))
 
-                dice_overall = dutil.get_hard_dice_score(np.array(data[1]), np.array(data[3]))
+                dice_overall = dutil.get_hard_dice_score(np.array(data[1]), np.array(data[3]), axis=(0,1,2,3))
 
                 dices_per_volume.append([dice_overall, dice_complete, dice_core, dice_enhancing])
 
