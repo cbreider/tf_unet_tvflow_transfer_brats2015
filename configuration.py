@@ -48,10 +48,10 @@ class DataParams:
                    modalities[2]: [11737.0, 512.1146, 560.1438],
                    modalities[3]: [15281.0, 609.6377, 507.4553]}
     # to norm every sclice by its own values uncomment this
-    data_values = {modalities[0]: [None, None, None],
-                   modalities[1]: [None, None, None],
-                   modalities[2]: [None, None, None],
-                   modalities[3]: [None, None, None]}
+    #data_values = {modalities[0]: [None, None, None],
+    #               modalities[1]: [None, None, None],
+    #              modalities[2]: [None, None, None],
+    #              modalities[3]: [None, None, None]}
 
     # size of the raw images
     raw_data_height = 240
