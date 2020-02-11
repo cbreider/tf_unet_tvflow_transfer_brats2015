@@ -129,7 +129,7 @@ class Validator(object):
 
                 if self._store_predictions:
                     self.store_prediction("{}_{}".format(self._nr, itr), self._mode, self._output_path,
-                                          np.array(data[0]), np.array(data[1]), np.array(data[2]), np.array(data[2]),
+                                          np.array(data[0]), np.array(data[1]), np.array(data[2]), np.array(data[3]),
                                           gt_is_one_hot=False if self._conv_net.cost == Cost.MSE else True)
 
                 # safe one feature_map
