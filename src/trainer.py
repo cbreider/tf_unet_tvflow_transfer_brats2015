@@ -22,7 +22,7 @@ from configuration import TrainingParams
 from src.validator import Validator
 import src.validator as vali
 import collections
-
+import random
 
 class Trainer(object):
 
@@ -228,8 +228,11 @@ class Trainer(object):
                     avg_score_vals_batch.append([loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing])
                     avg_score_vals_epoch.append([loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing])
 
-                    #self.store_prediction("{}_{}".format(epoch, step), self.output_path,
-                    #                      batch_x, batch_y, batch_tv, pred)
+                    #x = random.randint(1, 50)
+                    #if x == 50:
+                    #    Validator.store_prediction("{}_{}".format(epoch, step), self.mode, self.output_path,
+                    #                               batch_x, batch_y, batch_tv, pred,
+                    #                               gt_is_one_hot=False if self.net.cost == Cost.MSE else True)
 
                     if self.net.summaries and self._norm_grads:
                         avg_gradients = _update_avg_gradients(avg_gradients, gradients, step)
