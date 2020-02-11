@@ -637,7 +637,7 @@ def revert_zero_centering(data):
     return np.array(images)
 
 
-def get_hard_dice_score(pred, gt, axis=(1,2), eps=1e-5):
+def get_hard_dice_score(pred, gt, axis=(0, 1, 2, 3), eps=1e-5):
     d = np.sum(gt * pred, axis=axis)
     n1 = np.sum(gt, axis=axis)
     n2 = np.sum(pred, axis=axis)
