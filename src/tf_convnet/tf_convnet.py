@@ -148,10 +148,6 @@ class ConvNetModel(object):
                     axis = (1, 2, 3)
                 else:
                     axis = (1, 2)
-            if self._mode == TrainingModes.BRATS_SEGMENTATION:
-                exclude_zero_label = True
-            else:
-                exclude_zero_label = False
 
             flat_logits = tf.reshape(self.logits, [-1, self._n_class])
             flat_labels = tf.reshape(self.y, [-1, self._n_class])

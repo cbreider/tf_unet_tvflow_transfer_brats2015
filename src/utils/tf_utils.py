@@ -510,7 +510,7 @@ def get_dice_log_loss(logits, y, axis=(1, 2), smooth=1.0, exclude_zero_label=Fal
     return dice_loss
 
 
-def get_dice_loss(logits, y, loss_type='jaccard', axis=(1, 2), eps=1e-5, weights=None, exclude_zero_label=False):
+def get_dice_loss(logits, y, loss_type='sorensen', axis=(1, 2), eps=1e-5, weights=None, exclude_zero_label=False):
     """
     calculates the (multiclass) dice score over a given batch of samples. In multiclass prediction (n_class > 1)
     the dice score is the average dice score over all classes

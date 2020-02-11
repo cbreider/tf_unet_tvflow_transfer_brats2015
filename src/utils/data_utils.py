@@ -442,16 +442,6 @@ def tv_clustered_one_hot_to_rgb(one_hot):
     :param label_colors: rgb colors for each label [nr_classes, 3]
     :return: rgb images [nx, ny, 3]
     """
-    # Color for each Label (used for resut Visualization
-    seg_label_colors = np.array([
-        [0, 0, 0],
-        [255, 0, 0],
-        [0, 255, 0],
-        [0, 0, 255],
-        [255, 255, 0],
-        [255, 0, 255],
-        [0, 255, 255]
-        ])
 
     rgb_img = np.zeros((one_hot.shape[0], one_hot.shape[1], 3))
 
@@ -473,11 +463,11 @@ def one_hot_to_rgb(one_hot, scan):
     """
     # Color for each Label (used for resut Visualization
     seg_label_colors = np.array([
-        [0, 0, 0],
-        [255, 0, 0],
-        [255, 255, 0],
-        [0, 255, 0],
-        [0, 0, 255]])
+        [0, 0, 0], # no tumor
+        [255, 0, 0], # necrosis
+        [255, 255, 0], # edmema
+        [0, 255, 0], # non enhancing
+        [0, 0, 255]]) #enhancing
 
     rgb_img = copy.deepcopy(scan)
     if one_hot.shape[2] > 1:

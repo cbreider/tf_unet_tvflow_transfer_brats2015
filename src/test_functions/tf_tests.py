@@ -3,6 +3,9 @@ import  numpy as np
 import src.utils.tf_utils as tfu
 import matplotlib.pyplot as plt
 from src.test_functions.np_tv_denoise_test import tv_denoise
+from PIL import Image
+
+
 img = np.array(plt.imread(
     "/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0003_1/VSD.Brain.XX.O.MR_Flair.54524/VSD.Brain.XX.O.MR_Flair.54524_82.png"))
 
@@ -13,9 +16,13 @@ img3 = np.array(plt.imread(
     "/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0003_1/VSD.Brain.XX.O.MR_T1c.54526/VSD.Brain.XX.O.MR_T1c.54526_82.png"))
 
 img4 = np.array(plt.imread(
-    "/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0003_1/VSD.Brain.XX.O.MR_T1.54525/VSD.Brain.XX.O.MR_T1.54525_82.png"))
+   "/home/christian/Projects/Lab_SS2019/dsataset/2d_slices/png/raw/train/HGG/brats_2013_pat0003_1/VSD.Brain.XX.O.MR_T1.54525/VSD.Brain.XX.O.MR_T1.54525_82.png"))
 
-
+x = np.expand_dims(img / np.max(img) * 255.0, 2)
+idx = np.argwhere(x > 5)
+x = np.tile(x, 3)
+x[idx]= np.array([0., 255.0, 255.0])
+Image.fromarray(x.round().astype(np.uint8)).save("/home/christian/Bilder/test.jpg", 'JPEG', dpi=[300,300], quality=90)
 res = (img + img2 + img3 + img4) / 4
 res_tv = tv_denoise(res)
 

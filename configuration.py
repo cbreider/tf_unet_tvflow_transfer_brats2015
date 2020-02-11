@@ -43,15 +43,15 @@ class DataParams:
     modalities = ["mr_flair", "mr_t1", "mr_t1c", "mr_t2"]
 
     # values (pre computed) per modality of all mri (training set) scans:  [max, mean, variance]
-    data_values = {modalities[0]: [9971.0, 373.4186, 436.8327],
-                   modalities[1]: [11737.0, 498.3364, 514.9137],
-                   modalities[2]: [11737.0, 512.1146, 560.1438],
-                   modalities[3]: [15281.0, 609.6377, 507.4553]}
+    #data_values = {modalities[0]: [9971.0, 373.4186, 436.8327],
+    #               modalities[1]: [11737.0, 498.3364, 514.9137],
+    #               modalities[2]: [11737.0, 512.1146, 560.1438],
+    #               modalities[3]: [15281.0, 609.6377, 507.4553]}
     # to norm every sclice by its own values uncomment this
-    #data_values = {modalities[0]: [None, None, None],
-    #               modalities[1]: [None, None, None],
-    #               modalities[2]: [None, None, None],
-    #               modalities[3]: [None, None, None]}
+    data_values = {modalities[0]: [None, None, None],
+                   modalities[1]: [None, None, None],
+                   modalities[2]: [None, None, None],
+                   modalities[3]: [None, None, None]}
 
     # size of the raw images
     raw_data_height = 240
@@ -82,12 +82,12 @@ class DataParams:
     do_image_augmentation_val = False
     # parameters for image distortion
     image_disort_params = [[2, 3, 3],  # displacement vector [img dim, plane, heigh
-                           5.0,  # sigma deformation magnitude
+                           8.0,  # sigma deformation magnitude
                            0.8]  # max zoom factor
     # normalize standard deviation for images during pre processing
     normailze_std = True
     # value to which images should be normed to during pre processing. If None original max vales are kept
-    norm_max_image_value = None
+    norm_max_image_value = 1.0
     # Max value of input images (uint16)
     data_max_value = 65535.0
     # nr of folds for k fold cross validation
