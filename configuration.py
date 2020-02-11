@@ -43,10 +43,10 @@ class DataParams:
     modalities = ["mr_flair", "mr_t1", "mr_t1c", "mr_t2"]
 
     # values (pre computed) per modality of all mri (training set) scans:  [max, mean, variance]
-    #data_values = {modalities[0]: [9971.0, 373.4186, 436.8327],
-    #               modalities[1]: [11737.0, 498.3364, 514.9137],
-    #               modalities[2]: [11737.0, 512.1146, 560.1438],
-    #               modalities[3]: [15281.0, 609.6377, 507.4553]}
+    data_values = {modalities[0]: [9971.0, 373.4186, 436.8327],
+                   modalities[1]: [11737.0, 498.3364, 514.9137],
+                   modalities[2]: [11737.0, 512.1146, 560.1438],
+                   modalities[3]: [15281.0, 609.6377, 507.4553]}
     # to norm every sclice by its own values uncomment this
     data_values = {modalities[0]: [None, None, None],
                    modalities[1]: [None, None, None],
@@ -87,7 +87,7 @@ class DataParams:
     # normalize standard deviation for images during pre processing
     normailze_std = True
     # value to which images should be normed to during pre processing. If None original max vales are kept
-    norm_max_image_value = 1.0
+    norm_max_image_value = None
     # Max value of input images (uint16)
     data_max_value = 65535.0
     # nr of folds for k fold cross validation
@@ -149,7 +149,7 @@ class ConvNetParams:
     # size of max pooling pool_size x pool_size
     pool_size = 2
     # Cost function to use. Choose from class Cost(Enum)
-    cost_function = Cost.BATCH_DICE_SOFT
+    cost_function = Cost.BATCH_DICE_SOFT_CE
     # weighting if BATCH_DICE_SOFT_CE is chosen. loss = cost_weight * Dice_loss + (1-cost_weight) * cross_entropy_loss
     cost_weight = 0.7
     # Use padding to preserve feature map size and prevent downscaling
