@@ -179,6 +179,8 @@ class TFImageDataGenerator:
             in_img, gt_img, tv_img = tf_utils.crop_images_to_to_non_zero(scan=in_img, ground_truth=gt_img,
                                                                          size=self._set_img_size, tvimg=tv_img)
 
+        in_img2 = in_img
+        gt2 = gt_img
         if self._do_augmentation:
             in_img, gt_img = tf_utils.distort_imgs(in_img, gt_img, params=self._disort_params)
 
@@ -191,6 +193,8 @@ class TFImageDataGenerator:
             if self._segmentation_mask == Subtumral_Modes.ALL:
                 gt_img = tf.reshape(gt_img, [tf.shape(gt_img)[0], tf.shape(gt_img)[1]])
                 gt_img = tf.one_hot(tf.cast(gt_img, tf.int32), depth=self._nr_of_classes)
+                gt2 = tf.reshape(gt2, [tf.shape(gt_img)[0], tf.shape(gt_img)[1]])
+                gt2 = tf.one_hot(tf.cast(gt2, tf.int32), depth=self._nr_of_classes)
             else:
                 gt_img = tf_utils.to_one_hot_brats(gt_img, mask_mode=self._segmentation_mask, depth=self._nr_of_classes)
 
@@ -198,12 +202,12 @@ class TFImageDataGenerator:
             gt_img = tf.reshape(gt_img, [tf.shape(gt_img)[0], tf.shape(gt_img)[1]])
             gt_img = tf.one_hot(tf.cast(gt_img, tf.int32), depth=self._nr_of_classes)
 
-        if self._set_img_size != self._in_img_size:
-            in_img = tf.image.resize_images(in_img, self._set_img_size, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-            gt_img = tf.image.resize_images(gt_img, self._set_img_size, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-            tv_img = tf.image.resize_images(tv_img, self._set_img_size, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        #if self._set_img_size != self._in_img_size:
+        #    in_img = tf.image.resize_images(in_img, self._set_img_size, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        #    gt_img = tf.image.resize_images(gt_img, self._set_img_size, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        #    tv_img = tf.image.resize_images(tv_img, self._set_img_size, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
-        return in_img, gt_img, tv_img
+        return in_img, gt_img, gt2
 
 
 class TFTrainingImageDataGenerator(TFImageDataGenerator):
