@@ -108,10 +108,18 @@ class TFImageDataGenerator:
                 tv_img = tf_utils.load_png_image(gt_ob, nr_channels=self._nr_channels, img_size=self._in_img_size)
             else:
                 if self._modalties_tv:
-                    tv_base = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._modalties_tv,
-                                                                       new_max=self._data_norm_value,
+                    if self._data_norm_value[self._modalties_tv[0]] is not None:
+                        tv_base = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._modalties_tv,
+                                                                        new_max=self._data_norm_value,
                                                                        normalize_std=self._normalize_std,
                                                                        data_vals=self._data_vals)
+                    else:
+                        tv_base = in_img
+                    tvs = []
+                    for i in range(len(self._use_modalities)):
+                        tvs.append(tf_utils.get_tv_smoothed(img=tv_base, tau=self.tv_tau, weight=self.tv_weight,
+                                                      eps=self.tv_eps, m_itr=self.tv_nr_itr))
+
                     tv_base = tf.reduce_mean(tv_base, axis=2)
                     tv_base = tf.expand_dims(tv_base, axis=2)
 

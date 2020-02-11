@@ -24,6 +24,7 @@ import src.validator as vali
 import collections
 import random
 
+
 class Trainer(object):
 
     def __init__(self, net, data_provider_train, data_provider_val, out_path, train_config, mode,  restore_path=None,

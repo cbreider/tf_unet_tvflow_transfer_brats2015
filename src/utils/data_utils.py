@@ -571,7 +571,7 @@ def combine_img_prediction(data, gt, pred, mode=1, label_colors=None):
     return img
 
 
-def combine_img_prediction_tvclustering(data, tv, gt, pred, mode, n_classes):
+def combine_img_prediction_tvclustering(data, tv, gt, pred):
     """
     Combines the data, grouth thruth and the prediction into one rgb image
 

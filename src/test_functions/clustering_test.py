@@ -212,4 +212,5 @@ def compare_clusterings():
 if __name__ == "__main__":
     #eval_tf_smooth_and_cluster()
     #compare_clusterings()
-    eval_binning_and_meanshift()
+    nptv.test_anisotropic_diffiusion_smoothing()
+    #eval_binning_and_meanshift()

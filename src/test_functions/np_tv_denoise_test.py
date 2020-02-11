@@ -1,5 +1,28 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import medpy.filter as mp
+
+
+def test_anisotropic_diffiusion_smoothing():
+    img = np.array(plt.imread(
+        "/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0006_1/VSD.Brain.XX.O.MR_Flair.54542/VSD.Brain.XX.O.MR_Flair.54542_82.png"))
+
+    img2 = np.array(plt.imread(
+        "/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0006_1/VSD.Brain.XX.O.MR_T2.54545/VSD.Brain.XX.O.MR_T2.54545_82.png"))
+
+    img3 = np.array(plt.imread(
+        "/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0006_1/VSD.Brain.XX.O.MR_T1c.54544/VSD.Brain.XX.O.MR_T1c.54544_82.png"))
+
+    img4 = np.array(plt.imread(
+        "/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0006_1/VSD.Brain.XX.O.MR_T1.54543/VSD.Brain.XX.O.MR_T1.54543_82.png"))
+
+    smoothed_diff = mp.smoothing.anisotropic_diffusion(img=img2, niter=20, kappa=1, option=2)
+    smoothed_tv = tv_denoise(img2)
+    plt.matshow(img2)
+    plt.matshow(smoothed_diff)
+    plt.matshow(smoothed_tv)
+    plt.show()
+
 
 
 def test_reshape():
