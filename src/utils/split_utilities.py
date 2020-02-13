@@ -465,6 +465,9 @@ class TrainingDataset(object):
                 test_split.append(p)
             i += 1
         train_split = self.prune_patients(train_split)
+        print("Train: {}".format(len([x for x in train_split if "LGG" in x])))
+        print("Test: {}".format(len([x for x in test_split if "LGG" in x])))
+        print("Vali: {}".format(len([x for x in validation_split if "LGG" in x])))
         return train_split, validation_split, test_split
 
     def _split_patients_k_fold(self):

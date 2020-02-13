@@ -526,7 +526,7 @@ def expand_to_shape(data, shape, border=0):
     return expanded
 
 
-def combine_img_prediction(data, gt, pred, mode=1, label_colors=None):
+def combine_img_prediction(data, gt, pred, mode=1):
     """
     Combines the data, grouth thruth and the prediction into one rgb image
 
@@ -534,7 +534,6 @@ def combine_img_prediction(data, gt, pred, mode=1, label_colors=None):
     :param gt: the ground truth tensor
     :param pred: the prediction tensor
     :param mode: 0 for segmentation 1 for regression
-    :param label_colors: array of colors for each label. Only used if mode == 1
     :returns img: the concatenated rgb image
     """
 
@@ -561,6 +560,8 @@ def combine_img_prediction(data, gt, pred, mode=1, label_colors=None):
         pred = pred.reshape(-1, pred.shape[2], 1)
         gt_rgb = to_rgb(gt)
         pred_rgb = to_rgb(pred)
+    else:
+        raise ValueError()
 
     gt_resized = np.array(Image.fromarray(gt_rgb).resize(data_size, Image.NEAREST))
     pred_resized = np.array(Image.fromarray(pred_rgb).resize(data_size, Image.NEAREST))
@@ -593,7 +594,6 @@ def combine_img_prediction_tvclustering(data, tv, gt, pred):
                            revert_zero_centering(data[:, :, :, 3])),
                           axis=2).reshape(-1, ny*ch, 1)
     data_rgb = to_rgb(data)
-    data_size = (data_for_gt.shape[1], data_for_gt.shape[0])
     gt = gt.reshape(-1, gt.shape[2], gt.shape[3])
     pred = pred.reshape(-1, pred.shape[2], pred.shape[3])
     gt_rgb = tv_clustered_one_hot_to_rgb(gt)

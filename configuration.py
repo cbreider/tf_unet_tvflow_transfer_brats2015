@@ -37,21 +37,21 @@ class DataParams:
     ]
 
     # mask for segmentation training: Complete, core or enhancing. Or ALL if all five classes should be separatly predicted
-    segmentation_mask = Subtumral_Modes.ALL
+    segmentation_mask = Subtumral_Modes.COMPLETE
 
     # key for the four different modalities
     modalities = ["mr_flair", "mr_t1", "mr_t1c", "mr_t2"]
 
     # values (pre computed) per modality of all mri (training set) scans:  [max, mean, variance]
-    data_values = {modalities[0]: [9971.0, 373.4186, 436.8327],
-                   modalities[1]: [11737.0, 498.3364, 514.9137],
-                   modalities[2]: [11737.0, 512.1146, 560.1438],
-                   modalities[3]: [15281.0, 609.6377, 507.4553]}
+    #data_values = {modalities[0]: [9971.0, 373.4186, 436.8327],
+    #               modalities[1]: [11737.0, 498.3364, 514.9137],
+    #               modalities[2]: [11737.0, 512.1146, 560.1438],
+    #               modalities[3]: [15281.0, 609.6377, 507.4553]}
     # to norm every sclice by its own values uncomment this
-    #data_values = {modalities[0]: [None, None, None],
-    #               modalities[1]: [None, None, None],
-    #              modalities[2]: [None, None, None],
-    #              modalities[3]: [None, None, None]}
+    data_values = {modalities[0]: [None, None, None],
+                   modalities[1]: [None, None, None],
+                  modalities[2]: [None, None, None],
+                  modalities[3]: [None, None, None]}
 
     # size of the raw images
     raw_data_height = 240
@@ -82,7 +82,7 @@ class DataParams:
     do_image_augmentation_val = False
     # parameters for image distortion
     image_disort_params = [[2, 3, 3],  # displacement vector [img dim, plane, heigh
-                           8.0,  # sigma deformation magnitude
+                           6.0,  # sigma deformation magnitude
                            0.8]  # max zoom factor
     # normalize standard deviation for images during pre processing
     normailze_std = True
@@ -97,7 +97,7 @@ class DataParams:
     # Ration of Nr iraining images to Val images (optioanl test) if new random split is created. Only used if not k fold
     # argumnet is passed (k_fold cross validation is not used). Must sum up to 1
     split_train_val_ratio = [0.8, 0.2]
-    # split_train_val_ratio = [0.75, 0.05, 0.2]
+    #split_train_val_ratio = [0.6, 0.1, 0.3]
     # use only a subset of training images. values from >0.0 - 1.0 (1.0 for all traing data)
     training_data_portion = 1.0
     # set True if pre computed tv images should be red from disc. If False tv is computed in data pipeline
@@ -106,13 +106,13 @@ class DataParams:
     use_scale_image_as_gt = False
     # use only slices use_only_spatial_range[0] to use_only_spatial_range[1] because it is unlikely to be tumor regions
     # in the outer scans. use_only_spatial_range=None to use all scans
-    use_only_spatial_range = None #[30, 130]
+    use_only_spatial_range = [30, 130]
     # modalities used for training
     use_modalities = [modalities[0], modalities[1], modalities[2], modalities[3]]
     # number of channels of generated input images (grayscale)
     nr_of_input_modalities = len(use_modalities) * nr_of_image_channels
     # nr of classes of segmentation map (binary for gt segmentation, more for tv segmentation)
-    nr_of_classes = 5
+    nr_of_classes = 1
     # do not use tf data pipeline. Load all images into RAM before. Not used, because eats up all memory
     use_mha_files_instead = False
     # modalities used and combined for tv. None for preset (COMPLETE = flair+T2, CORE=T1c, ENHANCING=T1)
@@ -149,7 +149,7 @@ class ConvNetParams:
     # size of max pooling pool_size x pool_size
     pool_size = 2
     # Cost function to use. Choose from class Cost(Enum)
-    cost_function = Cost.BATCH_DICE_SOFT_CE
+    cost_function = Cost.BATCH_DICE_SOFT
     # weighting if BATCH_DICE_SOFT_CE is chosen. loss = cost_weight * Dice_loss + (1-cost_weight) * cross_entropy_loss
     cost_weight = 0.7
     # Use padding to preserve feature map size and prevent downscaling
