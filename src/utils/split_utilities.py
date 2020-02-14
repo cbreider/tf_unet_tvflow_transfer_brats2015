@@ -131,8 +131,9 @@ class TrainingDataset(object):
         if self._load_only_mid_scans and len(self._load_only_mid_scans) == 2 or self._empyt_slice_ratio:
             tmp = dict()
             keep_out = []
-            keep_out.extend(["_{}.".format(i) for i in range(0, self._load_only_mid_scans[0])])
-            keep_out.extend(["_{}.".format(i) for i in range(self._load_only_mid_scans[1] + 1, 155 + 1)])
+            if self._load_only_mid_scans and len(self._load_only_mid_scans) == 2:
+                keep_out.extend(["_{}.".format(i) for i in range(0, self._load_only_mid_scans[0])])
+                keep_out.extend(["_{}.".format(i) for i in range(self._load_only_mid_scans[1] + 1, 155 + 1)])
             for k in paths.keys():
                 keep = False
                 if not any(st in k for st in keep_out):
