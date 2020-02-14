@@ -82,7 +82,7 @@ class DataParams:
     do_image_augmentation_val = False
     # parameters for image distortion
     image_disort_params = [[2, 3, 3],  # displacement vector [img dim, plane, heigh
-                           6.0,  # sigma deformation magnitude
+                           8.0,  # sigma deformation magnitude
                            0.8]  # max zoom factor
     # normalize standard deviation for images during pre processing
     normailze_std = True
@@ -106,7 +106,9 @@ class DataParams:
     use_scale_image_as_gt = False
     # use only slices use_only_spatial_range[0] to use_only_spatial_range[1] because it is unlikely to be tumor regions
     # in the outer scans. use_only_spatial_range=None to use all scans
-    use_only_spatial_range = [30, 130]
+    use_only_spatial_range = None # [30, 130]
+    # use only every x-th  non tumor slice. Set None to use all slices
+    use_empty_slice_rand_max = 20
     # modalities used for training
     use_modalities = [modalities[0], modalities[1], modalities[2], modalities[3]]
     # number of channels of generated input images (grayscale)
@@ -231,7 +233,7 @@ class TrainingParams:
                      use_locking=False,
                      name='Adam',
                      decay_rate=0.1,
-                     decay_steps=300000)
+                     decay_steps=40000)
     # Hyperparameters for Momentum optimzer
     momentum_args = dict(momentum=0.99,
                          learning_rate=initial_learning_rate,

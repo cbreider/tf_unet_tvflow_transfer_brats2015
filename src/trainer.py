@@ -201,6 +201,7 @@ class Trainer(object):
             avg_score_vals_batch = []
             avg_score_vals_epoch = []
             last_validation_scores = [init_loss, init_loss]
+            zero_counter = 0
 
             try:
                 for step in range(init_step, self._n_epochs*self._training_iters):
@@ -225,6 +226,9 @@ class Trainer(object):
                         feed_dict={self.net.x: batch_x,
                                    self.net.y: dutil.crop_to_shape(batch_y, pred_shape),
                                    self.net.keep_prob: self._dropout})
+
+                    if np.max(batch_y) == 0.0:
+                        zero_counter += 1
 
                     avg_score_vals_batch.append([loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing])
                     avg_score_vals_epoch.append([loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing])
@@ -268,6 +272,8 @@ class Trainer(object):
                     if step % self._training_iters == 0 and step != 0:
                         epoch += 1
                         self.output_training_epoch_stats(epoch, np.mean(np.array(avg_score_vals_epoch), axis=0), lr)
+                        logging.info("EPOCH {}: Nr. of empty batches: {}".format(epoch, zero_counter))
+                        zero_counter = 0
                         avg_score_vals_epoch = []
                         pred_shape, val_score = self.run_validtaion(sess, epoch, step, summary_writer_validation)
                         logging.info("Saving Session and Model ...")

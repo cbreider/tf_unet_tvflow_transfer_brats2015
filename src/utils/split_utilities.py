@@ -21,6 +21,8 @@ import random
 import re
 import collections
 import src.utils.io_utils as ioutil
+import matplotlib.pyplot as plt
+import random
 
 
 class TestFilePaths(object):
@@ -94,6 +96,7 @@ class TrainingDataset(object):
         self.test_paths = dict()
         self.nr_of_folds = nr_of_folds
         self.k_fold_nr_val_samples = k_fold_nr_val_samples
+        self._empyt_slice_ratio = self._data_config.use_empty_slice_rand_max
 
         if self._mode == TrainingModes.TVFLOW_REGRESSION:
             self.split_name = self._tvflow_mode
@@ -125,13 +128,20 @@ class TrainingDataset(object):
             ))
 
     def _prune_dict(self, paths):
-        if self._load_only_mid_scans and len(self._load_only_mid_scans) == 2:
+        if self._load_only_mid_scans and len(self._load_only_mid_scans) == 2 or self._empyt_slice_ratio:
             tmp = dict()
             keep_out = []
             keep_out.extend(["_{}.".format(i) for i in range(0, self._load_only_mid_scans[0])])
             keep_out.extend(["_{}.".format(i) for i in range(self._load_only_mid_scans[1] + 1, 155 + 1)])
             for k in paths.keys():
+                keep = False
                 if not any(st in k for st in keep_out):
+                    keep = True
+                if self._empyt_slice_ratio:
+                    sl = np.array(plt.imread(k))
+                    if np.max(sl) == 0.0 and random.randint(1, self._empyt_slice_ratio) == self._empyt_slice_ratio:
+                       keep = True
+                if keep:
                     tmp[k] = paths[k]
             paths = tmp
 
@@ -244,9 +254,9 @@ class TrainingDataset(object):
         train_dict.update(self._get_paths_dict_seg_single(patient_paths=train_split,
                                                           ext_key=ext))
         val_dict.update(self._get_paths_dict_seg_single(patient_paths=validation_split,
-                                                          ext_key=ext))
+                                                        ext_key=ext))
         test_dict.update(self._get_paths_dict_seg_single(patient_paths=test_split,
-                                                          ext_key=ext))
+                                                         ext_key=ext))
         train_k = list(train_dict.keys())
         random.shuffle(train_k)
         rand_train_dict = dict()
