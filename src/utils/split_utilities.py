@@ -142,8 +142,11 @@ class TrainingDataset(object):
                     keep = True
                 if self._empyt_slice_ratio:
                     sl = np.array(plt.imread(k))
-                    if np.max(sl) == 0.0 and random.randint(1, self._empyt_slice_ratio) == self._empyt_slice_ratio:
-                       keep = True
+                    mx = np.max(sl)
+                    if mx > 0.0:
+                        keep = True
+                    elif np.max(sl) == 0.0 and random.randint(1, self._empyt_slice_ratio) == self._empyt_slice_ratio:
+                        keep = True
                 if keep:
                     tmp[k] = paths[k]
             paths = tmp
