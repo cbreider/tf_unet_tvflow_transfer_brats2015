@@ -98,6 +98,8 @@ class TrainingDataset(object):
         self.k_fold_nr_val_samples = k_fold_nr_val_samples
         self._empyt_slice_ratio = self._data_config.use_empty_slice_rand_max
 
+        logging.info("Loading Dataset...")
+
         if self._mode == TrainingModes.TVFLOW_REGRESSION:
             self.split_name = self._tvflow_mode
         elif self._mode == TrainingModes.BRATS_SEGMENTATION:
@@ -136,7 +138,7 @@ class TrainingDataset(object):
                 keep_out.extend(["_{}.".format(i) for i in range(self._load_only_mid_scans[1] + 1, 155 + 1)])
             for k in paths.keys():
                 keep = False
-                if not any(st in k for st in keep_out):
+                if self._load_only_mid_scans and (not any(st in k for st in keep_out)):
                     keep = True
                 if self._empyt_slice_ratio:
                     sl = np.array(plt.imread(k))
