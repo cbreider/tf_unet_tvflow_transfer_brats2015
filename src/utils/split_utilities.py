@@ -21,9 +21,10 @@ import random
 import re
 import collections
 import src.utils.io_utils as ioutil
-import matplotlib.pyplot as plt
 import random
 import warnings
+from PIL import  Image
+
 
 class TestFilePaths(object):
     # TODO
@@ -138,13 +139,13 @@ class TrainingDataset(object):
                 if self._load_only_mid_scans and (not any(st in k for st in keep_out)):
                     keep = True
                 if self._empyt_slice_ratio:
-                    sl = np.array(plt.imread(k))
+                    sl = np.array(Image.open(k))
                     mx = np.max(sl)
                     print(mx)
-                    if mx > 0.0:
+                    if mx > 0:
                         keep = True
                         t += 1
-                    elif np.max(sl) == 0.0 and random.randint(1, self._empyt_slice_ratio) == self._empyt_slice_ratio:
+                    elif np.max(sl) == 0 and random.randint(1, self._empyt_slice_ratio) == self._empyt_slice_ratio:
                         nt += 1
                         keep = True
                 if keep:
