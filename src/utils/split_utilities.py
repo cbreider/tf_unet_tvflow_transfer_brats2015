@@ -17,7 +17,6 @@ import numpy as np
 from src.utils.enum_params import TrainingModes
 from random import shuffle
 from configuration import DataParams
-import random
 import re
 import collections
 import src.utils.io_utils as ioutil
@@ -144,7 +143,7 @@ class TrainingDataset(object):
                     if mx > 0:
                         keep = True
                         t += 1
-                    elif np.max(sl) == 0 and random.randint(1, self._empyt_slice_ratio) == self._empyt_slice_ratio:
+                    elif mx == 0 and random.randint(1, self._empyt_slice_ratio) == self._empyt_slice_ratio:
                         nt += 1
                         keep = True
                 if keep:
