@@ -108,58 +108,56 @@ class TFImageDataGenerator:
                 tv_img = tf_utils.load_png_image(gt_ob, nr_channels=self._nr_channels, img_size=self._in_img_size)
             else:
                 if self._modalties_tv:
-                    if self._data_norm_value[self._modalties_tv[0]] is not None:
-                        tv_base = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._modalties_tv,
+                    tv_base = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._modalties_tv,
                                                                         new_max=self._data_norm_value,
                                                                        normalize_std=self._normalize_std,
                                                                        data_vals=self._data_vals)
-                    else:
-                        tv_base = in_img
                     tvs = []
-                    for i in range(len(self._use_modalities)):
-                        tvs.append(tf_utils.get_tv_smoothed(img=tv_base, tau=self.tv_tau, weight=self.tv_weight,
-                                                      eps=self.tv_eps, m_itr=self.tv_nr_itr))
+                    for i in range(len(self._modalties_tv)):
+                        tvs.append(tf_utils.get_tv_smoothed(img=tf.expand_dims(tv_base[:, :, i], axis=2),
+                                                            tau=self.tv_tau, weight=self.tv_weight, eps=self.tv_eps,
+                                                            m_itr=self.tv_nr_itr))
 
-                    tv_base = tf.reduce_mean(tv_base, axis=2)
-                    tv_base = tf.expand_dims(tv_base, axis=2)
+                    tv_img = tf.concat(tvs, axis=2)
 
-                elif self._segmentation_mask == Subtumral_Modes.COMPLETE:  # todo add case
-                    tv_base1 = tf.expand_dims(in_img[:, :, 0], axis=2)  # flair + t2
-                    tv_base2 = tf.expand_dims(in_img[:, :, 3], axis=2)
-                    tv_base1 = tf_utils.normalize_and_zero_center_slice(tv_base1,
+                else:
+                    if self._segmentation_mask == Subtumral_Modes.COMPLETE:  # todo add case
+                        tv_base1 = tf.expand_dims(in_img[:, :, 0], axis=2)  # flair + t2
+                        tv_base2 = tf.expand_dims(in_img[:, :, 3], axis=2)
+                        tv_base1 = tf_utils.normalize_and_zero_center_slice(tv_base1,
                                                                         max=self._data_vals[self._use_modalities[0]][0],
                                                                         normalize_std=True,
                                                                         new_max=None,
                                                                         mean=self._data_vals[self._use_modalities[0]][1],
                                                                         std=self._data_vals[self._use_modalities[0]][2])
-                    tv_base2 = tf_utils.normalize_and_zero_center_slice(tv_base2,
+                        tv_base2 = tf_utils.normalize_and_zero_center_slice(tv_base2,
                                                                         max=self._data_vals[self._use_modalities[3]][0],
                                                                         normalize_std=True,
                                                                         new_max=None,
                                                                         mean=self._data_vals[self._use_modalities[3]][1],
                                                                         std=self._data_vals[self._use_modalities[3]][2])
-                    tv_base = (tv_base1 + tv_base2) / 2
-                elif self._segmentation_mask == Subtumral_Modes.CORE:
-                    tv_base = in_img[:, :, 2]
-                    tv_base = tf_utils.normalize_and_zero_center_slice(tv_base,
+                        tv_base = (tv_base1 + tv_base2) / 2
+                    elif self._segmentation_mask == Subtumral_Modes.CORE:
+                        tv_base = in_img[:, :, 2]
+                        tv_base = tf_utils.normalize_and_zero_center_slice(tv_base,
                                                                         max=self._data_vals[self._use_modalities[2]][0],
                                                                         normalize_std=True,
                                                                         new_max=None,
                                                                         mean=self._data_vals[self._use_modalities[2]][1],
                                                                         std=self._data_vals[self._use_modalities[2]][2])
-                elif self._segmentation_mask == Subtumral_Modes.CORE:
-                    tv_base = in_img[:, :, 1]
-                    tv_base = tf_utils.normalize_and_zero_center_slice(tv_base,
+                    elif self._segmentation_mask == Subtumral_Modes.CORE:
+                        tv_base = in_img[:, :, 1]
+                        tv_base = tf_utils.normalize_and_zero_center_slice(tv_base,
                                                                         max=self._data_vals[self._use_modalities[1]][0],
                                                                         normalize_std=True,
                                                                         new_max=None,
                                                                         mean=self._data_vals[self._use_modalities[1]][1],
                                                                         std=self._data_vals[self._use_modalities[1]][2])
-                else:
-                    raise ValueError()
+                    else:
+                        raise ValueError()
 
-                tv_img = tf_utils.get_tv_smoothed(img=tv_base, tau=self.tv_tau, weight=self.tv_weight,
-                                                  eps=self.tv_eps, m_itr=self.tv_nr_itr)
+                    tv_img = tf_utils.get_tv_smoothed(img=tv_base, tau=self.tv_tau, weight=self.tv_weight,
+                                                      eps=self.tv_eps, m_itr=self.tv_nr_itr)
 
             if self._mode == TrainingModes.TVFLOW_REGRESSION:
                 gt_img = tv_img
@@ -203,8 +201,14 @@ class TFImageDataGenerator:
                 gt_img = tf_utils.to_one_hot_brats(gt_img, mask_mode=self._segmentation_mask, depth=self._nr_of_classes)
 
         elif self._mode == TrainingModes.TVFLOW_SEGMENTATION:
-            gt_img = tf.reshape(gt_img, [tf.shape(gt_img)[0], tf.shape(gt_img)[1]])
-            gt_img = tf.one_hot(tf.cast(gt_img, tf.int32), depth=self._nr_of_classes)
+            if self._modalties_tv:
+                gts = []
+                for i in range(len(self._modalties_tv)):
+                    gts.append(tf.one_hot(tf.cast(gt_img[:, :, i], tf.int32), depth=self._nr_of_classes))
+                gt_img = tf.concat(gts, axis=2)
+            else:
+                gt_img = tf.reshape(gt_img, [tf.shape(gt_img)[0], tf.shape(gt_img)[1]])
+                gt_img = tf.one_hot(tf.cast(gt_img, tf.int32), depth=self._nr_of_classes)
 
         if self._set_img_size != self._in_img_size:
             in_img = tf.image.resize_images(in_img, self._set_img_size, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)

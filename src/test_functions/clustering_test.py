@@ -12,6 +12,8 @@ import src.utils.enum_params as enp
 import os
 import src.utils.data_utils as dutils
 import time
+import configuration as config
+import  src.utils.io_utils as iou
 
 
 def recreate_image(codebook, labels, w, h):
@@ -112,22 +114,22 @@ def eval_binning_and_meanshift():
 def compare_clusterings():
     if not os.path.exists("test_out"):
         os.makedirs("test_out")
-    data_paths = DataPaths(data_path="/home/christian/Projects/Lab_SS2019/dataset", mode="TVFLOW")
-    data_paths.load_data_paths(mkdirs=False)
-    file_paths = TrainingDataset(paths=data_paths,
-                                 mode=enp.TrainingModes.TVFLOW_REGRESSION,
+    data_paths = DataPaths(data_path="/home/christian/Projects/LabSS2019/dataset", mode="TVFLOW")
+    data_paths.load_data_paths(mkdirs=True)
+    file_paths = TrainingDataset(paths=data_paths, mode=enp.TrainingModes.TVFLOW_REGRESSION, data_config=config.DataParams,
                                  new_split=True,
-                                 split_ratio=[0.9, 0.1],
-                                 nr_of_samples=0,
-                                 use_scale_as_gt=False,
-                                 load_only_mid_scans=True,
-                                 use_modalities=["mr_flair", "mr_t1", "mr_t1c", "mr_t2"])
+                                 is_five_fold=False,
+                                 five_fold_idx=0, nr_of_folds=config.DataParams.nr_k_folds,
+                                 k_fold_nr_val_samples=config.DataParams.k_fold_nr_val_samples)
 
     all_imgs = []
     all_tvs = []
     cl_img_flat = []
-    for path in file_paths.train_paths.keys():
-        img = np.array(plt.imread(path))
+    i = 0
+    for k, path in file_paths.train_paths.items():
+        img = np.array(plt.imread(path[0]))
+        if np.max(img) == 0.0:
+            continue
         all_imgs.append(img)
         img = np.reshape(img, (240, 240, 1))
         tv_img = nptv.tv_denoise(copy.deepcopy(img), tau=tv_tau, weight=tv_weight, eps=tv_eps, num_iter_max=tv_m_itr)
@@ -135,6 +137,10 @@ def compare_clusterings():
         all_tvs.append(tv_img)
         if int(np.random.uniform(1, 10))%5 == 0:
             cl_img_flat.append(tv_img.reshape((-1, 1)))
+        i += 1
+        print(i)
+        if i == 200:
+            break
     print("TV done!")
     cl_img_flat = np.array(cl_img_flat)
     cl_img_flat = cl_img_flat.reshape((-1, 1))
@@ -203,7 +209,7 @@ def compare_clusterings():
                               km_new_assign.astype(np.float) / float(n_clusters) * 255.0,
                               ms_assign.astype(np.float) / float(n_clusters) * 255.0),
                              axis=1)
-        dutils.save_image(img, "test_out/{}.jpg".format(i))
+        iou.save_image(img, "test_out/{}.jpg".format(i))
         print("Clustered {} of {}".format(i, len(all_tvs)))
 
 
@@ -211,6 +217,6 @@ def compare_clusterings():
 
 if __name__ == "__main__":
     #eval_tf_smooth_and_cluster()
-    #compare_clusterings()
-    nptv.test_anisotropic_diffiusion_smoothing()
+    compare_clusterings()
+    #nptv.test_anisotropic_diffiusion_smoothing()
     #eval_binning_and_meanshift()
