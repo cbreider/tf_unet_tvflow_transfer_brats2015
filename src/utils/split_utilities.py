@@ -150,7 +150,7 @@ class TrainingDataset(object):
                     tmp[k] = paths[k]
             paths = tmp
 
-            logging.info("{} Non tumor and {} tumor slices".format(nt, t))
+            logging.info("{} non tumor and {} tumor slices".format(nt, t))
 
         return paths
 
