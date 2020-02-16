@@ -38,7 +38,7 @@ def distort_imgs(scan, ground_truth, params=[[2, 3, 1], 25.0, 0.7]):
 
     # displacement_val = np.random.randn(3, 2, 3) * dispacement_sigma
     # construct TensorFlow input and top gradient
-    displacement = tf.random.normal(shape=params[0]) * params[1]
+    displacement = tf.random.uniform(minval=-1.0, maxval=1.0, shape=params[0]) * params[1]
     combined_deform = etf.deform_grid(combined_flip, displacement, order=0, axis=(0, 1),
                                       prefilter=False, mode="nearest")
 
@@ -165,10 +165,8 @@ def get_static_clustering(image, cluster_centers):
 
 
 def get_tv_smoothed(img, tau, weight, eps, m_itr):
-    inimg = img - tf.reduce_min(img)
-    mean, var = tf.nn.moments(inimg, axes=[0, 1, 2])
-    inimg = tf.math.divide((inimg), tf.math.sqrt(var))
-    inimg = inimg / tf.reduce_max(inimg)
+
+    inimg = img / tf.reduce_max(img)
 
     u = tf.zeros_like(inimg)
     px = tf.zeros_like(inimg)
@@ -411,16 +409,16 @@ def normalize_and_zero_center_tensor(tensor, modalities, data_vals, normalize_st
         :returns: One hot Tensor of depth = depth
         """
     slices = []
-    for i in range (len(modalities)):
-        v = data_vals[modalities[i]]
+    for i in range(len(modalities)):
+        v = data_vals[i, :]
         slices.append(normalize_and_zero_center_slice(tf.expand_dims(tensor[:, :, i], axis=2), max=v[0],
-                                                                     normalize_std=normalize_std,
-                                                      new_max=new_max, mean=v[1], std=v[2]))
+                                                      normalize_std=normalize_std,
+                                                      new_max=new_max, mean=v[1], var=v[2]))
 
     return tf.concat(slices, axis=2)
 
 
-def normalize_and_zero_center_slice(tensor, max, normalize_std, new_max=None, mean=None, std=None):
+def normalize_and_zero_center_slice(tensor, max, normalize_std, new_max=None, mean=None, var=None):
     """
     Creates a one hot tensor of a given image
 
@@ -433,11 +431,11 @@ def normalize_and_zero_center_slice(tensor, max, normalize_std, new_max=None, me
 
     if normalize_std:
         # intensity normalize                     new_max
-        if mean is None or std is None:
-            mean, std = tf.nn.moments(tensor, axes=[0, 1, 2])
-        out = tf.math.divide((tensor - mean), tf.math.sqrt(std))
+        if mean is None or var is None:
+            mean, var = tf.nn.moments(tensor, axes=[0, 1, 2])
+        out = tf.math.divide((tensor - mean), tf.math.sqrt(var))
         if max is not None:
-            max = (max - mean) / std
+            max = (max - mean) / tf.math.sqrt(var)
     else:
         out = tensor
     if max is None:

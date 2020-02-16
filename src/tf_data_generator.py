@@ -48,7 +48,6 @@ class TFImageDataGenerator:
         self._input_data = None
         self._gt_data = None
         self.data = None
-        self.load_data_from_disk = False # not used any more
         self._load_tv_from_file = self._data_config.load_tv_from_file
         self.clustering_method = self._data_config.clustering_method
         self._modalties_tv = self._data_config.combine_modalities_for_tv
@@ -69,11 +68,6 @@ class TFImageDataGenerator:
         self.mean_shift_bin_seeding = self._data_config.tv_and_clustering_params["bin_seeding"]
         self.static_cluster_center = self._data_config.tv_and_clustering_params["k_means_pre_cluster"]
 
-        # check if file
-        el = next(iter(data)) # nor neccessary any more
-        if isinstance(el, str):
-            self.load_data_from_disk = True
-
     def __exit__(self, exc_type, exc_value, traceback):
         self._data = None
 
@@ -85,16 +79,14 @@ class TFImageDataGenerator:
         raise NotImplementedError()
 
     @abstractmethod
-    def _parse_function(self):
+    def _parse_function(self, input, gt, values):
         raise NotImplementedError()
 
-    def _default_parse_func(self, input_ob, gt_ob):
+    def _default_parse_func(self, input_ob, gt_ob, values):
         # load and preprocess the image
         # if data is given as png path load the data first
-        in_img = tf.zeros(shape=(self._in_img_size[0], self._in_img_size[1], self._nr_modalities), dtype=tf.float32)
         gt_img = tf.zeros(shape=(self._in_img_size[0], self._in_img_size[1], 1), dtype=tf.float32)
         tv_img = tf.zeros_like(gt_img)
-        tv_base = tf.zeros_like(gt_img)
 
         slices = []
         for i in range(len(self._use_modalities)):
@@ -110,8 +102,8 @@ class TFImageDataGenerator:
                 if self._modalties_tv:
                     tv_base = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._modalties_tv,
                                                                         new_max=self._data_norm_value,
-                                                                       normalize_std=self._normalize_std,
-                                                                       data_vals=self._data_vals)
+                                                                        normalize_std=self._normalize_std,
+                                                                        data_vals=values)
                     tvs = []
                     for i in range(len(self._modalties_tv)):
                         tvs.append(tf_utils.get_tv_smoothed(img=tf.expand_dims(tv_base[:, :, i], axis=2),
@@ -124,35 +116,23 @@ class TFImageDataGenerator:
                     if self._segmentation_mask == Subtumral_Modes.COMPLETE:  # todo add case
                         tv_base1 = tf.expand_dims(in_img[:, :, 0], axis=2)  # flair + t2
                         tv_base2 = tf.expand_dims(in_img[:, :, 3], axis=2)
-                        tv_base1 = tf_utils.normalize_and_zero_center_slice(tv_base1,
-                                                                        max=self._data_vals[self._use_modalities[0]][0],
-                                                                        normalize_std=True,
-                                                                        new_max=None,
-                                                                        mean=self._data_vals[self._use_modalities[0]][1],
-                                                                        std=self._data_vals[self._use_modalities[0]][2])
-                        tv_base2 = tf_utils.normalize_and_zero_center_slice(tv_base2,
-                                                                        max=self._data_vals[self._use_modalities[3]][0],
-                                                                        normalize_std=True,
-                                                                        new_max=None,
-                                                                        mean=self._data_vals[self._use_modalities[3]][1],
-                                                                        std=self._data_vals[self._use_modalities[3]][2])
+                        tv_base1 = tf_utils.normalize_and_zero_center_slice(tv_base1, max=values[0, 0],
+                                                                            normalize_std=True, new_max=None,
+                                                                            mean=values[0, 1], var=values[0, 2])
+                        tv_base2 = tf_utils.normalize_and_zero_center_slice(tv_base2, max=values[3, 0],
+                                                                            normalize_std=True, new_max=None,
+                                                                            mean=values[3, 1], var=values[3, 2])
                         tv_base = (tv_base1 + tv_base2) / 2
                     elif self._segmentation_mask == Subtumral_Modes.CORE:
                         tv_base = in_img[:, :, 2]
-                        tv_base = tf_utils.normalize_and_zero_center_slice(tv_base,
-                                                                        max=self._data_vals[self._use_modalities[2]][0],
-                                                                        normalize_std=True,
-                                                                        new_max=None,
-                                                                        mean=self._data_vals[self._use_modalities[2]][1],
-                                                                        std=self._data_vals[self._use_modalities[2]][2])
+                        tv_base = tf_utils.normalize_and_zero_center_slice(tv_base, max=values[2, 0],
+                                                                           normalize_std=True, new_max=None,
+                                                                           mean=values[2, 1], var=values[2, 2])
                     elif self._segmentation_mask == Subtumral_Modes.CORE:
                         tv_base = in_img[:, :, 1]
-                        tv_base = tf_utils.normalize_and_zero_center_slice(tv_base,
-                                                                        max=self._data_vals[self._use_modalities[1]][0],
-                                                                        normalize_std=True,
-                                                                        new_max=None,
-                                                                        mean=self._data_vals[self._use_modalities[1]][1],
-                                                                        std=self._data_vals[self._use_modalities[1]][2])
+                        tv_base = tf_utils.normalize_and_zero_center_slice(tv_base, max=values[1, 0],
+                                                                           normalize_std=True, new_max=None,
+                                                                           mean=values[1, 1], var=values[1, 2])
                     else:
                         raise ValueError()
 
@@ -189,9 +169,9 @@ class TFImageDataGenerator:
             in_img, gt_img = tf_utils.distort_imgs(in_img, gt_img, params=self._disort_params)
 
         in_img = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._use_modalities,
-                                                               new_max=self._data_norm_value,
-                                                               normalize_std=self._normalize_std,
-                                                               data_vals=self._data_vals)
+                                                           new_max=self._data_norm_value,
+                                                           normalize_std=self._normalize_std,
+                                                           data_vals=values)
 
         if self._mode == TrainingModes.BRATS_SEGMENTATION:
             if self._segmentation_mask == Subtumral_Modes.ALL:
@@ -228,17 +208,16 @@ class TFTrainingImageDataGenerator(TFImageDataGenerator):
 
         logging.info("Train buffer size {}, batch size {}".format(self._buffer_size, self._batch_size))
         # convert lists to TF tensor
-        if self.load_data_from_disk:
-            gt = list(self._raw_data.keys())
-            input_val = list(self._raw_data.values())
-            self._input_data = convert_to_tensor(input_val)
-            self._gt_data = convert_to_tensor(gt)
-        else:
-            self._input_data = np.array([row[1] for row in self._raw_data])
-            self._gt_data = np.array([row[0] for row in self._raw_data])
+        gt = list(self._raw_data.keys())
+        inputd = list(self._raw_data.values())
+        input_imgs = [img[0] for img in inputd]
+        input_vals = [v[1] for v in inputd]
 
+        self._input_data = convert_to_tensor(input_imgs)
+        self._gt_data = convert_to_tensor(gt)
+        self._data_vals = convert_to_tensor(input_vals)
         # create dataset
-        tmp_data = tf.data.Dataset.from_tensor_slices((self._input_data, self._gt_data))
+        tmp_data = tf.data.Dataset.from_tensor_slices((self._input_data, self._gt_data, self._data_vals))
         tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=6)
         # shuffle the first `buffer_size` elements of the dataset
         tmp_data = tmp_data.prefetch(buffer_size=self._buffer_size)
@@ -248,10 +227,10 @@ class TFTrainingImageDataGenerator(TFImageDataGenerator):
         tmp_data = tmp_data.batch(self._batch_size)
         self.data = tmp_data
 
-    def _parse_function(self, input, gt):
+    def _parse_function(self, input, gt, values):
         # load and preprocess the image
         # if data is given as png path load the data first
-        return self._default_parse_func(input, gt)
+        return self._default_parse_func(input, gt, values)
 
 
 class TFValidationImageDataGenerator(TFImageDataGenerator):
@@ -264,17 +243,16 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
 
         logging.info("Validation buffer size {}, batch size {}".format(self._buffer_size, self._batch_size))
         # convert lists to TF tensor
-        if self.load_data_from_disk:
-            gt = list(self._raw_data.keys())
-            input_val = list(self._raw_data.values())
-            self._input_data = convert_to_tensor(input_val)
-            self._gt_data = convert_to_tensor(gt)
-        else:
-            self._input_data = np.array([row[1] for row in self._raw_data])
-            self._gt_data = np.array([row[0] for row in self._raw_data])
+        gt = list(self._raw_data.keys())
+        inputd = list(self._raw_data.values())
+        input_imgs = [img[0] for img in inputd]
+        input_vals = [v[1] for v in inputd]
 
+        self._input_data = convert_to_tensor(input_imgs)
+        self._gt_data = convert_to_tensor(gt)
+        self._data_vals = convert_to_tensor(input_vals)
         # create dataset
-        tmp_data = tf.data.Dataset.from_tensor_slices((self._input_data, self._gt_data))
+        tmp_data = tf.data.Dataset.from_tensor_slices((self._input_data, self._gt_data, self._data_vals))
         tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=3)
         tmp_data = tmp_data.prefetch(buffer_size=self._buffer_size)
         # shuffle the first `buffer_size` elements of the dataset
@@ -282,9 +260,9 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
         tmp_data = tmp_data.batch(self._batch_size)
         self.data = tmp_data
 
-    def _parse_function(self, input, gt):
+    def _parse_function(self, input, gt, values):
         # load and preprocess the image
         # if data is given as png path load the data first
-        return self._default_parse_func(input, gt)
+        return self._default_parse_func(input, gt, values)
 
 

@@ -50,8 +50,8 @@ class DataParams:
     # to norm every sclice by its own values uncomment this
     data_values = {modalities[0]: [None, None, None],
                    modalities[1]: [None, None, None],
-                  modalities[2]: [None, None, None],
-                  modalities[3]: [None, None, None]}
+                   modalities[2]: [None, None, None],
+                   modalities[3]: [None, None, None]}
 
     # size of the raw images
     raw_data_height = 240
@@ -115,8 +115,6 @@ class DataParams:
     nr_of_input_modalities = len(use_modalities) * nr_of_image_channels
     # nr of classes of segmentation map (binary for gt segmentation, more for tv segmentation)
     nr_of_classes = 1
-    # do not use tf data pipeline. Load all images into RAM before. Not used, because eats up all memory
-    use_mha_files_instead = False
     # modalities used and combined for tv. None for preset (COMPLETE = flair+T2, CORE=T1c, ENHANCING=T1)
     combine_modalities_for_tv = [modalities[0], modalities[1], modalities[2], modalities[3]]
     # method for clustering TV Images in TV segmentation mode (Static binning, Kmeans or mean shift)
