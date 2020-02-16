@@ -93,7 +93,7 @@ class DataParams:
     # nr of folds for k fold cross validation
     nr_k_folds = 5
     # nr of validation samples taken from training set in k fold cross validtaion
-    k_fold_nr_val_samples = 20
+    k_fold_nr_val_samples = 10
     # Ration of Nr iraining images to Val images (optioanl test) if new random split is created. Only used if not k fold
     # argumnet is passed (k_fold cross validation is not used). Must sum up to 1
     split_train_val_ratio = [0.8, 0.2]
@@ -203,9 +203,9 @@ class TrainingParams:
     # number of training epochs
     num_epochs = 100
     # iterations per epoch
-    training_iters = 4000
+    training_iters = 2000
     # number of iterations between each
-    display_step = 200
+    display_step = 100
     # smooth label values int gt to confuse network. Not used  TODO ?
     label_smothing = 0
     # Optimizer to use. Choose from class Optimizer(Enum):
@@ -231,7 +231,7 @@ class TrainingParams:
                      use_locking=False,
                      name='Adam',
                      decay_rate=0.1,
-                     decay_steps=40000)
+                     decay_steps=30000)
     # Hyperparameters for Momentum optimzer
     momentum_args = dict(momentum=0.99,
                          learning_rate=initial_learning_rate,
