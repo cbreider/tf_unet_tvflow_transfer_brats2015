@@ -128,6 +128,8 @@ class TrainingDataset(object):
         if self._load_only_mid_scans and len(self._load_only_mid_scans) == 2 or self._empyt_slice_ratio:
             tmp = dict()
             keep_out = []
+            nt = 0
+            t = 0
             if self._load_only_mid_scans and len(self._load_only_mid_scans) == 2:
                 keep_out.extend(["_{}.".format(i) for i in range(0, self._load_only_mid_scans[0])])
                 keep_out.extend(["_{}.".format(i) for i in range(self._load_only_mid_scans[1] + 1, 155 + 1)])
@@ -140,11 +142,15 @@ class TrainingDataset(object):
                     mx = np.max(sl)
                     if mx > 0.0:
                         keep = True
+                        t = +1
                     elif np.max(sl) == 0.0 and random.randint(1, self._empyt_slice_ratio) == self._empyt_slice_ratio:
+                        nt += 1
                         keep = True
                 if keep:
                     tmp[k] = paths[k]
             paths = tmp
+
+            logging.info("{} Non tumor and {} tumor slices".format(nt, t))
 
         return paths
 
@@ -194,6 +200,12 @@ class TrainingDataset(object):
             else:
                 patients_train, patients_val = self._split_patients()
 
+            logging.info("Loaded {} HGG {} LGG train and {} HGG {} LGG validation scans".format(
+                len([i for i in patients_train if "hgg" in i.lower()]),
+                len([i for i in patients_train if "lgg" in i.lower()]),
+                len([i for i in patients_val if "hgg" in i.lower()]),
+                len([i for i in patients_val if "lgg" in i.lower()])
+            ))
             self.validation_paths = self._get_paths_dict_single(patients_val)
             patients_train = self.prune_patients(patients_train)
             train_tmp = self._get_paths_dict_single(patients_train)
