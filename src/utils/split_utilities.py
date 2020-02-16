@@ -141,7 +141,6 @@ class TrainingDataset(object):
                 if self._empyt_slice_ratio:
                     sl = np.array(Image.open(k))
                     mx = np.max(sl)
-                    print(mx)
                     if mx > 0:
                         keep = True
                         t += 1
