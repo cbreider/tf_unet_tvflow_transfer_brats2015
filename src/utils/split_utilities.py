@@ -140,9 +140,10 @@ class TrainingDataset(object):
                 if self._empyt_slice_ratio:
                     sl = np.array(plt.imread(k))
                     mx = np.max(sl)
+                    print(mx)
                     if mx > 0.0:
                         keep = True
-                        t = +1
+                        t += 1
                     elif np.max(sl) == 0.0 and random.randint(1, self._empyt_slice_ratio) == self._empyt_slice_ratio:
                         nt += 1
                         keep = True

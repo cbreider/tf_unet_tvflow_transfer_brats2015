@@ -96,7 +96,7 @@ class DataParams:
     k_fold_nr_val_samples = 10
     # Ration of Nr iraining images to Val images (optioanl test) if new random split is created. Only used if not k fold
     # argumnet is passed (k_fold cross validation is not used). Must sum up to 1
-    split_train_val_ratio = [0.8, 0.2]
+    split_train_val_ratio = [0.75, 0.25]
     #split_train_val_ratio = [0.6, 0.1, 0.3]
     # use only a subset of training images. values from >0.0 - 1.0 (1.0 for all traing data)
     training_data_portion = 1.0
