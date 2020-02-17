@@ -486,7 +486,8 @@ class TrainingDataset(object):
         else:
             test = self._read_single_split_from_folder(os.path.join(self._paths.split_path,
                                                                  "split{}".format(self._split_file_extension)))
-            self.test_paths = test
+        self.test_paths = self._get_paths_dict_single(test)
+
 
     def atoi(self, text):
         return int(text) if text.isdigit() else text
