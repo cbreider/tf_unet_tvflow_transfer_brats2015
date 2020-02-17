@@ -201,7 +201,7 @@ class TrainingParams:
     # log (to terminal) mini batch stats after training_iters. If False only average is logged
     log_mini_batch_stats = False
     # number of training epochs
-    num_epochs = 100
+    num_epochs = 20
     # iterations per epoch
     training_iters = 2000
     # number of iterations between each
