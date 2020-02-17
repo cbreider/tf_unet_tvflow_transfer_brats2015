@@ -82,7 +82,7 @@ class DataParams:
     do_image_augmentation_val = False
     # parameters for image distortion
     image_disort_params = [[2, 3, 3],  # displacement vector [img dim, plane, heigh
-                           8.0,  # sigma deformation magnitude
+                           25.0,  # sigma deformation magnitude
                            0.8]  # max zoom factor
     # normalize standard deviation for images during pre processing
     normailze_std = True
@@ -96,8 +96,8 @@ class DataParams:
     k_fold_nr_val_samples = 10
     # Ration of Nr iraining images to Val images (optioanl test) if new random split is created. Only used if not k fold
     # argumnet is passed (k_fold cross validation is not used). Must sum up to 1
-    split_train_val_ratio = [0.75, 0.25]
-    #split_train_val_ratio = [0.6, 0.1, 0.3]
+    #split_train_val_ratio = [0.75, 0.25]
+    split_train_val_ratio = [0.6, 0.15, 0.25]
     # use only a subset of training images. values from >0.0 - 1.0 (1.0 for all traing data)
     training_data_portion = 1.0
     # set True if pre computed tv images should be red from disc. If False tv is computed in data pipeline
@@ -108,7 +108,7 @@ class DataParams:
     # in the outer scans. use_only_spatial_range=None to use all scans
     use_only_spatial_range = None # [30, 130]
     # use only every x-th  non tumor slice. Set None to use all slices
-    use_empty_slice_rand_max = 20
+    use_empty_slice_rand_max = 10
     # modalities used for training
     use_modalities = [modalities[0], modalities[1], modalities[2], modalities[3]]
     # number of channels of generated input images (grayscale)
@@ -231,7 +231,7 @@ class TrainingParams:
                      use_locking=False,
                      name='Adam',
                      decay_rate=0.1,
-                     decay_steps=30000)
+                     decay_steps=24000)
     # Hyperparameters for Momentum optimzer
     momentum_args = dict(momentum=0.99,
                          learning_rate=initial_learning_rate,

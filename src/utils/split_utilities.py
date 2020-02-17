@@ -370,7 +370,6 @@ class TrainingDataset(object):
             return None
         directory = self._paths.raw_train_dir
 
-
         patient_paths_hgg = self._get_patient_folders(base_path=directory, gg=self._paths.high_grade_gliomas_folder)
         patient_paths_lgg = self._get_patient_folders(base_path=directory, gg=self._paths.low_grade_gliomas_folder)
         shuffle(patient_paths_hgg)
@@ -437,6 +436,8 @@ class TrainingDataset(object):
             os.makedirs(archive_folder)
         with open(os.path.join(self._paths.split_path, '{}{}'.format(file_name, self._split_file_extension)), 'w') as file:
             file.write(json.dumps(split))
+        with open(os.path.join(self._paths.tf_out_path, '{}{}'.format(file_name, self._split_file_extension)), 'w') as file:
+            file.write(json.dumps(split))
         with open(os.path.join(archive_folder, '{}{}'.format(file_name, self._split_file_extension)), 'w') as file_archive:
             file_archive.write(json.dumps(split))
 
@@ -453,6 +454,10 @@ class TrainingDataset(object):
             fname = os.path.join(self._paths.split_path, "split{}".format(self._split_file_extension))
 
         split = self._read_single_split_from_folder(fname)
+
+        with open(os.path.join(self._paths.tf_out_path,  fname), 'w') as file:
+            file.write(json.dumps(split))
+
         train = split["training"]
         validation = split["validation"]
 
