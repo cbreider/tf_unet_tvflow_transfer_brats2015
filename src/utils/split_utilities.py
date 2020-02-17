@@ -461,6 +461,12 @@ class TrainingDataset(object):
         train = split["training"]
         validation = split["validation"]
 
+        logging.info("Loaded {} HGG {} LGG train and {} HGG {} LGG validation scans".format(
+            len([i for i in train if "hgg" in i.lower()]),
+            len([i for i in train if "lgg" in i.lower()]),
+            len([i for i in validation if "hgg" in i.lower()]),
+            len([i for i in validation if "lgg" in i.lower()])))
+
         train = self.prune_patients(train)
         train_tmp = self._get_paths_dict_single(train)
         validation = self._get_paths_dict_single(validation)
@@ -485,7 +491,12 @@ class TrainingDataset(object):
             self.test_paths = self._get_paths_dict_single(test)
         else:
             test = self._read_single_split_from_folder(os.path.join(self._paths.split_path,
-                                                                 "split{}".format(self._split_file_extension)))
+                                                                 "split{}".format(self._split_file_extension)))["testing"]
+
+        logging.info("Loaded {} HGG {} LGG test".format(
+            len([i for i in test if "hgg" in i.lower()]),
+            len([i for i in test if "lgg" in i.lower()])))
+
         self.test_paths = self._get_paths_dict_single(test)
 
 
