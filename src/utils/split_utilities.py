@@ -341,7 +341,7 @@ class TrainingDataset(object):
         patient_paths_hgg_train = patient_paths_hgg[hgg_vali_idx:]
 
         lgg_test_idx = int(self._split_ratio[2] * len(patient_paths_lgg))
-        lgg_vali_idx = hgg_test_idx + int(self._split_ratio[1] * len(patient_paths_lgg))
+        lgg_vali_idx = lgg_test_idx + int(self._split_ratio[1] * len(patient_paths_lgg))
 
         patient_paths_lgg_test = patient_paths_lgg[:lgg_test_idx]
         patient_paths_lgg_vali = patient_paths_lgg[lgg_test_idx:lgg_vali_idx]
