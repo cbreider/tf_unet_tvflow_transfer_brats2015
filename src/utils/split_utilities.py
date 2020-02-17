@@ -358,6 +358,10 @@ class TrainingDataset(object):
         assert (not any(x in vali_combined for x in train_combined))
         assert (not any(x in vali_combined for x in test_combined))
 
+        shuffle(train_combined)
+        shuffle(test_combined)
+        shuffle(vali_combined)
+
         split = {"training": train_combined, "validation": vali_combined, "testing": test_combined}
         self._safe_and_archive_split(split, "split", is_five_fold=True)
 
@@ -391,6 +395,10 @@ class TrainingDataset(object):
             assert(not any(x in test for x in train))
             assert(not any(x in val for x in train))
             assert(not any(x in val for x in test))
+
+            shuffle(train)
+            shuffle(val)
+            shuffle(test)
 
             folds.append({"training": train, "validation": val, "testing": test})
             self._safe_and_archive_split(folds[i], "{}_{}".format(self._five_fold_file, i), is_five_fold=True)
