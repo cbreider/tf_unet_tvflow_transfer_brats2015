@@ -109,7 +109,8 @@ if __name__ == "__main__":
             net.restore(sess, ckpt.model_checkpoint_path, restore_mode=RestoreMode.COMPLETE_SESSION)
         sess.run(data.init_op)
         if not use_Brats_Testing:
-            vali.run_test(sess, net, data_provider_test=data, mode=TrainingModes.BRATS_SEGMENTATION, nr=fold_nr)
+            vali.run_test(sess, net, data_provider_test=data, mode=TrainingModes.BRATS_SEGMENTATION, nr=fold_nr,
+                          out_path="")
 
 
 

@@ -291,7 +291,7 @@ class Trainer(object):
 
                 if self.data_provider_test:
                     vali.run_test(sess, net=self.net, data_provider_test=self.data_provider_test, mode=self.mode,
-                                  nr=self._fold_nr)
+                                  nr=self._fold_nr, out_path=self.output_path)
 
                 return save_path
 

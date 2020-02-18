@@ -18,9 +18,9 @@ import logging
 import collections
 
 
-def run_test(sess, net, data_provider_test, mode, nr):
+def run_test(sess, net, data_provider_test, mode, nr, out_path):
     logging.info("Running evaluation on {} test images ....".format(data_provider_test.size))
-    test_out_path = "Test_{}".format(nr)
+    test_out_path = os.path.join(out_path, "Test_{}".format(nr))
     pred_shape, validation_results = Validator(sess, net, data_provider_test,
                                                test_out_path, mode=mode, mini_validation=False,
                                                nr=nr, store_feature_maps=True,

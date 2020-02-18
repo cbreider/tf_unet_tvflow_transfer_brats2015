@@ -104,9 +104,10 @@ if __name__ == "__main__":
     log.init_logger(type="train", path=data_paths.tf_out_path)
 
     logging.info("Given Args: mode: {}, create_new_split: {}, restore_path: {},"
-                 " restore_mode: {}, caffemodel_path: {}, cuda_dev: {}".format(
-        train_mode, create_new_training_split, restore_path, restore_mode, caffemodel_path, args.cuda_device
-    ))
+                 " restore_mode: {}, caffemodel_path: {}, cuda_dev: {}, fold nr: {}, testing: {}, data path: {}, "
+                 "train data portion: {}".format(
+        train_mode, create_new_training_split, restore_path, restore_mode, caffemodel_path, args.cuda_device, fold_nr,
+        include_testing, data_path, config.DataParams.training_data_portion))
 
     logging.info("Training mode: {}".format(train_mode))
 
