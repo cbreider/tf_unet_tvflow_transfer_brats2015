@@ -37,9 +37,80 @@ class TestFilePaths(object):
         return self
 
     """Constructor"""
-    def __init__(self, paths):
-        """ DataPaths object which hold all necessary paths """
-        self._paths = paths
+    def __init__(self, paths, base_path, config, file_modality="mr_flair", ext=".png"):
+        self._path = paths
+        self._use_modalities = config.use_modalities,
+        self._data_config = config
+
+        file_dict = collections.OrderedDict()
+        val_dict = dict()
+        slices = [[] for i in range(len(self._use_modalities))]
+        for patient_path in base_path:
+            file_paths = os.listdir(patient_path)
+            file_paths = sorted(file_paths, reverse=True)
+            for file_path in file_paths:
+                file_path_full = os.path.join(patient_path, file_path)
+                file_slices = os.listdir(file_path_full)
+                file_slices.sort(key=TrainingDataset.natural_keys)
+
+                modality = ""
+                i = 0
+                if self._paths.t1_identifier in file_path.lower():
+                    modality = self._paths.t1_identifier
+                    i = self._use_modalities.index(self._paths.t1_identifier)
+                if self._paths.t1c_identifier in file_path.lower():
+                    modality = self._paths.t1c_identifier
+                    i = self._use_modalities.index(self._paths.t1c_identifier)
+                if self._paths.t2_identifier in file_path.lower():
+                    modality = self._paths.t2_identifier
+                    i = self._use_modalities.index(self._paths.t2_identifier)
+                if self._paths.flair_identifier in file_path.lower():
+                    modality = self._paths.flair_identifier
+                    i = self._use_modalities.index(self._paths.flair_identifier)
+                if self._paths.ground_truth_path_identifier[0] in file_path.lower() or \
+                        self._paths.ground_truth_path_identifier[1] in file_path.lower():
+                    continue
+
+                if not any(modality in m for m in self._use_modalities):
+                    continue
+
+                values_path = os.path.join(file_path_full, "values.json")
+                if not os.path.exists(values_path):
+                    warnings.warn("Values  file for {} not found. Scan will be normailzed by slice value "
+                                  "or global values".format(file_path_full), ResourceWarning)
+
+                    mx = self._data_config.data_values[self._use_modalities[i]][0]
+                    mn = self._data_config.data_values[self._use_modalities[i]][1]
+                    vr = self._data_config.data_values[self._use_modalities[i]][2]
+
+                else:
+                    file = open(values_path, 'r')
+                    data = file.read()
+                    dvals = json.loads(data)
+                    mx = dvals["max"]
+                    mn = dvals["mean"]
+                    vr = dvals["variance"]
+
+                for file in file_slices:
+                    if file.endswith(ext):
+                        file_path_img = os.path.join(file_path_full, file)
+
+
+
+                        slices[i].append(file_path_img)
+                        val_dict[file_path_img] = [mx, mn, vr]
+
+        # Check if there are the same number of images for each modality
+        if any(len(sl) != len(slices[0]) for sl in slices):
+            raise ValueError("Length of Lists do not match")
+        arr = np.array(slices).transpose()
+        for i in range(arr.shape[0]):
+            j = arr.shape[1] - 1
+            values = []
+            for x in range(j):
+                values.append(val_dict[arr[i, x]])
+            file_dict[arr[i, j]] = [list(arr[i, 0:j]), values]
+        self._paths = file_dict
 
 
 class TrainingDataset(object):
@@ -199,6 +270,8 @@ class TrainingDataset(object):
                 patients_train, patients_val = self._split_patients_k_fold()
             else:
                 patients_train, patients_val = self._split_patients()
+            self.validation_paths = self._get_paths_dict_single(patients_val)
+            patients_train = self.prune_patients(patients_train)
 
             logging.info("Loaded {} HGG {} LGG train and {} HGG {} LGG validation scans".format(
                 len([i for i in patients_train if "hgg" in i.lower()]),
@@ -206,8 +279,7 @@ class TrainingDataset(object):
                 len([i for i in patients_val if "hgg" in i.lower()]),
                 len([i for i in patients_val if "lgg" in i.lower()])
             ))
-            self.validation_paths = self._get_paths_dict_single(patients_val)
-            patients_train = self.prune_patients(patients_train)
+
             train_tmp = self._get_paths_dict_single(patients_train)
             train_k = list(train_tmp.keys())
             random.shuffle(train_k)
@@ -469,13 +541,14 @@ class TrainingDataset(object):
         train = split["training"]
         validation = split["validation"]
 
+        train = self.prune_patients(train)
+
         logging.info("Loaded {} HGG {} LGG train and {} HGG {} LGG validation scans".format(
             len([i for i in train if "hgg" in i.lower()]),
             len([i for i in train if "lgg" in i.lower()]),
             len([i for i in validation if "hgg" in i.lower()]),
             len([i for i in validation if "lgg" in i.lower()])))
 
-        train = self.prune_patients(train)
         train_tmp = self._get_paths_dict_single(train)
         validation = self._get_paths_dict_single(validation)
         train_k = list(train_tmp.keys())
@@ -507,10 +580,11 @@ class TrainingDataset(object):
 
         self.test_paths = self._get_paths_dict_single(test)
 
-
+    @staticmethod
     def atoi(self, text):
         return int(text) if text.isdigit() else text
 
+    @staticmethod
     def natural_keys(self, text):
         '''
         alist.sort(key=natural_keys) sorts in human order
@@ -518,7 +592,6 @@ class TrainingDataset(object):
         (See Toothy's implementation in the comments)
         '''
         return [self.atoi(c) for c in re.split(r'(\d+)', text)]
-
 
     def _get_raw_to_tvflow_file_paths_dict(self, use_scale=False):
         """
@@ -598,3 +671,4 @@ class TrainingDataset(object):
                         continue
                     file_dict[file_path_key] = file_path_val
         return file_dict
+
