@@ -89,6 +89,7 @@ if __name__ == "__main__":
                                      new_split=False,
                                      is_five_fold=True if fold_nr > 0 else False,
                                      five_fold_idx=fold_nr)
+    else
 
     out_path = os.path.join(model_path, "predictions")
     if not os.path.exists(out_path):

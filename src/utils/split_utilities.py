@@ -38,21 +38,21 @@ class TestFilePaths(object):
 
     """Constructor"""
     def __init__(self, paths, base_path, config, file_modality="mr_flair", ext=".png"):
-        self._path = paths
+        self._paths = paths
         self._use_modalities = config.use_modalities,
         self._data_config = config
+        self.test_paths = None
 
         file_dict = collections.OrderedDict()
-        val_dict = dict()
-        slices = [[] for i in range(len(self._use_modalities))]
         for patient_path in base_path:
             file_paths = os.listdir(patient_path)
             file_paths = sorted(file_paths, reverse=True)
+            patient_id = [f for f in file_paths if file_modality in f][0].split(".")[-1]
+            file_dict[patient_id] = [[] for i in range(len(self._use_modalities))]
             for file_path in file_paths:
                 file_path_full = os.path.join(patient_path, file_path)
                 file_slices = os.listdir(file_path_full)
                 file_slices.sort(key=TrainingDataset.natural_keys)
-
                 modality = ""
                 i = 0
                 if self._paths.t1_identifier in file_path.lower():
@@ -95,22 +95,9 @@ class TestFilePaths(object):
                     if file.endswith(ext):
                         file_path_img = os.path.join(file_path_full, file)
 
+                        file_dict[patient_id][i] = [file_path_img, [mx, mn, vr]]
 
-
-                        slices[i].append(file_path_img)
-                        val_dict[file_path_img] = [mx, mn, vr]
-
-        # Check if there are the same number of images for each modality
-        if any(len(sl) != len(slices[0]) for sl in slices):
-            raise ValueError("Length of Lists do not match")
-        arr = np.array(slices).transpose()
-        for i in range(arr.shape[0]):
-            j = arr.shape[1] - 1
-            values = []
-            for x in range(j):
-                values.append(val_dict[arr[i, x]])
-            file_dict[arr[i, j]] = [list(arr[i, 0:j]), values]
-        self._paths = file_dict
+        self.test_paths = file_dict
 
 
 class TrainingDataset(object):
@@ -535,7 +522,7 @@ class TrainingDataset(object):
 
         split = self._read_single_split_from_folder(fname)
 
-        with open(os.path.join(self._paths.tf_out_path,  fname), 'w') as file:
+        with open(os.path.join(self._paths.tf_out_path,  "split.json"), 'w') as file:
             file.write(json.dumps(split))
 
         train = split["training"]

@@ -9,7 +9,7 @@ Author: Christian Breiderhoff
 2019-2020
 """
 
-from src.tf_data_generator import TFTrainingImageDataGenerator, TFValidationImageDataGenerator
+from src.tf_data_generator import TFTrainingImageDataGenerator, TFValidationImageDataGenerator, TFTestImageDataGenerator
 import tensorflow as tf
 import tensorflow.data as tf_data
 from src.utils.enum_params import TrainingModes, DataModes, TV_clustering_method
@@ -68,6 +68,10 @@ class ImageData(object):
                     self.data_generator = TFValidationImageDataGenerator(data=self._data,
                                                                          mode=self.train_mode,
                                                                          data_config=self._data_config)
+                elif self._mode == DataModes.TESTING:
+                    self.data_generator = TFTestImageDataGenerator(data=self._data,
+                                                                   mode=self.train_mode,
+                                                                   data_config=self._data_config)
                 else:
                     raise ValueError("Invalid mode {}".format(self._mode))
                 self.data_generator.initialize()
