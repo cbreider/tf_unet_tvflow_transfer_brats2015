@@ -48,6 +48,7 @@ class TFImageDataGenerator:
         self._input_data = None
         self._gt_data = None
         self.data = None
+        self._ids = None
         self._load_tv_from_file = self._data_config.load_tv_from_file
         self.clustering_method = self._data_config.clustering_method
         self._modalties_tv = self._data_config.combine_modalities_for_tv
@@ -264,5 +265,48 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
         # load and preprocess the image
         # if data is given as png path load the data first
         return self._default_parse_func(input, gt, values)
+
+
+class TFTestImageDataGenerator(TFImageDataGenerator):
+
+    def initialize(self):
+        self._batch_size = self._data_config.batch_size_val
+        self._buffer_size = self._data_config.buffer_size_val
+        self._do_augmentation = False
+        self._crop_to_non_zero = False
+
+        logging.info("Training buffer size {}, batch size {}".format(self._buffer_size, self._batch_size))
+        # convert lists to TF tensor
+        ids = list(self._raw_data.keys())
+        inputd = list(self._raw_data.values())
+        input_imgs = [img[0] for img in inputd]
+        input_vals = [v[1] for v in inputd]
+
+        self._input_data = convert_to_tensor(input_imgs)
+        self._ids = convert_to_tensor(ids)
+        self._data_vals = convert_to_tensor(input_vals)
+        # create dataset
+        tmp_data = tf.data.Dataset.from_tensor_slices((self._input_data, self._data_vals, self._ids))
+        tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=3)
+        tmp_data = tmp_data.prefetch(buffer_size=self._buffer_size)
+        # shuffle the first `buffer_size` elements of the dataset
+        # create a new dataset with batches of images
+        tmp_data = tmp_data.batch(self._batch_size)
+        self.data = tmp_data
+
+    def _parse_function(self, input_ob, values, id):
+        # load and preprocess the image
+        # if data is given as png path load the data first
+        slices = []
+        for i in range(len(self._use_modalities)):
+            slices.append(tf_utils.load_png_image(input_ob[i], nr_channels=self._nr_channels,
+                                                  img_size=self._in_img_size))
+        in_img = tf.concat(slices, axis=2)
+        in_img = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._use_modalities,
+                                                           new_max=self._data_norm_value,
+                                                           normalize_std=self._normalize_std,
+                                                           data_vals=values)
+
+        return in_img, id
 
 
