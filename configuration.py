@@ -82,12 +82,14 @@ class DataParams:
     do_image_augmentation_val = False
     # parameters for image distortion
     image_disort_params = [[2, 3, 3],  # displacement vector [img dim, plane, heigh
-                           25.0,  # sigma deformation magnitude
+                           20.0,  # sigma deformation magnitude
                            0.8]  # max zoom factor
     # normalize standard deviation for images during pre processing
     normailze_std = True
     # value to which images should be normed to during pre processing. If None original max vales are kept
     norm_max_image_value = None
+    # value to which images should be normed to during pre processing. If None original max vales are kept
+    norm_max_image_value_tv = 1.0
     # Max value of input images (uint16)
     data_max_value = 65535.0
     # nr of folds for k fold cross validation
@@ -110,7 +112,7 @@ class DataParams:
     # use only every x-th  non tumor slice. Set None to use all slices
     use_empty_slice_rand_max = 10
     # modalities used for training
-    use_modalities = [modalities[0], modalities[1], modalities[2], modalities[3]]
+    use_modalities = None # [modalities[0], modalities[1], modalities[2], modalities[3]]
     # number of channels of generated input images (grayscale)
     nr_of_input_modalities = len(use_modalities) * nr_of_image_channels
     # nr of classes of segmentation map (binary for gt segmentation, more for tv segmentation)
@@ -120,8 +122,10 @@ class DataParams:
     # method for clustering TV Images in TV segmentation mode (Static binning, Kmeans or mean shift)
     clustering_method = TV_clustering_method.STATIC_BINNING
     # params for differnt tv clustering methods (tv smoothing
-    tv_and_clustering_params = dict(k_means_pre_cluster=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0], #not used
-                                    # params for tv smoothing
+    tv_and_clustering_params = dict(
+        k_means_pre_cluster=[-0.5, 0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7,
+                             0.75, 0.8, 0.85, 0.9, 0.95, 1.0],
+                                # params for tv smoothing
                                     tv_weight=0.1, tv_eps=0.00001, tv_tau=0.125, tv_m_itr=50,
                                     # params for kmeans nr of clusters =nr_of_clases.Only used im tv
                                     # clustering with kmeans)

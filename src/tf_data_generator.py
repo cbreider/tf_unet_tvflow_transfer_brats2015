@@ -33,6 +33,7 @@ class TFImageDataGenerator:
         self._set_img_size = self._data_config.set_image_size
         self._data_max_value = self._data_config.data_max_value
         self._data_norm_value = self._data_config.norm_max_image_value
+        self._data_norm_value_tv = self._data_config.norm_max_image_value_tv
         self._raw_data = data
         self._shuffle = self._data_config.shuffle
         self._mode = mode  # type: TrainingModes
@@ -102,7 +103,7 @@ class TFImageDataGenerator:
             else:
                 if self._modalties_tv:
                     tv_base = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._modalties_tv,
-                                                                        new_max=self._data_norm_value,
+                                                                        new_max=self._data_norm_value_tv,
                                                                         normalize_std=self._normalize_std,
                                                                         data_vals=values)
                     tvs = []
@@ -118,21 +119,25 @@ class TFImageDataGenerator:
                         tv_base1 = tf.expand_dims(in_img[:, :, 0], axis=2)  # flair + t2
                         tv_base2 = tf.expand_dims(in_img[:, :, 3], axis=2)
                         tv_base1 = tf_utils.normalize_and_zero_center_slice(tv_base1, max=values[0, 0],
-                                                                            normalize_std=True, new_max=None,
+                                                                            normalize_std=True,
+                                                                            new_max=self._data_norm_value_tv,
                                                                             mean=values[0, 1], var=values[0, 2])
                         tv_base2 = tf_utils.normalize_and_zero_center_slice(tv_base2, max=values[3, 0],
-                                                                            normalize_std=True, new_max=None,
+                                                                            normalize_std=True,
+                                                                            new_max=None,
                                                                             mean=values[3, 1], var=values[3, 2])
                         tv_base = (tv_base1 + tv_base2) / 2
                     elif self._segmentation_mask == Subtumral_Modes.CORE:
                         tv_base = in_img[:, :, 2]
                         tv_base = tf_utils.normalize_and_zero_center_slice(tv_base, max=values[2, 0],
-                                                                           normalize_std=True, new_max=None,
+                                                                           normalize_std=True,
+                                                                           new_max=self._data_norm_value_tv,
                                                                            mean=values[2, 1], var=values[2, 2])
                     elif self._segmentation_mask == Subtumral_Modes.CORE:
                         tv_base = in_img[:, :, 1]
                         tv_base = tf_utils.normalize_and_zero_center_slice(tv_base, max=values[1, 0],
-                                                                           normalize_std=True, new_max=None,
+                                                                           normalize_std=True,
+                                                                           new_max=self._data_norm_value_tv,
                                                                            mean=values[1, 1], var=values[1, 2])
                     else:
                         raise ValueError()
@@ -145,11 +150,14 @@ class TFImageDataGenerator:
 
             elif self._mode == TrainingModes.TVFLOW_SEGMENTATION:
                 if self.clustering_method == TV_clustering_method.STATIC_BINNING:
-                    gt_img = tf_utils.get_fixed_bin_clustering(image=tv_img, n_bins=self._nr_of_classes)
+                    gt_img = tf_utils.get_fixed_bin_clustering(image=tv_img, n_bins=self._nr_of_classes,
+                                                               val_range=[-self._data_norm_value_tv,
+                                                                          self._data_norm_value_tv])
                 elif self.clustering_method == TV_clustering_method.STATIC_CLUSTERS:
                     gt_img = tf_utils.get_static_clustering(image=tv_img, cluster_centers=self.static_cluster_center)
                 elif self.clustering_method == TV_clustering_method.K_MEANS:
                     gt_img = tf_utils.get_kmeans(img=tv_img, clusters_n=self._nr_of_classes, iteration_n=self.km_nr_itr)
+                    gt_img = tf.expand_dims(gt_img, axis=2)
                 elif self.clustering_method == TV_clustering_method.MEAN_SHIFT:
                     gt_img = tf_utils.get_meanshift_clustering(image=tv_img, ms_itr=self.mean_shift_n_itr,
                                                                win_r=self.mean_shift_win_size,

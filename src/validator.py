@@ -130,7 +130,7 @@ class Validator(object):
                 if self._store_predictions:
                     self.store_prediction("{}_{}".format(self._nr, itr), self._mode, self._output_path,
                                           np.array(data[0]), np.array(data[1]), np.array(data[2]), np.array(data[3]),
-                                          gt_is_one_hot=False if self._conv_net.cost == Cost.MSE else True)
+                                          gt_is_one_hot=0 if self._conv_net.cost_function == Cost.MSE else 1)
 
                 # safe one feature_map
                 if self._store_fmaps:
@@ -154,7 +154,7 @@ class Validator(object):
             if self._store_predictions:
                 self.store_prediction("{}_{}".format(self._nr, itr), self._mode, self._output_path,
                                       np.array(data[0]), np.array(data[1]), np.array(data[2]), np.array(data[3]),
-                                      gt_is_one_hot=False if self._conv_net.cost == Cost.MSE else True)
+                                      gt_is_one_hot=0 if self._conv_net.cost_function == Cost.MSE else 1)
         sbatch = np.mean(np.array(vals), axis=0)
         d_per_patient = np.mean(np.array(dices_per_volume), axis=0)
 
@@ -178,10 +178,10 @@ class Validator(object):
         return shape, scores
 
     @staticmethod
-    def store_prediction(name, mode, path, batch_x, batch_y, batch_tv, prediction, gt_is_one_hot=True):
+    def store_prediction(name, mode, path, batch_x, batch_y, batch_tv, prediction, gt_is_one_hot=1):
         if mode == TrainingModes.TVFLOW_SEGMENTATION:
             img = dutil.combine_img_prediction_tvclustering(data=batch_x, gt=batch_y, tv=batch_tv, pred=prediction)
         else:
             img = dutil.combine_img_prediction(batch_x, batch_y, prediction,
-                                               mode=0 if gt_is_one_hot else 1)
+                                               mode=0 if gt_is_one_hot == 1 else 1)
         ioutil.save_image(img, "%s/%s.jpg" % (path, name))

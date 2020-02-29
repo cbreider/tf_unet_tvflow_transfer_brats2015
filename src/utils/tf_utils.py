@@ -133,9 +133,8 @@ def load_png_image(filename, nr_channels, img_size, data_type=tf.float32):
         return tf.zeros(shape=img_size, dtype=data_type)
 
 
-def get_fixed_bin_clustering(image, n_bins=10):
+def get_fixed_bin_clustering(image, n_bins=10, val_range=[-1.0, 1.0]):
 
-    val_range = [tf.reduce_min(image), tf.reduce_max(image)]
     assignments = tf.histogram_fixed_width_bins(values=image, value_range=val_range, nbins=n_bins)
     return tf.cast(assignments, tf.float32)
 
@@ -166,7 +165,7 @@ def get_static_clustering(image, cluster_centers):
 
 def get_tv_smoothed(img, tau, weight, eps, m_itr):
 
-    inimg = img / tf.reduce_max(img)
+    inimg = img
 
     u = tf.zeros_like(inimg)
     px = tf.zeros_like(inimg)
@@ -178,8 +177,8 @@ def get_tv_smoothed(img, tau, weight, eps, m_itr):
     i = tf.constant(0)
 
     def _tv_cond(img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr):
-        return tf.logical_or(tf.greater_equal(tf.math.abs(err_prev - error), tf.multiply(eps, err_init)),
-                             tf.less_equal(i, m_itr))
+        return tf.logical_and(tf.greater_equal(tf.math.abs(err_prev - error), tf.multiply(eps, err_init)),
+                              tf.less_equal(i, m_itr))
 
     def _tv_body(img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr):
         u_old = u
@@ -448,7 +447,7 @@ def normalize_and_zero_center_slice(tensor, max, normalize_std, new_max=None, me
     #out = tf.math.divide(tensor, tf.reduce_max(out))
 
     if new_max is not None:
-        out = tf.math.multiply(tf.math.divide(out, max), new_max)
+        out = tf.math.divide(out, max) * new_max
 
     return out
 
