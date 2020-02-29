@@ -40,7 +40,7 @@ class DataPaths(object):
         self.tv_flow_out_dir = "tvflow"
         self.raw_dir = "raw"
         self.brats_train_dir = "BRATS2015_Training"
-        self.brats_test_dir = "BRATS2015_Testing"
+        self.brats_test_dir = "BRATS2015_Testing/HGG_LGG"
         self.split_path = "splits"
         self.tf_out_path = "tf_model_output"
         self.mode = mode

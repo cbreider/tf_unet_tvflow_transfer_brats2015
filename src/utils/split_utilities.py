@@ -37,14 +37,15 @@ class TestFilePaths(object):
         return self
 
     """Constructor"""
-    def __init__(self, paths, base_path, config, file_modality="mr_flair", ext=".png"):
+    def __init__(self, paths, patient_paths, config, file_modality="mr_flair", ext=".png"):
         self._paths = paths
         self._use_modalities = config.use_modalities,
         self._data_config = config
         self.test_paths = None
+        patient_paths.sort(key=TrainingDataset.natural_keys)
 
         file_dict = collections.OrderedDict()
-        for patient_path in base_path:
+        for patient_path in patient_paths:
             file_paths = os.listdir(patient_path)
             file_paths = sorted(file_paths, reverse=True)
             patient_id = [f for f in file_paths if file_modality in f][0].split(".")[-1]
