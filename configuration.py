@@ -110,7 +110,7 @@ class DataParams:
     # in the outer scans. use_only_spatial_range=None to use all scans
     use_only_spatial_range = None # [30, 130]
     # use only every x-th  non tumor slice. Set None to use all slices
-    use_empty_slice_rand_max = 10
+    use_empty_slice_rand_max = 4
     # modalities used for training
     use_modalities =  [modalities[0], modalities[1], modalities[2], modalities[3]]
     # number of channels of generated input images (grayscale)
@@ -206,7 +206,7 @@ class TrainingParams:
     # log (to terminal) mini batch stats after training_iters. If False only average is logged
     log_mini_batch_stats = False
     # number of training epochs
-    num_epochs = 20
+    num_epochs = 40
     # iterations per epoch
     training_iters = 2000
     # number of iterations between each
@@ -236,7 +236,7 @@ class TrainingParams:
                      use_locking=False,
                      name='Adam',
                      decay_rate=0.1,
-                     decay_steps=24000)
+                     decay_steps=60000)
     # Hyperparameters for Momentum optimzer
     momentum_args = dict(momentum=0.99,
                          learning_rate=initial_learning_rate,
