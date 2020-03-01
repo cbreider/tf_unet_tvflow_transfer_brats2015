@@ -36,6 +36,17 @@ class TestFilePaths(object):
     def __enter__(self):
         return self
 
+    def atoi(self, text):
+        return int(text) if text.isdigit() else text
+
+    def natural_keys(self, text):
+        '''
+        alist.sort(key=natural_keys) sorts in human order
+        http://nedbatchelder.com/blog/200712/human_sorting.html
+        (See Toothy's implementation in the comments)
+        '''
+        return [self.atoi(c) for c in re.split(r'(\d+)', text)]
+
     """Constructor"""
     def __init__(self, paths, patient_paths, config, file_modality="mr_flair", ext=".png"):
         self._paths = paths
@@ -53,7 +64,7 @@ class TestFilePaths(object):
             for file_path in file_paths:
                 file_path_full = os.path.join(patient_path, file_path)
                 file_slices = os.listdir(file_path_full)
-                file_slices.sort(key=TrainingDataset.natural_keys)
+                file_slices.sort(key=self.natural_keys)
                 modality = ""
                 i = 0
                 if self._paths.t1_identifier in file_path.lower():
@@ -568,11 +579,9 @@ class TrainingDataset(object):
 
         self.test_paths = self._get_paths_dict_single(test)
 
-    @staticmethod
     def atoi(self, text):
         return int(text) if text.isdigit() else text
 
-    @staticmethod
     def natural_keys(self, text):
         '''
         alist.sort(key=natural_keys) sorts in human order

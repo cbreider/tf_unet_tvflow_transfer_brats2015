@@ -112,13 +112,13 @@ class DataParams:
     # use only every x-th  non tumor slice. Set None to use all slices
     use_empty_slice_rand_max = 10
     # modalities used for training
-    use_modalities = None # [modalities[0], modalities[1], modalities[2], modalities[3]]
+    use_modalities =  [modalities[0], modalities[1], modalities[2], modalities[3]]
     # number of channels of generated input images (grayscale)
     nr_of_input_modalities = len(use_modalities) * nr_of_image_channels
     # nr of classes of segmentation map (binary for gt segmentation, more for tv segmentation)
     nr_of_classes = 1
     # modalities used and combined for tv. None for preset (COMPLETE = flair+T2, CORE=T1c, ENHANCING=T1)
-    combine_modalities_for_tv = [modalities[0], modalities[1], modalities[2], modalities[3]]
+    combine_modalities_for_tv = None #[modalities[0], modalities[1], modalities[2], modalities[3]]
     # method for clustering TV Images in TV segmentation mode (Static binning, Kmeans or mean shift)
     clustering_method = TV_clustering_method.STATIC_BINNING
     # params for differnt tv clustering methods (tv smoothing
@@ -143,11 +143,11 @@ class ConvNetParams:
     # number of encoder layers including bottom layer (5 for original U-net)
     num_layers = 5
     if gettrace():
-        num_layers = 2
+        num_layers = 3
     # number of feature maps/kernels in the first layer (original 64)
     feat_root = 64
     if gettrace():
-        num_layers = 16
+        feat_roots = 16
     # kernel size = filter_size x filter_size
     filter_size = 3
     # size of max pooling pool_size x pool_size
@@ -172,9 +172,9 @@ class ConvNetParams:
     # Add residual layer/skip layer at the end output = input + last_layer (only for tv regression). NOT useful
     add_residual_layer = False
     # freeze layers during training. Set None to train all layers
-    trainable_layers = {"down_conv_0": True, "down_conv_1": True, "down_conv_2": True, "down_conv_3": True,
-                        "down_conv_4": True,
-                        "up_conv_3": True, "up_conv_2": True, "up_conv_1": True, "up_conv_0": True}
+    trainable_layers = {"down_conv_0": True, "down_conv_1": True, "down_conv_2": False, "down_conv_3": False,
+                        "down_conv_4": False,
+                        "up_conv_3": False, "up_conv_2": False, "up_conv_1": True, "up_conv_0": True}
     #trainable_layers = None
     # Act func for output map. ATTENTION: Please choose none. actfunc is added prediction step
     # softmax multi class classifiavtion, sigmoid binary
