@@ -39,8 +39,7 @@ class ConvNetModel(object):
         self._features_root = self._convnet_config.feat_root
         self._filter_size = self._convnet_config.filter_size
         self._pool_size = self._convnet_config.pool_size
-        self._freeze_down_layers = self._convnet_config.freeze_down_layers
-        self._freeze_up_layers = self._convnet_config.freeze_up_layers
+        self._trainable_layers = self._convnet_config.trainable_layers
         self._use_padding = self._convnet_config.padding
         self._add_residual_layer = self._convnet_config.add_residual_layer
         self._batch_norm = self._convnet_config.batch_normalization
@@ -67,8 +66,7 @@ class ConvNetModel(object):
                                    filter_size=self._filter_size,
                                    pool_size=self._pool_size,
                                    summaries=self.summaries,
-                                   freeze_down_layers=self._freeze_down_layers,
-                                   freeze_up_layers=self._freeze_up_layers,
+                                   trainable_layers=self._trainable_layers,
                                    use_padding=self._use_padding,
                                    bn=self._batch_norm,
                                    add_residual_layer=self._add_residual_layer,
@@ -80,7 +78,6 @@ class ConvNetModel(object):
 
         self.gradients_node = tf.gradients(self.cost, self.variables)
         self.last_feature_map = lfs
-
 
         with tf.name_scope("results"):
             self.dice_core = tf.constant(-1.)

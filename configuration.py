@@ -171,10 +171,11 @@ class ConvNetParams:
     tv_regularizer = 0.01
     # Add residual layer/skip layer at the end output = input + last_layer (only for tv regression). NOT useful
     add_residual_layer = False
-    # freeze encoder layers during training
-    freeze_down_layers = False
-    # freeze decoder layers during training
-    freeze_up_layers = False
+    # freeze layers during training. Set None to train all layers
+    trainable_layers = {"down_conv_0": True, "down_conv_1": True, "down_conv_2": True, "down_conv_3": True,
+                        "down_conv_4": True,
+                        "up_conv_3": True, "up_conv_2": True, "up_conv_1": True, "up_conv_0": True}
+    #trainable_layers = None
     # Act func for output map. ATTENTION: Please choose none. actfunc is added prediction step
     # softmax multi class classifiavtion, sigmoid binary
     activation_func_out = Activation_Func.NONE

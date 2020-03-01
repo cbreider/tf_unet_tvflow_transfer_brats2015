@@ -26,7 +26,7 @@ from src.tf_convnet.layers import (weight_variable, weight_variable_devonc, bias
 
 
 def create_2d_unet(x, keep_prob, channels, n_class, n_layers=5, features_root=64, filter_size=3, pool_size=2,
-                   summaries=True, freeze_down_layers=False, freeze_up_layers=False, use_padding=False, bn=False,
+                   summaries=True, use_padding=False, bn=False,  trainable_layers=None,
                    add_residual_layer=False, use_scale_image_as_gt=False, act_func_out=Activation_Func.RELU):
     """
     Creates a new convolutional unet for the given parametrization.
@@ -40,9 +40,8 @@ def create_2d_unet(x, keep_prob, channels, n_class, n_layers=5, features_root=64
     :param filter_size: size of the convolution filter, default 3
     :param pool_size: size of the max pooling operation, default 2
     :param summaries: Flag if summaries should be created, default True
-    :param freeze_down_layers: True to freeze layers in decoder, default False
-    :param freeze_up_layers: True to freeze layers in decoder, default False
-    :param use_padding: True touse padding and preserve image sizes. in_size=out_size, default False
+    :param trainable_layers: Dictionary of layer to train or not. None to train complete network
+    :param use_padding: True to use padding and preserve image sizes. in_size=out_size, default False
     :param bn: True to use batch normalization, default False
     :param add_residual_layer: Add skip layer from input to output new_out = out + in
     :param use_scale_image_as_gt: Use scale layer from tv as gt (only for tv learning) default False
@@ -58,7 +57,6 @@ def create_2d_unet(x, keep_prob, channels, n_class, n_layers=5, features_root=64
                                                              filter_size=filter_size,
                                                              pool_size=pool_size))
 
-
     in_node = x
 
     weights = []
@@ -70,17 +68,9 @@ def create_2d_unet(x, keep_prob, channels, n_class, n_layers=5, features_root=64
     up_h_convs = OrderedDict()
     variables = []
 
-    if freeze_down_layers:
-        logging.info("Freezing down Layers!")
-        trainable_down = False
-    else:
-        trainable_down = True
-
-    if freeze_up_layers:
-        logging.info("Freezing up Layers!")
-        trainable_up = False
-    else:
-        trainable_up = True
+    train_all = True
+    if trainable_layers:
+        train_all = False
 
     if use_padding:
         padding = "SAME" # pad convolution outputs to original map size
@@ -91,20 +81,24 @@ def create_2d_unet(x, keep_prob, channels, n_class, n_layers=5, features_root=64
     size = in_size
     # down layers
     for layer in range(0, n_layers):
-        with tf.name_scope("down_conv_{}".format(str(layer))):
+        l_name = "down_conv_{}".format(str(layer))
+        l_trainable = True if train_all else trainable_layers[l_name]
+        if not l_trainable:
+            logging.info("Freezing layer {}".format(l_name))
+        with tf.name_scope(l_name):
             features = 2 ** layer * features_root
             stddev = np.sqrt(2 / (filter_size ** 2 * features))
             if layer == 0:
                 w1 = weight_variable([filter_size, filter_size, channels, features], stddev, name="w1",
-                                     trainable=trainable_down)
+                                     trainable=l_trainable)
             else:
                 w1 = weight_variable([filter_size, filter_size, features // 2, features], stddev, name="w1",
-                                     trainable=trainable_down)
+                                     trainable=l_trainable)
 
             w2 = weight_variable([filter_size, filter_size, features, features], stddev, name="w2",
-                                 trainable=trainable_down)
-            b1 = bias_variable([features], name="b1", trainable=trainable_down)
-            b2 = bias_variable([features], name="b2", trainable=trainable_down)
+                                 trainable=l_trainable)
+            b1 = bias_variable([features], name="b1", trainable=l_trainable)
+            b2 = bias_variable([features], name="b2", trainable=l_trainable)
 
             conv1 = conv2d(in_node, w1, b1, keep_prob, padding=padding, bn=bn)
             tmp_h_conv = tf.nn.relu(conv1)
@@ -125,23 +119,27 @@ def create_2d_unet(x, keep_prob, channels, n_class, n_layers=5, features_root=64
 
     # up layers
     for layer in range(n_layers - 2, -1, -1):
-        with tf.name_scope("up_conv_{}".format(str(layer))):
+        l_name = "up_conv_{}".format(str(layer))
+        l_trainable = True if train_all else trainable_layers[l_name]
+        if not l_trainable:
+            logging.info("Freezing layer {}".format(l_name))
+        with tf.name_scope(l_name):
             features = 2 ** (layer + 1) * features_root
             stddev = np.sqrt(2 / (filter_size ** 2 * features))
 
             wd = weight_variable_devonc([pool_size, pool_size, features // 2, features], stddev, name="wd",
-                                        trainable=trainable_up)
-            bd = bias_variable([features // 2], name="bd", trainable=trainable_up)
+                                        trainable=l_trainable)
+            bd = bias_variable([features // 2], name="bd", trainable=l_trainable)
             h_deconv = tf.nn.relu(deconv2d(in_node, wd, pool_size) + bd)
             h_deconv_concat = crop_and_concat(dw_h_convs[layer], h_deconv)
             deconv[layer] = h_deconv_concat
 
             w1 = weight_variable([filter_size, filter_size, features, features // 2], stddev, name="w1",
-                                 trainable=trainable_up)
+                                 trainable=l_trainable)
             w2 = weight_variable([filter_size, filter_size, features // 2, features // 2], stddev, name="w2",
-                                 trainable=trainable_up)
-            b1 = bias_variable([features // 2], name="b1", trainable=trainable_up)
-            b2 = bias_variable([features // 2], name="b2", trainable=trainable_up)
+                                 trainable=l_trainable)
+            b1 = bias_variable([features // 2], name="b1", trainable=l_trainable)
+            b2 = bias_variable([features // 2], name="b2", trainable=l_trainable)
 
             conv1 = conv2d(h_deconv_concat, w1, b1, keep_prob, padding=padding, bn=bn)
             h_conv = tf.nn.relu(conv1)
