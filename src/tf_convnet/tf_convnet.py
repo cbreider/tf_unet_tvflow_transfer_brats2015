@@ -51,15 +51,18 @@ class ConvNetModel(object):
         self._regularizer = self._convnet_config.regularizer
         self._max_tv_value = self._convnet_config.max_tv_value
         self._loss_weight = self._convnet_config.cost_weight
+        self._train_deconv_layers = self._convnet_config.train_deconv_layers
         self._mode = mode
 
         self.x = tf.placeholder("float", shape=[None, None, None, self._n_channels], name="x")
         self.y = tf.placeholder("float", shape=[None, None, None, self._n_class], name="y")
-        self.keep_prob = tf.placeholder(tf.float32, name="dropout_probability")  # dropout (keep probability)
+        self.keep_prob_conv = tf.placeholder(tf.float32, name="dropout_probability")  # dropout (keep probability)
+        self.keep_prob_pool = tf.placeholder(tf.float32, name="dropout_probability")  # dropout (keep probability)
 
         self.logits, self.variables, self.offset, self.out_vars, lfs = \
             tf_unet.create_2d_unet(x=self.x,
-                                   keep_prob=self.keep_prob,
+                                   keep_prob_conv=self.keep_prob_conv,
+                                   keep_prob_pool=self.keep_prob_pool,
                                    channels=self._n_channels,
                                    n_class=self._n_class,
                                    n_layers=self._n_layers,

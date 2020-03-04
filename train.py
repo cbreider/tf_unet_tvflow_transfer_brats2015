@@ -57,7 +57,7 @@ if __name__ == "__main__":
     parser.add_argument('--data_path', type=str, default=None,
                         help='Path to the Brats training dataset. Files have to be 2D images and ordered in the same way'
                              '(HGG/LGG --> Patient --> modality--> *.png). Default ../dataset/2d/slices/png/raw/train')
-    parser.add_argument('--training_data_portion', type=float, default=1.0,
+    parser.add_argument('--training_data_portion', type=float, default=-1.0,
                         help='Use only a specific portion of all training samples')
 
     args = parser.parse_args()
@@ -87,7 +87,7 @@ if __name__ == "__main__":
         include_testing = True
     if args.data_path:
         data_path = args.data_path
-    if args.training_data_portion:
+    if args.training_data_portion and args.training_data_portion >= 0:
         config.DataParams.training_data_portion = args.training_data_portion
 
 

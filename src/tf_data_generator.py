@@ -59,7 +59,7 @@ class TFImageDataGenerator:
         self._buffer_size = None
         self._do_augmentation = None
         self._crop_to_non_zero = None
-
+        self._tv_multi_scale_range = self._data_config.tv_multi_scale_range
         self.tv_tau = self._data_config.tv_and_clustering_params["tv_tau"]
         self.tv_weight = self._data_config.tv_and_clustering_params["tv_weight"]
         self.tv_eps = self._data_config.tv_and_clustering_params["tv_eps"]
@@ -124,7 +124,7 @@ class TFImageDataGenerator:
                                                                             mean=values[0, 1], var=values[0, 2])
                         tv_base2 = tf_utils.normalize_and_zero_center_slice(tv_base2, max=values[3, 0],
                                                                             normalize_std=True,
-                                                                            new_max=None,
+                                                                            new_max=self._data_norm_value_tv,
                                                                             mean=values[3, 1], var=values[3, 2])
                         tv_base = (tv_base1 + tv_base2) / 2
                     elif self._segmentation_mask == Subtumral_Modes.CORE:
@@ -142,7 +142,13 @@ class TFImageDataGenerator:
                     else:
                         raise ValueError()
 
-                    tv_img = tf_utils.get_tv_smoothed(img=tv_base, tau=self.tv_tau, weight=self.tv_weight,
+                    if self._tv_multi_scale_range and len(self._tv_multi_scale_range) == 2:
+                        tv_weight = tf.random.uniform(minval=self._tv_multi_scale_range[0],
+                                                      maxval=self._tv_multi_scale_range[1], shape=())
+                    else:
+                        tv_weight = self.tv_weight
+
+                    tv_img = tf_utils.get_tv_smoothed(img=tv_base, tau=self.tv_tau, weight=tv_weight,
                                                       eps=self.tv_eps, m_itr=self.tv_nr_itr)
 
             if self._mode == TrainingModes.TVFLOW_REGRESSION:

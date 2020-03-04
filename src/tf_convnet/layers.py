@@ -38,18 +38,21 @@ def conv2d(x, W, b, keep_prob, padding='VALID', bn=False):
         conv_2d_b = tf.nn.bias_add(conv_2d, b)
         if bn:
             conv_2d_b = tf.layers.batch_normalization(conv_2d_b)
-        return tf.nn.dropout(conv_2d_b, keep_prob)
+        return tf.nn.dropout(conv_2d_b, keep_prob=keep_prob)
 
 
-def deconv2d(x, W, stride):
+def deconv2d(x, W, stride, keep_prob):
     with tf.name_scope("deconv2d"):
         x_shape = tf.shape(x)
         output_shape = tf.stack([x_shape[0], x_shape[1]*2, x_shape[2]*2, x_shape[3]//2])
-        return tf.nn.conv2d_transpose(x, W, output_shape, strides=[1, stride, stride, 1], padding='VALID', name="conv2d_transpose")
+        deconv = tf.nn.conv2d_transpose(x, W, output_shape, strides=[1, stride, stride, 1], padding='VALID',
+                                        name="conv2d_transpose")
+        return tf.nn.dropout(deconv, keep_prob=keep_prob)
 
 
-def max_pool(x, n):
-    return tf.nn.max_pool(x, ksize=[1, n, n, 1], strides=[1, n, n, 1], padding='VALID')
+def max_pool(x, n, keep_prob):
+    mp = tf.nn.max_pool(x, ksize=[1, n, n, 1], strides=[1, n, n, 1], padding='VALID')
+    return tf.nn.dropout(mp, keep_prob)
 
 
 def crop_and_concat(x1, x2):

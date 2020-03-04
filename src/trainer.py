@@ -53,7 +53,8 @@ class Trainer(object):
         self.optimizer_name = self.config.optimizer
         self._n_epochs = self.config.num_epochs
         self._training_iters = self.config.training_iters
-        self._dropout = self.config.keep_prob_dopout
+        self._dropout_conv = 1.0 - self.config.dropout_rate_conv
+        self._dropout_pool = 1.0 - self.config.dropout_rate_pool_upscale
         self._write_graph = self.config.write_graph
         self._caffemodel_path = caffemodel_path
         self._restore_path = restore_path
@@ -73,7 +74,7 @@ class Trainer(object):
             self.momentum = self.config.momentum_args.pop("momentum", 0.2)
             self.decay_steps = self.config.momentum_args.pop("decay_steps", 10000)
             self.learning_rate_node = tf.train.exponential_decay(learning_rate=self.learning_rate,
-                                                                 global_step=self.global_step,
+                                                                 global_step=global_step,
                                                                  decay_steps=self.decay_steps,
                                                                  decay_rate=self.decay_rate,
                                                                  staircase=True)
@@ -140,9 +141,9 @@ class Trainer(object):
             "Optimizer: {}, "
             "Learning rate {}, Decay rate {}, Decay steps {},"
             "Nr of Epochs: {}, "
-            "Epoch size: {},"
-            "Keep prob {}".format(self.optimizer_name, self.learning_rate, self.decay_rate, self.decay_steps,
-                                  self._n_epochs, self._training_iters, self._dropout))
+            "Epoch size: {}, "
+            "Keep prob {} {}".format(self.optimizer_name, self.learning_rate, self.decay_rate, self.decay_steps,
+                                  self._n_epochs, self._training_iters, self._dropout_conv, self._dropout_pool))
 
         save_path = os.path.join(self.output_path, "model.ckpt")
         if self._n_epochs == 0:
@@ -225,7 +226,8 @@ class Trainer(object):
                          self.learning_rate_node, self.net.gradients_node, self.net.predicter),
                         feed_dict={self.net.x: batch_x,
                                    self.net.y: dutil.crop_to_shape(batch_y, pred_shape),
-                                   self.net.keep_prob: self._dropout})
+                                   self.net.keep_prob_pool: self._dropout_pool,
+                                   self.net.keep_prob_conv: self._dropout_conv})
 
                     if np.max(batch_y) == 0.0:
                         zero_counter += 1
@@ -353,7 +355,8 @@ class Trainer(object):
              self.net.dice_enhancing),
             feed_dict={self.net.x: batch_x,
                        self.net.y: batch_y,
-                       self.net.keep_prob: 1.0})
+                       self.net.keep_prob_pool: 1.0,
+                       self.net.keep_prob_conv: 1.0})
         scores = collections.OrderedDict()
 
         scores[Scores.LOSS] = loss
@@ -373,8 +376,9 @@ class Trainer(object):
     def run_summary(self, sess, summary_writer, step, batch_x, batch_y):
         # Calculate batch loss and accuracy
         summary_str = sess.run(self.summary_op, feed_dict={self.net.x: batch_x,
-                                                             self.net.y: batch_y,
-                                                             self.net.keep_prob: 1.})
+                                                           self.net.y: batch_y,
+                                                           self.net.keep_prob_pool: 1.0,
+                                                           self.net.keep_prob_conv: 1.0})
         summary_writer.add_summary(summary_str, step)
         summary_writer.flush()
 

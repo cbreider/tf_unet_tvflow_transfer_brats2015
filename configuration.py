@@ -112,7 +112,7 @@ class DataParams:
     # use only every x-th  non tumor slice. Set None to use all slices
     use_empty_slice_rand_max = 4
     # modalities used for training
-    use_modalities =  [modalities[0], modalities[1], modalities[2], modalities[3]]
+    use_modalities = [modalities[0], modalities[1], modalities[2], modalities[3]]
     # number of channels of generated input images (grayscale)
     nr_of_input_modalities = len(use_modalities) * nr_of_image_channels
     # nr of classes of segmentation map (binary for gt segmentation, more for tv segmentation)
@@ -121,6 +121,10 @@ class DataParams:
     combine_modalities_for_tv = None #[modalities[0], modalities[1], modalities[2], modalities[3]]
     # method for clustering TV Images in TV segmentation mode (Static binning, Kmeans or mean shift)
     clustering_method = TV_clustering_method.STATIC_BINNING
+    # To train the network with multiple TV scales set a range for the tv_weight. During training the tv weight will be
+    # selected uniformly from the range. Set to None to train only with a single scale set in the parameters below
+    tv_multi_scale_range = [0.05, 0.2]
+    #tv_multi_scale_range = None
     # params for differnt tv clustering methods (tv smoothing
     tv_and_clustering_params = dict(
         k_means_pre_cluster=[-0.5, 0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7,
@@ -175,6 +179,8 @@ class ConvNetParams:
     trainable_layers = {"down_conv_0": True, "down_conv_1": True, "down_conv_2": False, "down_conv_3": False,
                         "down_conv_4": False,
                         "up_conv_3": False, "up_conv_2": False, "up_conv_1": True, "up_conv_0": True}
+    # Flag to include transpose convolutions in expanding path. May set to false while fine tuning
+    train_deconv_layers = False
     #trainable_layers = None
     # Act func for output map. ATTENTION: Please choose none. actfunc is added prediction step
     # softmax multi class classifiavtion, sigmoid binary
@@ -215,8 +221,11 @@ class TrainingParams:
     label_smothing = 0
     # Optimizer to use. Choose from class Optimizer(Enum):
     optimizer = Optimizer.ADAM
-    # keep prob for dropout
-    keep_prob_dopout = 0.7
+    # dropout probability for the convolutions. Note: it's unusual to use dropout in convulutional layers
+    # but they did it in the original tf_unet implementation, so the option will be provided here.
+    dropout_rate_conv = 0.0
+    # dropout_rate for the pooling and deconvolutional layers
+    dropout_rate_pool_upscale = 0.3
     # initial learning rate
     initial_learning_rate = 0.0001
     # store output images of validation

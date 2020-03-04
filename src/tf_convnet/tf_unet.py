@@ -25,9 +25,10 @@ from src.tf_convnet.layers import (weight_variable, weight_variable_devonc, bias
                                    conv2d, deconv2d, max_pool, crop_and_concat)
 
 
-def create_2d_unet(x, keep_prob, channels, n_class, n_layers=5, features_root=64, filter_size=3, pool_size=2,
-                   summaries=True, use_padding=False, bn=False,  trainable_layers=None,
-                   add_residual_layer=False, use_scale_image_as_gt=False, act_func_out=Activation_Func.RELU):
+def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layers=5, features_root=64, filter_size=3,
+                   pool_size=2, summaries=True, use_padding=False, bn=False,  trainable_layers=None,
+                   add_residual_layer=False, use_scale_image_as_gt=False, act_func_out=Activation_Func.RELU,
+                   train_deconv_layers=True):
     """
     Creates a new convolutional unet for the given parametrization.
 
@@ -100,9 +101,9 @@ def create_2d_unet(x, keep_prob, channels, n_class, n_layers=5, features_root=64
             b1 = bias_variable([features], name="b1", trainable=l_trainable)
             b2 = bias_variable([features], name="b2", trainable=l_trainable)
 
-            conv1 = conv2d(in_node, w1, b1, keep_prob, padding=padding, bn=bn)
+            conv1 = conv2d(in_node, w1, b1, keep_prob_conv, padding=padding, bn=bn)
             tmp_h_conv = tf.nn.relu(conv1)
-            conv2 = conv2d(tmp_h_conv, w2, b2, keep_prob, padding=padding, bn=bn)
+            conv2 = conv2d(tmp_h_conv, w2, b2, keep_prob_conv, padding=padding, bn=bn)
             dw_h_convs[layer] = tf.nn.relu(conv2)
 
             weights.append((w1, w2))
@@ -111,7 +112,7 @@ def create_2d_unet(x, keep_prob, channels, n_class, n_layers=5, features_root=64
 
             size -= 2 * 2 * (filter_size // 2) # valid conv
             if layer < n_layers - 1:
-                pools[layer] = max_pool(dw_h_convs[layer], pool_size)
+                pools[layer] = max_pool(dw_h_convs[layer], pool_size, keep_prob_pool)
                 in_node = pools[layer]
                 size /= pool_size
 
@@ -128,9 +129,9 @@ def create_2d_unet(x, keep_prob, channels, n_class, n_layers=5, features_root=64
             stddev = np.sqrt(2 / (filter_size ** 2 * features))
 
             wd = weight_variable_devonc([pool_size, pool_size, features // 2, features], stddev, name="wd",
-                                        trainable=l_trainable)
-            bd = bias_variable([features // 2], name="bd", trainable=l_trainable)
-            h_deconv = tf.nn.relu(deconv2d(in_node, wd, pool_size) + bd)
+                                        trainable=l_trainable if train_deconv_layers else False)
+            bd = bias_variable([features // 2], name="bd", trainable=l_trainable if train_deconv_layers else False)
+            h_deconv = tf.nn.relu(deconv2d(in_node, wd, pool_size, keep_prob_pool) + bd)
             h_deconv_concat = crop_and_concat(dw_h_convs[layer], h_deconv)
             deconv[layer] = h_deconv_concat
 
@@ -141,9 +142,9 @@ def create_2d_unet(x, keep_prob, channels, n_class, n_layers=5, features_root=64
             b1 = bias_variable([features // 2], name="b1", trainable=l_trainable)
             b2 = bias_variable([features // 2], name="b2", trainable=l_trainable)
 
-            conv1 = conv2d(h_deconv_concat, w1, b1, keep_prob, padding=padding, bn=bn)
+            conv1 = conv2d(h_deconv_concat, w1, b1, keep_prob_conv, padding=padding, bn=bn)
             h_conv = tf.nn.relu(conv1)
-            conv2 = conv2d(h_conv, w2, b2, keep_prob, padding=padding, bn=bn)
+            conv2 = conv2d(h_conv, w2, b2, keep_prob_conv, padding=padding, bn=bn)
             in_node = tf.nn.relu(conv2)
             up_h_convs[layer] = in_node
 
