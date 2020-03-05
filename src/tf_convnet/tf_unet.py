@@ -121,26 +121,29 @@ def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layer
     # up layers
     for layer in range(n_layers - 2, -1, -1):
         l_name = "up_conv_{}".format(str(layer))
-        l_trainable = True if train_all else trainable_layers[l_name]
-        if not l_trainable:
-            logging.info("Freezing layer {}".format(l_name))
+        l_trainable_conv = True if train_all else trainable_layers[l_name][0]
+        l_trainable_upconv = True if train_all else trainable_layers[l_name][0]
+        if not l_trainable_conv:
+            logging.info("Freezing layer {} convolution block".format(l_name))
+        if not l_trainable_upconv:
+            logging.info("Freezing layer {} up convolution".format(l_name))
         with tf.name_scope(l_name):
             features = 2 ** (layer + 1) * features_root
             stddev = np.sqrt(2 / (filter_size ** 2 * features))
 
             wd = weight_variable_devonc([pool_size, pool_size, features // 2, features], stddev, name="wd",
-                                        trainable=l_trainable if train_deconv_layers else False)
-            bd = bias_variable([features // 2], name="bd", trainable=l_trainable if train_deconv_layers else False)
+                                        trainable=l_trainable_upconv if train_deconv_layers else False)
+            bd = bias_variable([features // 2], name="bd", trainable=l_trainable_upconv if train_deconv_layers else False)
             h_deconv = tf.nn.relu(deconv2d(in_node, wd, pool_size, keep_prob_pool) + bd)
             h_deconv_concat = crop_and_concat(dw_h_convs[layer], h_deconv)
             deconv[layer] = h_deconv_concat
 
             w1 = weight_variable([filter_size, filter_size, features, features // 2], stddev, name="w1",
-                                 trainable=l_trainable)
+                                 trainable=l_trainable_conv)
             w2 = weight_variable([filter_size, filter_size, features // 2, features // 2], stddev, name="w2",
-                                 trainable=l_trainable)
-            b1 = bias_variable([features // 2], name="b1", trainable=l_trainable)
-            b2 = bias_variable([features // 2], name="b2", trainable=l_trainable)
+                                 trainable=l_trainable_conv)
+            b1 = bias_variable([features // 2], name="b1", trainable=l_trainable_conv)
+            b2 = bias_variable([features // 2], name="b2", trainable=l_trainable_conv)
 
             conv1 = conv2d(h_deconv_concat, w1, b1, keep_prob_conv, padding=padding, bn=bn)
             h_conv = tf.nn.relu(conv1)

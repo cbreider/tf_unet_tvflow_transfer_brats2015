@@ -110,7 +110,7 @@ class DataParams:
     # in the outer scans. use_only_spatial_range=None to use all scans
     use_only_spatial_range = None # [30, 130]
     # use only every x-th  non tumor slice. Set None to use all slices
-    use_empty_slice_rand_max = 4
+    use_empty_slice_probability = 0.25
     # modalities used for training
     use_modalities = [modalities[0], modalities[1], modalities[2], modalities[3]]
     # number of channels of generated input images (grayscale)
@@ -178,11 +178,10 @@ class ConvNetParams:
     # freeze layers during training. Set None to train all layers
     trainable_layers = {"down_conv_0": False, "down_conv_1": False, "down_conv_2": False, "down_conv_3": False,
                         "down_conv_4": False,
-                        "up_conv_3": False, "up_conv_2": False, "up_conv_1": False, "up_conv_0": False,
+                        "up_conv_3": [False, False], "up_conv_2": [False, False], "up_conv_1": [False, False],
+                        "up_conv_0": [False, False],  # up_conv consists of transpose cond and two convolutions
                         "classifier": True}
     # trainable_layers = None
-    # Flag to include transpose convolutions in expanding path. May set to false while fine tuning
-    train_deconv_layers = False
     # Act func for output map. ATTENTION: Please choose none. actfunc is added prediction step
     # softmax multi class classifiavtion, sigmoid binary
     activation_func_out = Activation_Func.NONE

@@ -452,7 +452,7 @@ def normalize_and_zero_center_slice(tensor, max, normalize_std, new_max=None, me
     return out
 
 
-def get_dice_score(pred, y, eps=1e-7, axis=(1, 2), weights=None):
+def get_dice_score(pred, y, eps=1e-5, axis=(1, 2), weights=None):
     """
     calculates the (multiclass) dice score over a given batch of samples. In multiclass prediction (n_class > 1)
     the dice score is the average dice score over all classes
@@ -484,7 +484,7 @@ def get_dice_score(pred, y, eps=1e-7, axis=(1, 2), weights=None):
     return dice
 
 
-def get_dice_log_loss(logits, y, axis=(1, 2), smooth=1.0, exclude_zero_label=False):
+def get_dice_log_loss(logits, y, axis=(1, 2), eps=1e-5, exclude_zero_label=False):
     """
     Sorenson (Soft) Dice loss
     Using -log(Dice) as the loss since it is better behaved.
@@ -503,8 +503,8 @@ def get_dice_log_loss(logits, y, axis=(1, 2), smooth=1.0, exclude_zero_label=Fal
     intersection = tf.reduce_sum(prediction * y, axis=axis)
     p = tf.reduce_sum(prediction, axis=axis)
     t = tf.reduce_sum(y, axis=axis)
-    numerator = tf.reduce_mean(intersection + smooth)
-    denominator = tf.reduce_mean(t + p + smooth)
+    numerator = tf.reduce_mean(intersection + eps)
+    denominator = tf.reduce_mean(t + p + eps)
     dice_loss = -tf.log(2.*numerator) + tf.log(denominator)
 
     return dice_loss

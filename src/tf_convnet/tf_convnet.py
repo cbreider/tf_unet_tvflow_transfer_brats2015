@@ -124,8 +124,7 @@ class ConvNetModel(object):
                                                            n_class=self._n_class,
                                                            weights=None)
                 self.iou_coe = tfu.get_iou_coe(pre=self.predicter, gt=self.y)
-                self.dice = tfu.get_dice_score(pred=self.predicter, y=self.y,
-                                               eps=1e-5, weights=None)
+                self.dice = tfu.get_dice_score(pred=self.predicter, y=self.y, weights=None)
                 self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
                 self.error = tf.constant(1.0) - self.accuracy
 
@@ -156,11 +155,11 @@ class ConvNetModel(object):
                                              weights=self._class_weights_ce)
 
             elif self.cost_function == Cost.DICE_SOFT or self.cost_function == Cost.BATCH_DICE_SOFT:
-                loss = 1.0 - tfu.get_dice_loss(logits=self.logits, y=self.y, eps=1e-2, axis=axis,
+                loss = 1.0 - tfu.get_dice_loss(logits=self.logits, y=self.y, axis=axis,
                                                weights=self._class_weights_dice, exclude_zero_label=False)
 
             elif self.cost_function == Cost.DICE_SOFT_CE or self.cost_function == Cost.BATCH_DICE_SOFT_CE:
-                loss = self._loss_weight * (1.0 - tfu.get_dice_loss(logits=self.logits, y=self.y, eps=1e-2, axis=axis,
+                loss = self._loss_weight * (1.0 - tfu.get_dice_loss(logits=self.logits, y=self.y, axis=axis,
                                                                     weights=self._class_weights_dice,
                                                                     exclude_zero_label=False))
                 loss += (1.0 - self._loss_weight) * tfu.get_cross_entropy(logits=flat_logits, y=flat_labels,

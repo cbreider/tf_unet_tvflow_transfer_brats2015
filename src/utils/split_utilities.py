@@ -165,7 +165,7 @@ class TrainingDataset(object):
         self.test_paths = dict()
         self.nr_of_folds = nr_of_folds
         self.k_fold_nr_val_samples = k_fold_nr_val_samples
-        self._empyt_slice_ratio = self._data_config.use_empty_slice_rand_max
+        self._empyt_slice_ratio = int(1.0 / self._data_config.use_empty_slice_probability)
 
         logging.info("Loading Dataset...")
 
