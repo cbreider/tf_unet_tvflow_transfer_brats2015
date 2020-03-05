@@ -121,7 +121,7 @@ def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layer
     # up layers
     for layer in range(n_layers - 2, -1, -1):
         l_name = "up_conv_{}".format(str(layer))
-        l_trainable_conv = True if train_all else trainable_layers[l_name][0]
+        l_trainable_conv = True if train_all else trainable_layers[l_name][1]
         l_trainable_upconv = True if train_all else trainable_layers[l_name][0]
         if not l_trainable_conv:
             logging.info("Freezing layer {} convolution block".format(l_name))
