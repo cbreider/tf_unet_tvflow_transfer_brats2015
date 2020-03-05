@@ -51,7 +51,6 @@ class ConvNetModel(object):
         self._regularizer = self._convnet_config.regularizer
         self._max_tv_value = self._convnet_config.max_tv_value
         self._loss_weight = self._convnet_config.cost_weight
-        self._train_deconv_layers = self._convnet_config.train_deconv_layers
         self._mode = mode
 
         self.x = tf.placeholder("float", shape=[None, None, None, self._n_channels], name="x")

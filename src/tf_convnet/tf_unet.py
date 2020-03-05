@@ -27,8 +27,7 @@ from src.tf_convnet.layers import (weight_variable, weight_variable_devonc, bias
 
 def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layers=5, features_root=64, filter_size=3,
                    pool_size=2, summaries=True, use_padding=False, bn=False,  trainable_layers=None,
-                   add_residual_layer=False, use_scale_image_as_gt=False, act_func_out=Activation_Func.RELU,
-                   train_deconv_layers=True):
+                   add_residual_layer=False, use_scale_image_as_gt=False, act_func_out=Activation_Func.RELU):
     """
     Creates a new convolutional unet for the given parametrization.
 
@@ -132,8 +131,8 @@ def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layer
             stddev = np.sqrt(2 / (filter_size ** 2 * features))
 
             wd = weight_variable_devonc([pool_size, pool_size, features // 2, features], stddev, name="wd",
-                                        trainable=l_trainable_upconv if train_deconv_layers else False)
-            bd = bias_variable([features // 2], name="bd", trainable=l_trainable_upconv if train_deconv_layers else False)
+                                        trainable=l_trainable_upconv)
+            bd = bias_variable([features // 2], name="bd", trainable=l_trainable_upconv)
             h_deconv = tf.nn.relu(deconv2d(in_node, wd, pool_size, keep_prob_pool) + bd)
             h_deconv_concat = crop_and_concat(dw_h_convs[layer], h_deconv)
             deconv[layer] = h_deconv_concat
