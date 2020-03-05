@@ -68,6 +68,7 @@ class Trainer(object):
         self._fold_nr = fold_nr
 
     def _get_optimizer(self, global_step):
+        tvars = tf.trainable_variables()
         if self.optimizer_name == Optimizer.MOMENTUM:
             self.learning_rate = self.config.momentum_args.pop("learning_rate", 0.2)
             self.decay_rate = self.config.momentum_args.pop("decay_rate", 0.95)
@@ -81,6 +82,7 @@ class Trainer(object):
 
             optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate_node, momentum=self.momentum,
                                                    **self.config.momentum_args).minimize(self.net.cost,
+                                                                                         var_list=tvars,
                                                                                          global_step=global_step)
 
         elif self.optimizer_name == Optimizer.ADAM:
@@ -95,6 +97,7 @@ class Trainer(object):
             optimizer = tf.train.AdamOptimizer(
                 learning_rate=self.learning_rate_node,
                 **self.config.adam_args).minimize(self.net.cost,
+                                                  var_list=tvars,
                                                   global_step=global_step)
 
         elif self.optimizer_name == Optimizer.ADAGRAD:
@@ -104,6 +107,7 @@ class Trainer(object):
             optimizer = tf.train.AdamOptimizer(
                                                 learning_rate=self.learning_rate_node,
                                                 **self.config.adagrad_args).minimize(self.net.cost,
+                                                                                     var_list=tvars,
                                                                                      global_step=global_step)
 
         else:
@@ -113,9 +117,9 @@ class Trainer(object):
 
     def _initialize(self):
 
-        global_step = tf.Variable(0, name="global_step")
+        global_step = tf.Variable(0, name="global_step", trainable=False)
         self.norm_gradients_node = tf.Variable(tf.constant(0.0, shape=[len(self.net.gradients_node)]),
-                                               name="norm_gradients")
+                                               name="norm_gradients", trainable=False)
 
         if self.net.summaries and self._norm_grads:
             tf.summary.histogram('norm_grads', self.norm_gradients_node)

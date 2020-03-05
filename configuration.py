@@ -23,9 +23,9 @@ class DataParams:
     # batch size used for validation. Attention: Due to implementation only 1 is possible at the moment
     batch_size_val = 1
     # buffer size for tf training data pipeline
-    buffer_size_train = 64
+    buffer_size_train = 32
     # buffer size for tf validation data pipeline
-    buffer_size_val = 20
+    buffer_size_val = 10
 
     # label values of BRATS2015
     brats_label_values = [
@@ -82,7 +82,7 @@ class DataParams:
     do_image_augmentation_val = False
     # parameters for image distortion
     image_disort_params = [[2, 3, 3],  # displacement vector [img dim, plane, heigh
-                           20.0,  # sigma deformation magnitude
+                           25.0,  # sigma deformation magnitude
                            0.8]  # max zoom factor
     # normalize standard deviation for images during pre processing
     normailze_std = True
@@ -176,12 +176,13 @@ class ConvNetParams:
     # Add residual layer/skip layer at the end output = input + last_layer (only for tv regression). NOT useful
     add_residual_layer = False
     # freeze layers during training. Set None to train all layers
-    trainable_layers = {"down_conv_0": True, "down_conv_1": True, "down_conv_2": False, "down_conv_3": False,
+    trainable_layers = {"down_conv_0": False, "down_conv_1": False, "down_conv_2": False, "down_conv_3": False,
                         "down_conv_4": False,
-                        "up_conv_3": False, "up_conv_2": False, "up_conv_1": True, "up_conv_0": True}
+                        "up_conv_3": False, "up_conv_2": False, "up_conv_1": False, "up_conv_0": False,
+                        "classifier": True}
+    # trainable_layers = None
     # Flag to include transpose convolutions in expanding path. May set to false while fine tuning
     train_deconv_layers = False
-    #trainable_layers = None
     # Act func for output map. ATTENTION: Please choose none. actfunc is added prediction step
     # softmax multi class classifiavtion, sigmoid binary
     activation_func_out = Activation_Func.NONE
@@ -222,12 +223,12 @@ class TrainingParams:
     # Optimizer to use. Choose from class Optimizer(Enum):
     optimizer = Optimizer.ADAM
     # dropout probability for the convolutions. Note: it's unusual to use dropout in convulutional layers
-    # but they did it in the original tf_unet implementation, so the option will be provided here.
+    # but they did it in the original tf_unet implementation, so at least the option will be provided here.
     dropout_rate_conv = 0.0
     # dropout_rate for the pooling and deconvolutional layers
     dropout_rate_pool_upscale = 0.3
     # initial learning rate
-    initial_learning_rate = 0.0001
+    initial_learning_rate = 0.00001
     # store output images of validation
     store_val_images = True
     # store last feature maps  from cnn during validation ( only for middle scan)

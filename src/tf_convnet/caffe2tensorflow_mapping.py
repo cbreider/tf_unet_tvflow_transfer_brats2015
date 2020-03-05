@@ -26,7 +26,7 @@ To adapt it to different caffe models the names of caffe variables have to be ch
 caffe_2_tf_dict = {
 
     # caffe             # tf weights            #tf bias                shape weights       shape bias
-    'conv_d0a-b':       ['down_conv_0/w1:0',    'down_conv_0/b1:0'],    # (3, 3, 1, 64),     (64,)
+    # 'conv_d0a-b':       ['down_conv_0/w1:0',    'down_conv_0/b1:0'],    # (3, 3, 1, 64),     (64,)
     'conv_d0b-c':       ['down_conv_0/w2:0',    'down_conv_0/b2:0'],    # (3, 3, 64, 64),    (64,)
     'conv_d1a-b':       ['down_conv_1/w1:0',    'down_conv_1/b1:0'],    # (3, 3, 64, 128),   (128,)
     'conv_d1b-c':       ['down_conv_1/w2:0',    'down_conv_1/b2:0'],    # (3, 3, 128, 128),  (128,)

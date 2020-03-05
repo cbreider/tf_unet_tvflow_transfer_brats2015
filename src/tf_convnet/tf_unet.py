@@ -161,8 +161,11 @@ def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layer
 
     # Output Map
     with tf.name_scope("output_map"):
-        weight = weight_variable([1, 1, features_root, n_class], stddev, trainable=True)
-        bias = bias_variable([n_class], name="bias", trainable=True)
+        l_trainable = True if train_all else trainable_layers["classifier"]
+        if not l_trainable:
+            logging.info("Freezing layer {}".format("classifier"))
+        weight = weight_variable([1, 1, features_root, n_class], stddev, trainable=l_trainable)
+        bias = bias_variable([n_class], name="bias", trainable=l_trainable)
         conv = conv2d(in_node, weight, bias, tf.constant(1.0))
         if act_func_out == Activation_Func.NONE or n_class == 1:  # in binary sigmoid is added within cs loss
             output_map = conv
