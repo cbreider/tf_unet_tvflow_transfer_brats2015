@@ -19,7 +19,7 @@ from datetime import datetime
 from src.utils.enum_params import Cost, RestoreMode, TrainingModes
 import src.utils.tf_utils as tfu
 from configuration import ConvNetParams
-
+import tensorlayer as tl
 
 class ConvNetModel(object):
 
@@ -51,6 +51,7 @@ class ConvNetModel(object):
         self._regularizer = self._convnet_config.regularizer
         self._max_tv_value = self._convnet_config.max_tv_value
         self._loss_weight = self._convnet_config.cost_weight
+        self._retore_layers = self._convnet_config.restore_layers
         self._mode = mode
 
         self.x = tf.placeholder("float", shape=[None, None, None, self._n_channels], name="x")
@@ -74,7 +75,8 @@ class ConvNetModel(object):
                                    add_residual_layer=self._add_residual_layer,
                                    use_scale_image_as_gt=self._use_scale_image_as_gt,
                                    act_func_out=self._activation_func_out,
-                                   features_root=self._features_root)
+                                   features_root=self._features_root,
+                                   layers_to_restore=self._retore_layers)
 
         self.cost = self._get_cost()
 
@@ -124,6 +126,7 @@ class ConvNetModel(object):
                                                            weights=None)
                 self.iou_coe = tfu.get_iou_coe(pre=self.predicter, gt=self.y)
                 self.dice = tfu.get_dice_score(pred=self.predicter, y=self.y, weights=None)
+                self.dice_tl = tl.dice_hard_coe.dice_coe(self.predicter, self.y, )
                 self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
                 self.error = tf.constant(1.0) - self.accuracy
 

@@ -142,14 +142,14 @@ class TFImageDataGenerator:
                     else:
                         raise ValueError()
 
-                    if self._tv_multi_scale_range and len(self._tv_multi_scale_range) == 2:
-                        tv_weight = tf.random.uniform(minval=self._tv_multi_scale_range[0],
+                if self._tv_multi_scale_range and len(self._tv_multi_scale_range) == 2:
+                    tv_weight = tf.random.uniform(minval=self._tv_multi_scale_range[0],
                                                       maxval=self._tv_multi_scale_range[1], shape=())
-                    else:
-                        tv_weight = self.tv_weight
+                else:
+                    tv_weight = self.tv_weight
 
-                    tv_img = tf_utils.get_tv_smoothed(img=tv_base, tau=self.tv_tau, weight=tv_weight,
-                                                      eps=self.tv_eps, m_itr=self.tv_nr_itr)
+                tv_img = tf_utils.get_tv_smoothed(img=tv_base, tau=self.tv_tau, weight=tv_weight,
+                                                  eps=self.tv_eps, m_itr=self.tv_nr_itr)
 
             if self._mode == TrainingModes.TVFLOW_REGRESSION:
                 gt_img = tv_img

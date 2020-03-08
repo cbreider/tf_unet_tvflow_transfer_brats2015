@@ -182,6 +182,13 @@ class ConvNetParams:
                         "up_conv_0": [False, False],  # up_conv consists of transpose cond and two convolutions
                         "classifier": True}
     # trainable_layers = None
+    # freeze layers during training. Set None to train all layers
+    restore_layers = {"down_conv_0": False, "down_conv_1": False, "down_conv_2": False, "down_conv_3": False,
+                      "down_conv_4": False,
+                      # up_conv consists of transpose cond and two convolutions
+                      "up_conv_3": [True, True], "up_conv_2": [False, False], "up_conv_1": [False, False], "up_conv_0": [True, True],
+                      "classifier": True}
+    # trainable_layers = None
     # Act func for output map. ATTENTION: Please choose none. actfunc is added prediction step
     # softmax multi class classifiavtion, sigmoid binary
     activation_func_out = Activation_Func.NONE

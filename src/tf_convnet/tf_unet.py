@@ -27,12 +27,13 @@ from src.tf_convnet.layers import (weight_variable, weight_variable_devonc, bias
 
 def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layers=5, features_root=64, filter_size=3,
                    pool_size=2, summaries=True, use_padding=False, bn=False,  trainable_layers=None,
-                   add_residual_layer=False, use_scale_image_as_gt=False, act_func_out=Activation_Func.RELU):
+                   layers_to_restore=None, add_residual_layer=False, use_scale_image_as_gt=False,
+                   act_func_out=Activation_Func.RELU):
     """
     Creates a new convolutional unet for the given parametrization.
 
     :param x: input tensor, shape [?,nx,ny,channels]
-    :param keep_prob: dropout probability tensor
+    :param keep_prob_conv: dropout probability tensor for convolutions
     :param channels: number of channels in the input image
     :param n_class: number of output labels
     :param n_layers: number of layers in the net, default 5
@@ -66,7 +67,7 @@ def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layer
     deconv = OrderedDict()
     dw_h_convs = OrderedDict()
     up_h_convs = OrderedDict()
-    variables = []
+    variables_to_restore = []
 
     train_all = True
     if trainable_layers:
@@ -85,6 +86,11 @@ def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layer
         l_trainable = True if train_all else trainable_layers[l_name]
         if not l_trainable:
             logging.info("Freezing layer {}".format(l_name))
+
+        restore_layer = False if layers_to_restore is None else layers_to_restore[l_name]
+        if restore_layer:
+            logging.info("Restoring layer {} from checkpoint".format(l_name))
+
         with tf.name_scope(l_name):
             features = 2 ** layer * features_root
             stddev = np.sqrt(2 / (filter_size ** 2 * features))
@@ -109,6 +115,12 @@ def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layer
             biases.append((b1, b2))
             convs.append((conv1, conv2))
 
+            if restore_layer:
+                variables_to_restore.append(w1)
+                variables_to_restore.append(w2)
+                variables_to_restore.append(b1)
+                variables_to_restore.append(b2)
+
             size -= 2 * 2 * (filter_size // 2) # valid conv
             if layer < n_layers - 1:
                 pools[layer] = max_pool(dw_h_convs[layer], pool_size, keep_prob_pool)
@@ -126,6 +138,14 @@ def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layer
             logging.info("Freezing layer {} convolution block".format(l_name))
         if not l_trainable_upconv:
             logging.info("Freezing layer {} up convolution".format(l_name))
+
+        restore_layer_conv = False if layers_to_restore is None else layers_to_restore[l_name][1]
+        if restore_layer_conv:
+            logging.info("Restoring conv layer {} from checkpoint".format(l_name))
+        restore_layer_up = False if layers_to_restore is None else layers_to_restore[l_name][0]
+        if restore_layer_up:
+            logging.info("Restoring up conv layer {} from checkpoint".format(l_name))
+
         with tf.name_scope(l_name):
             features = 2 ** (layer + 1) * features_root
             stddev = np.sqrt(2 / (filter_size ** 2 * features))
@@ -150,8 +170,15 @@ def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layer
             in_node = tf.nn.relu(conv2)
             up_h_convs[layer] = in_node
 
-            variables.append(wd)
-            variables.append(bd)
+            if restore_layer_up:
+                variables_to_restore.append(wd)
+                variables_to_restore.append(bd)
+            if restore_layer_conv:
+                variables_to_restore.append(w1)
+                variables_to_restore.append(w2)
+                variables_to_restore.append(b1)
+                variables_to_restore.append(b2)
+
             weights.append((w1, w2))
             biases.append((b1, b2))
             convs.append((conv1, conv2))
@@ -204,12 +231,4 @@ def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layer
             for k in up_h_convs.keys():
                 tf.summary.histogram("up_convolution_%s" % k + '/activations', up_h_convs[k])
 
-    for w1, w2 in weights:
-        variables.append(w1)
-        variables.append(w2)
-
-    for b1, b2 in biases:
-        variables.append(b1)
-        variables.append(b2)
-
-    return output_map, variables, int(in_size - size), [weight, bias], last_feature_map
+    return output_map, variables_to_restore, int(in_size - size), [weight, bias], last_feature_map
