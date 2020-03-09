@@ -163,7 +163,7 @@ class ConvNetParams:
     # Use padding to preserve feature map size and prevent downscaling
     padding = True
     # Use Batch normalization Yes/No
-    batch_normalization = False
+    batch_normalization = True
     # weight for each class if Cross Entropy loss is chosen. length must correspond to nr of classes.
     # None to not use any weighting
     class_weights_ce = [0.1, 1.0, 1.0, 1.0, 1.0]
@@ -179,9 +179,9 @@ class ConvNetParams:
     add_residual_layer = False
     # freeze layers during training. Set None to train all layers
     trainable_layers = {"down_conv_0": False, "down_conv_1": False, "down_conv_2": False, "down_conv_3": False,
-                        "down_conv_4": False,
-                        "up_conv_3": [False, False], "up_conv_2": [False, False], "up_conv_1": [False, False],
-                        "up_conv_0": [False, False],  # up_conv consists of transpose cond and two convolutions
+                        "down_conv_4": True,
+                        # up_conv consists of transpose cond and two convolutions
+                        "up_conv_3": [False, True], "up_conv_2": [False, True], "up_conv_1": [False, True], "up_conv_0": [False, True],
                         "classifier": True}
     # trainable_layers = None
     # freeze layers during training. Set None to train all layers
