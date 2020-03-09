@@ -148,8 +148,9 @@ class Trainer(object):
             "Learning rate {}, Decay rate {}, Decay steps {},"
             "Nr of Epochs: {}, "
             "Epoch size: {}, "
-            "Keep prob {} {}".format(self.optimizer_name, self.learning_rate, self.decay_rate, self.decay_steps,
-                                  self._n_epochs, self._training_iters, self._dropout_conv, self._dropout_pool))
+            "Keep prob {} {} {} {}".format(self.optimizer_name, self.learning_rate, self.decay_rate, self.decay_steps,
+                                  self._n_epochs, self._training_iters, self._dropout_conv1, self._dropout_conv2,
+                                     self._dropout_pool, self._dropout_tconv))
 
         save_path = os.path.join(self.output_path, "model.ckpt")
         if self._n_epochs == 0:

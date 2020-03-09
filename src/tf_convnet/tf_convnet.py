@@ -19,7 +19,7 @@ from datetime import datetime
 from src.utils.enum_params import Cost, RestoreMode, TrainingModes
 import src.utils.tf_utils as tfu
 from configuration import ConvNetParams
-import tensorlayer as tl
+
 
 class ConvNetModel(object):
 
