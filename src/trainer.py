@@ -226,10 +226,10 @@ class Trainer(object):
                                                     summary_writer=summary_writer_training)
 
                     # Run optimization op (backprop)
-                    _, loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing, lr, gradients, pred = sess.run(
+                    _, loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing, l1, l2, lr, gradients, pred = sess.run(
                         (self.optimizer, self.net.cost, self.net.cross_entropy, self.net.error, self.net.accuracy,
                          self.net.iou_coe, self.net.dice, self.net.dice_complete, self.net.dice_core,
-                         self.net.dice_enhancing,
+                         self.net.dice_enhancing, self.net.l1regularizers, self.net.l2regularizers,
                          self.learning_rate_node, self.net.gradients_node, self.net.predicter),
                         feed_dict={self.net.x: batch_x,
                                    self.net.y: dutil.crop_to_shape(batch_y, pred_shape),
@@ -241,7 +241,7 @@ class Trainer(object):
                     if np.max(batch_y) == 0.0:
                         zero_counter += 1
 
-                    avg_score_vals_batch.append([loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing])
+                    avg_score_vals_batch.append([loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing, l1, l2])
                     avg_score_vals_epoch.append([loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing])
 
                     #x = random.randint(1, 50)
@@ -275,6 +275,8 @@ class Trainer(object):
                         scores[Scores.DSC_COMP] = avg_score_vals_batch[6]
                         scores[Scores.DSC_CORE] = avg_score_vals_batch[7]
                         scores[Scores.DSC_EN] = avg_score_vals_batch[8]
+                        scores[Scores.L1] = avg_score_vals_batch[9]
+                        scores[Scores.L2] = avg_score_vals_batch[10]
 
                         self.write_tf_summary_scores(step, scores, summary_writer_training)
                         self.write_log_string("Iteration {} Average:".format(step), scores)
