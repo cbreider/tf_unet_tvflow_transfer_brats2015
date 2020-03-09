@@ -53,8 +53,10 @@ class Trainer(object):
         self.optimizer_name = self.config.optimizer
         self._n_epochs = self.config.num_epochs
         self._training_iters = self.config.training_iters
-        self._dropout_conv = 1.0 - self.config.dropout_rate_conv
-        self._dropout_pool = 1.0 - self.config.dropout_rate_pool_upscale
+        self._dropout_conv1 = 1.0 - self.config.dropout_rate_conv1
+        self._dropout_conv2 = 1.0 - self.config.dropout_rate_conv2
+        self._dropout_pool = 1.0 - self.config.dropout_rate_pool
+        self._dropout_tconv = 1.0 - self.config.dropout_rate_tconv
         self._write_graph = self.config.write_graph
         self._caffemodel_path = caffemodel_path
         self._restore_path = restore_path
@@ -230,8 +232,10 @@ class Trainer(object):
                          self.learning_rate_node, self.net.gradients_node, self.net.predicter),
                         feed_dict={self.net.x: batch_x,
                                    self.net.y: dutil.crop_to_shape(batch_y, pred_shape),
+                                   self.net.keep_prob_conv1: self._dropout_conv1,
+                                   self.net.keep_prob_conv2: self._dropout_conv2,
                                    self.net.keep_prob_pool: self._dropout_pool,
-                                   self.net.keep_prob_conv: self._dropout_conv})
+                                   self.net.keep_prob_tconv: self._dropout_tconv})
 
                     if np.max(batch_y) == 0.0:
                         zero_counter += 1
@@ -359,8 +363,10 @@ class Trainer(object):
              self.net.dice_enhancing),
             feed_dict={self.net.x: batch_x,
                        self.net.y: batch_y,
+                       self.net.keep_prob_conv1: 1.0,
+                       self.net.keep_prob_conv2: 1.0,
                        self.net.keep_prob_pool: 1.0,
-                       self.net.keep_prob_conv: 1.0})
+                       self.net.keep_prob_tconv: 1.0})
         scores = collections.OrderedDict()
 
         scores[Scores.LOSS] = loss
@@ -381,8 +387,10 @@ class Trainer(object):
         # Calculate batch loss and accuracy
         summary_str = sess.run(self.summary_op, feed_dict={self.net.x: batch_x,
                                                            self.net.y: batch_y,
+                                                           self.net.keep_prob_conv1: 1.0,
+                                                           self.net.keep_prob_conv2: 1.0,
                                                            self.net.keep_prob_pool: 1.0,
-                                                           self.net.keep_prob_conv: 1.0})
+                                                           self.net.keep_prob_tconv: 1.0})
         summary_writer.add_summary(summary_str, step)
         summary_writer.flush()
 

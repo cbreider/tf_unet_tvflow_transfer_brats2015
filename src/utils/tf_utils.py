@@ -427,6 +427,8 @@ def normalize_and_zero_center_slice(tensor, max, normalize_std, new_max=None, me
     :param normalize_std: True if std should be normalized
     :returns: One hot Tensor of depth = depth:
     """
+    if max is None:
+        max = tf.reduce_max(tensor)
 
     if normalize_std:
         # intensity normalize                     new_max
@@ -436,9 +438,8 @@ def normalize_and_zero_center_slice(tensor, max, normalize_std, new_max=None, me
         if max is not None:
             max = (max - mean) / tf.math.sqrt(var)
     else:
-        out = tensor
-    if max is None:
-        max = tf.reduce_max(out)
+        out = tensor / max
+
 
     #set black elemts to random
     #zero = tf.constant(0, dtype=tf.float32)

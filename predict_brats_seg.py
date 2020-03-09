@@ -93,7 +93,6 @@ if __name__ == "__main__":
                                      new_split=False,
                                      is_five_fold=True if fold_nr > 0 else False,
                                      five_fold_idx=fold_nr)
-    else
 
     out_path = os.path.join(model_path, "predictions")
     if not os.path.exists(out_path):
@@ -113,6 +112,7 @@ if __name__ == "__main__":
         if ckpt and ckpt.model_checkpoint_path:
             net.restore(sess, ckpt.model_checkpoint_path, restore_mode=RestoreMode.COMPLETE_SESSION)
         sess.run(data.init_op)
+        """
         for i in range(int(data.size / batch_size)):
 
             test_x, id = sess.run(data.next_batch)
@@ -130,16 +130,17 @@ if __name__ == "__main__":
                 file_name = "VSD.{}.{}".format(name, id)
                 pred_slice = np.argmax(np.array(data[3]), axis=3).astype(float)
 
-                if save_pngs:
-                    Validator.store_prediction(file_name, self._mode, self._output_path,
-                                          np.array(data[0]), np.array(data[1]), np.array(data[2]), np.array(data[3]),
-                                          gt_is_one_hot=False if self._conv_net.cost == Cost.MSE else True)
+                #if save_pngs:
+                    #Validator.store_prediction(file_name, self._mode, self._output_path,
+                    #                      np.array(data[0]), np.array(data[1]), np.array(data[2]), np.array(data[3]),
+                    #                      gt_is_one_hot=False if self._conv_net.cost == Cost.MSE else True)
 
 
                 data = [[], [], [], [], []]
 
             ioutil.progress(i, int(data.size / batch_size))
-
+            
+            """
         if len(data[1]) > 0:
             raise ValueError("Somthing seems to be wrong with number of scans")
 

@@ -25,9 +25,9 @@ from src.tf_convnet.layers import (weight_variable, weight_variable_devonc, bias
                                    conv2d, deconv2d, max_pool, crop_and_concat)
 
 
-def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layers=5, features_root=64, filter_size=3,
-                   pool_size=2, summaries=True, use_padding=False, bn=False,  trainable_layers=None,
-                   layers_to_restore=None, add_residual_layer=False, use_scale_image_as_gt=False,
+def create_2d_unet(x, keep_prob_conv1, keep_prob_conv2, keep_prob_pool, keep_prob_tconv, channels, n_class, n_layers=5,
+                   features_root=64, filter_size=3, pool_size=2, summaries=True, use_padding=False, bn=False,
+                   trainable_layers=None, layers_to_restore=None, add_residual_layer=False, use_scale_image_as_gt=False,
                    act_func_out=Activation_Func.RELU):
     """
     Creates a new convolutional unet for the given parametrization.
@@ -60,14 +60,14 @@ def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layer
 
     in_node = x
 
-    weights = []
-    biases = []
     convs = []
     pools = OrderedDict()
     deconv = OrderedDict()
     dw_h_convs = OrderedDict()
     up_h_convs = OrderedDict()
     variables_to_restore = []
+    trainable_variables = []
+    variables = []
 
     train_all = True
     if trainable_layers:
@@ -106,20 +106,28 @@ def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layer
             b1 = bias_variable([features], name="b1", trainable=l_trainable)
             b2 = bias_variable([features], name="b2", trainable=l_trainable)
 
-            conv1 = conv2d(in_node, w1, b1, keep_prob_conv, padding=padding, bn=bn)
+            conv1 = conv2d(in_node, w1, b1, keep_prob_conv1, padding=padding, bn=bn)
             tmp_h_conv = tf.nn.relu(conv1)
-            conv2 = conv2d(tmp_h_conv, w2, b2, keep_prob_conv, padding=padding, bn=bn)
+            conv2 = conv2d(tmp_h_conv, w2, b2, keep_prob_conv2, padding=padding, bn=bn)
             dw_h_convs[layer] = tf.nn.relu(conv2)
 
-            weights.append((w1, w2))
-            biases.append((b1, b2))
             convs.append((conv1, conv2))
+
+            variables.append(w1)
+            variables.append(w2)
+            variables.append(b1)
+            variables.append(b2)
 
             if restore_layer:
                 variables_to_restore.append(w1)
                 variables_to_restore.append(w2)
                 variables_to_restore.append(b1)
                 variables_to_restore.append(b2)
+            if l_trainable:
+                trainable_variables.append(w1)
+                trainable_variables.append(w2)
+                trainable_variables.append(b1)
+                trainable_variables.append(b2)
 
             size -= 2 * 2 * (filter_size // 2) # valid conv
             if layer < n_layers - 1:
@@ -153,7 +161,7 @@ def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layer
             wd = weight_variable_devonc([pool_size, pool_size, features // 2, features], stddev, name="wd",
                                         trainable=l_trainable_upconv)
             bd = bias_variable([features // 2], name="bd", trainable=l_trainable_upconv)
-            h_deconv = tf.nn.relu(deconv2d(in_node, wd, pool_size, keep_prob_pool) + bd)
+            h_deconv = tf.nn.relu(deconv2d(in_node, wd, pool_size, keep_prob_tconv) + bd)
             h_deconv_concat = crop_and_concat(dw_h_convs[layer], h_deconv)
             deconv[layer] = h_deconv_concat
 
@@ -164,11 +172,18 @@ def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layer
             b1 = bias_variable([features // 2], name="b1", trainable=l_trainable_conv)
             b2 = bias_variable([features // 2], name="b2", trainable=l_trainable_conv)
 
-            conv1 = conv2d(h_deconv_concat, w1, b1, keep_prob_conv, padding=padding, bn=bn)
+            conv1 = conv2d(h_deconv_concat, w1, b1, keep_prob_conv1, padding=padding, bn=bn)
             h_conv = tf.nn.relu(conv1)
-            conv2 = conv2d(h_conv, w2, b2, keep_prob_conv, padding=padding, bn=bn)
+            conv2 = conv2d(h_conv, w2, b2, keep_prob_conv2, padding=padding, bn=bn)
             in_node = tf.nn.relu(conv2)
             up_h_convs[layer] = in_node
+
+            variables.append(w1)
+            variables.append(w2)
+            variables.append(b1)
+            variables.append(b2)
+            variables.append(wd)
+            variables.append(bd)
 
             if restore_layer_up:
                 variables_to_restore.append(wd)
@@ -178,9 +193,15 @@ def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layer
                 variables_to_restore.append(w2)
                 variables_to_restore.append(b1)
                 variables_to_restore.append(b2)
+            if l_trainable_upconv:
+                trainable_variables.append(wd)
+                trainable_variables.append(bd)
+            if l_trainable_conv:
+                trainable_variables.append(w1)
+                trainable_variables.append(w2)
+                trainable_variables.append(b1)
+                trainable_variables.append(b2)
 
-            weights.append((w1, w2))
-            biases.append((b1, b2))
             convs.append((conv1, conv2))
 
             size *= pool_size
@@ -193,9 +214,23 @@ def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layer
         l_trainable = True if train_all else trainable_layers["classifier"]
         if not l_trainable:
             logging.info("Freezing layer {}".format("classifier"))
+        restore_layer = False if layers_to_restore is None else layers_to_restore["classifier"]
+        if restore_layer:
+            logging.info("Restoring layer {} from checkpoint".format("classifier"))
         weight = weight_variable([1, 1, features_root, n_class], stddev, trainable=l_trainable)
         bias = bias_variable([n_class], name="bias", trainable=l_trainable)
         conv = conv2d(in_node, weight, bias, tf.constant(1.0))
+
+        variables.append(weight)
+        variables.append(bias)
+
+        if restore_layer:
+            variables_to_restore.append(weight)
+            variables_to_restore.append(bias)
+        if l_trainable:
+            trainable_variables.append(weight)
+            trainable_variables.append(bias)
+
         if act_func_out == Activation_Func.NONE or n_class == 1:  # in binary sigmoid is added within cs loss
             output_map = conv
         elif act_func_out == Activation_Func.RELU:
@@ -231,4 +266,4 @@ def create_2d_unet(x, keep_prob_conv, keep_prob_pool, channels, n_class, n_layer
             for k in up_h_convs.keys():
                 tf.summary.histogram("up_convolution_%s" % k + '/activations', up_h_convs[k])
 
-    return output_map, variables_to_restore, int(in_size - size), [weight, bias], last_feature_map
+    return [output_map, last_feature_map, variables_to_restore, trainable_variables, variables, int(in_size - size)]

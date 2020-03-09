@@ -48,7 +48,8 @@ class ConvNetModel(object):
         self._tv_regularizer = self._convnet_config.tv_regularizer
         self._class_weights_ce = self._convnet_config.class_weights_ce
         self._class_weights_dice = self._convnet_config.class_weights_dice
-        self._regularizer = self._convnet_config.regularizer
+        self._l2_regularizer = self._convnet_config.lambda_l2_regularizer
+        self._l1_regularizer = self._convnet_config.lambda_l1_regularizer
         self._max_tv_value = self._convnet_config.max_tv_value
         self._loss_weight = self._convnet_config.cost_weight
         self._retore_layers = self._convnet_config.restore_layers
@@ -56,32 +57,27 @@ class ConvNetModel(object):
 
         self.x = tf.placeholder("float", shape=[None, None, None, self._n_channels], name="x")
         self.y = tf.placeholder("float", shape=[None, None, None, self._n_class], name="y")
-        self.keep_prob_conv = tf.placeholder(tf.float32, name="dropout_probability")  # dropout (keep probability)
-        self.keep_prob_pool = tf.placeholder(tf.float32, name="dropout_probability")  # dropout (keep probability)
+        self.keep_prob_conv1 = tf.placeholder(tf.float32, name="dropout_probability_conv1")  # dropout (keep probability)
+        self.keep_prob_conv2 = tf.placeholder(tf.float32, name="dropout_probability_conv2")  # dropout (keep probability)
+        self.keep_prob_pool = tf.placeholder(tf.float32, name="dropout_probability_pool")  # dropout (keep probability)
+        self.keep_prob_tconv = tf.placeholder(tf.float32, name="dropout_probability_tconv")  # dropout (keep probability)
 
-        self.logits, self.variables, self.offset, self.out_vars, lfs = \
-            tf_unet.create_2d_unet(x=self.x,
-                                   keep_prob_conv=self.keep_prob_conv,
-                                   keep_prob_pool=self.keep_prob_pool,
-                                   channels=self._n_channels,
-                                   n_class=self._n_class,
-                                   n_layers=self._n_layers,
-                                   filter_size=self._filter_size,
-                                   pool_size=self._pool_size,
-                                   summaries=self.summaries,
-                                   trainable_layers=self._trainable_layers,
-                                   use_padding=self._use_padding,
-                                   bn=self._batch_norm,
-                                   add_residual_layer=self._add_residual_layer,
-                                   use_scale_image_as_gt=self._use_scale_image_as_gt,
-                                   act_func_out=self._activation_func_out,
-                                   features_root=self._features_root,
-                                   layers_to_restore=self._retore_layers)
+        [self.logits, self.last_feature_map, self.variables_to_restore, self.trainable_variables, self.variables,
+         self.offset] = tf_unet.create_2d_unet(x=self.x,
+                                               keep_prob_conv1=self.keep_prob_conv1, keep_prob_conv2=self.keep_prob_conv2,
+                                               keep_prob_pool=self.keep_prob_pool, keep_prob_tconv=self.keep_prob_tconv,
+                                               channels=self._n_channels, n_class=self._n_class,
+                                               n_layers=self._n_layers, filter_size=self._filter_size,
+                                               pool_size=self._pool_size, summaries=self.summaries,
+                                               trainable_layers=self._trainable_layers, use_padding=self._use_padding,
+                                               bn=self._batch_norm, add_residual_layer=self._add_residual_layer,
+                                               use_scale_image_as_gt=self._use_scale_image_as_gt,
+                                               act_func_out=self._activation_func_out, features_root=self._features_root,
+                                               layers_to_restore=self._retore_layers)
 
         self.cost = self._get_cost()
 
         self.gradients_node = tf.gradients(self.cost, self.variables)
-        self.last_feature_map = lfs
 
         with tf.name_scope("results"):
             self.dice_core = tf.constant(-1.)
@@ -126,7 +122,6 @@ class ConvNetModel(object):
                                                            weights=None)
                 self.iou_coe = tfu.get_iou_coe(pre=self.predicter, gt=self.y)
                 self.dice = tfu.get_dice_score(pred=self.predicter, y=self.y, weights=None)
-                self.dice_tl = tl.dice_hard_coe.dice_coe(self.predicter, self.y, )
                 self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
                 self.error = tf.constant(1.0) - self.accuracy
 
@@ -181,9 +176,12 @@ class ConvNetModel(object):
             else:
                 raise ValueError("Unknown cost function: " % self.cost_function.name)
 
-            if self._regularizer is not None:
-                regularizers = sum([tf.nn.l2_loss(variable) for variable in self.variables])
-                loss += (self._regularizer * regularizers)
+            if self._l2_regularizer is not None:
+                l2regularizers = sum([tf.nn.l2_loss(variable) for variable in self.variables])
+                loss += (self._l2_regularizer * l2regularizers)
+            if self._l1_regularizer is not None:
+                l1regularizers = sum([tf.reduce_sum(tf.abs(variable)) for variable in self.variables])
+                loss += (self._l1_regularizer * l1regularizers)
 
             return loss
 
@@ -205,7 +203,12 @@ class ConvNetModel(object):
             self.restore(sess, model_path)
 
             y_dummy = np.empty((x_test.shape[0], x_test.shape[1], x_test.shape[2], self._n_class))
-            prediction = sess.run(self.predicter, feed_dict={self.x: x_test, self.y: y_dummy, self.keep_prob: 1.})
+            prediction = sess.run(self.predicter, feed_dict={self.x: x_test, self.y: y_dummy,
+                                                             self.keep_prob_conv1: 1.0,
+                                                             self.keep_prob_conv2: 1.0,
+                                                             self.keep_prob_pool: 1.0,
+                                                             self.keep_prob_tconv: 1.0
+                                                             })
 
         return prediction
 
@@ -232,12 +235,12 @@ class ConvNetModel(object):
         if restore_mode == RestoreMode.COMPLETE_SESSION:
             logging.info('{} Resuming complete session: {}'.format(datetime.now(), model_path))
             saver = tf.train.Saver()
-        elif restore_mode == RestoreMode.COMPLETE_NET:
+        elif restore_mode == RestoreMode.ONLY_NETWORK:
             logging.info('{} Restoring Complete Net: {}'.format(datetime.now(), model_path))
-            saver = tf.train.Saver(self.variables + self.out_vars)
+            saver = tf.train.Saver(self.variables_to_restore)
         elif restore_mode == RestoreMode.ONLY_BASE_NET:
             logging.info('{} Restoring only Bases Net: {}'.format(datetime.now(), model_path))
-            saver = tf.train.Saver(self.variables)
+            saver = tf.train.Saver(self.variables_to_restore)
         else:
             raise ValueError()
 
