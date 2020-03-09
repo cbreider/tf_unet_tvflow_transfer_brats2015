@@ -177,10 +177,10 @@ class ConvNetModel(object):
                 raise ValueError("Unknown cost function: " % self.cost_function.name)
 
             if self._l2_regularizer is not None:
-                l2regularizers = sum([tf.nn.l2_loss(variable) for variable in self.variables])
+                l2regularizers = sum([tf.nn.l2_loss(variable) for variable in self.trainable_variables])
                 loss += (self._l2_regularizer * l2regularizers)
             if self._l1_regularizer is not None:
-                l1regularizers = sum([tf.reduce_sum(tf.abs(variable)) for variable in self.variables])
+                l1regularizers = sum([tf.reduce_sum(tf.abs(variable)) for variable in self.trainable_variables])
                 loss += (self._l1_regularizer * l1regularizers)
 
             return loss
