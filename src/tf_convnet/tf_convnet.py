@@ -235,7 +235,7 @@ class ConvNetModel(object):
         if restore_mode == RestoreMode.COMPLETE_SESSION:
             logging.info('{} Resuming complete session: {}'.format(datetime.now(), model_path))
             saver = tf.train.Saver()
-        elif restore_mode == RestoreMode.ONLY_NETWORK:
+        elif restore_mode == RestoreMode.COMPLETE_NET:
             logging.info('{} Restoring Complete Net: {}'.format(datetime.now(), model_path))
             saver = tf.train.Saver(self.variables_to_restore)
         elif restore_mode == RestoreMode.ONLY_BASE_NET:
