@@ -437,8 +437,12 @@ def normalize_and_zero_center_slice(tensor, max, normalize_std, new_max=None, me
         out = tf.math.divide((tensor - mean), tf.math.sqrt(var))
         if max is not None:
             max = (max - mean) / tf.math.sqrt(var)
+        if new_max is not None:
+            out = tf.math.divide(out, max) * new_max
     else:
         out = tensor / max
+        if new_max is not None:
+            out = out * new_max
 
 
     #set black elemts to random
@@ -446,9 +450,6 @@ def normalize_and_zero_center_slice(tensor, max, normalize_std, new_max=None, me
     #where_zero = tf.equal(out, zero)
     #out = tf.where(where_zero > 0, tf.random_uniform(out.shape, -0.5, 0.5, dtype=tf.float32, seed=0), out)
     #out = tf.math.divide(tensor, tf.reduce_max(out))
-
-    if new_max is not None:
-        out = tf.math.divide(out, max) * new_max
 
     return out
 

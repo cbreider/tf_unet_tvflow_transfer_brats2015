@@ -117,6 +117,8 @@ class Scores(Enum):
     LR = "LR"
     L1 = "L1"
     L2 = "L2"
+    DLTL = "L2"
+    DTL = "L2"
 
 
 ScoresLong = {
@@ -136,5 +138,7 @@ ScoresLong = {
     Scores.IOUP: "IoU per Patient",
     Scores.LR: "Learning-Rate",
     Scores.L1: "L1-Weight",
-    Scores.L2: "L2-Weight"
+    Scores.L2: "L2-Weight",
+    Scores.DLTL: "DLTL",
+    Scores.DTL : "DTL",
 }

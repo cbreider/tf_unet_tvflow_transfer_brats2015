@@ -79,6 +79,7 @@ class Validator(object):
         dice_complete = -1.
         dice_core = -1.
         dice_enhancing = -1.
+        dice_overall = -1.
         if not os.path.exists(self._output_path):
             os.makedirs(self._output_path)
         self._tf_session.run(self._data_provider.init_op)
@@ -88,11 +89,11 @@ class Validator(object):
 
         for i in range(int(self._data_provider.size / self._batch_size)):
             test_x, test_y, test_tv = self._tf_session.run(self._data_provider.next_batch)
-            loss, acc, err, prediction, dice, ce, iou, feature, d_complete, d_core, d_enhancing = self._tf_session.run(
+            [loss, acc, err, prediction, dice, ce, iou, feature, d_complete, d_core, d_enhancing, dltl, dtl] = self._tf_session.run(
                 [self._conv_net.cost, self._conv_net.accuracy, self._conv_net.error,
                  self._conv_net.predicter, self._conv_net.dice, self._conv_net.cross_entropy, self._conv_net.iou_coe,
                  self._conv_net.last_feature_map, self._conv_net.dice_complete, self._conv_net.dice_core,
-                 self._conv_net.dice_enhancing],
+                 self._conv_net.dice_enhancing, self._conv_net.dice_loss_tl, self._conv_net.dice_tl],
                 feed_dict={self._conv_net.x: test_x,
                            self._conv_net.y: test_y,
                            self._conv_net.keep_prob_conv1: 1.0,
@@ -100,7 +101,7 @@ class Validator(object):
                            self._conv_net.keep_prob_pool: 1.0,
                            self._conv_net.keep_prob_tconv: 1.0})
 
-            vals.append([loss, ce, err, acc, iou, dice, d_complete, d_core, d_enhancing])
+            vals.append([loss, ce, err, acc, iou, dice, d_complete, d_core, d_enhancing, dltl, dtl])
             data[0].append(np.squeeze(np.array(test_x), axis=0))
             data[1].append(np.squeeze(np.array(test_y), axis=0))
             data[2].append(np.squeeze(np.array(test_tv), axis=0))
@@ -125,8 +126,8 @@ class Validator(object):
                     dice_complete = dutil.get_hard_dice_score(pred=pred_complete, gt=y_complete, eps=1e-5, axis=(0,1,2))
                     dice_core = dutil.get_hard_dice_score(pred=pred_core, gt=y_core, eps=1e-5, axis=(0,1,2))
                     dice_enhancing = dutil.get_hard_dice_score(pred=pred_enhancing, gt=y_enhancing, eps=1e-5, axis=(0,1,2))
-
-                dice_overall = dutil.get_hard_dice_score(np.array(data[1]), np.array(data[3]), axis=(0,1,2,3))
+                if self._conv_net.cost_function != Cost.MSE:
+                    dice_overall = dutil.get_hard_dice_score(np.array(data[1]), np.array(data[3]), axis=(0,1,2,3))
 
                 dices_per_volume.append([dice_overall, dice_complete, dice_core, dice_enhancing])
 
@@ -172,6 +173,8 @@ class Validator(object):
         scores[Scores.DSC_COMP] = sbatch[6]
         scores[Scores.DSC_CORE] = sbatch[7]
         scores[Scores.DSC_EN] = sbatch[8]
+        scores[Scores.DLTL] = sbatch[9]
+        scores[Scores.DTL] = sbatch[10]
 
         scores[Scores.DSCP] = d_per_patient[0]
         scores[Scores.DSCP_COMP] = d_per_patient[1]

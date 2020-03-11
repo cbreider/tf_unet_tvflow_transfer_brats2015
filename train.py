@@ -77,6 +77,8 @@ if __name__ == "__main__":
         create_summaries = False
     if args.restore_path is not None:
         restore_path = args.restore_path
+    else:
+        config.ConvNetParams.restore_layers = None
     if args.restore_mode:
         restore_mode = RestoreMode(args.restore_mode)
     if args.caffemodel_path is not None:
@@ -89,6 +91,7 @@ if __name__ == "__main__":
         data_path = args.data_path
     if args.training_data_portion and args.training_data_portion >= 0:
         config.DataParams.training_data_portion = args.training_data_portion
+
 
 
 

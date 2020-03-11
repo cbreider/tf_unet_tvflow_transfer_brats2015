@@ -82,14 +82,14 @@ class DataParams:
     do_image_augmentation_val = False
     # parameters for image distortion
     image_disort_params = [[2, 3, 3],  # displacement vector [img dim, plane, heigh
-                           25.0,  # sigma deformation magnitude
+                           20.0,  # sigma deformation magnitude
                            0.8]  # max zoom factor
     # normalize standard deviation for images during pre processing
     normailze_std = True
     # value to which images should be normed to during pre processing. If None original max vales are kept
     norm_max_image_value = None
     # value to which images should be normed to during pre processing. If None original max vales are kept
-    norm_max_image_value_tv = 1.0
+    norm_max_image_value_tv = 10.0
     # Max value of input images (uint16)
     data_max_value = 65535.0
     # nr of folds for k fold cross validation
@@ -110,7 +110,7 @@ class DataParams:
     # in the outer scans. use_only_spatial_range=None to use all scans
     use_only_spatial_range = None # [30, 130]
     # use only every x-th  non tumor slice. Set None to use all slices
-    use_empty_slice_probability = 0.25
+    use_empty_slice_probability = 0.1
     # modalities used for training
     use_modalities = [modalities[0], modalities[1], modalities[2], modalities[3]]
     # number of channels of generated input images (grayscale)
@@ -123,14 +123,14 @@ class DataParams:
     clustering_method = TV_clustering_method.STATIC_BINNING
     # To train the network with multiple TV scales set a range for the tv_weight. During training the tv weight will be
     # selected uniformly from the range. Set to None to train only with a single scale set in the parameters below
-    tv_multi_scale_range = [0.05, 0.2]
+    tv_multi_scale_range = [0.125, 1.125]
     #tv_multi_scale_range = None
     # params for differnt tv clustering methods (tv smoothing
     tv_and_clustering_params = dict(
         k_means_pre_cluster=[-0.5, 0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7,
                              0.75, 0.8, 0.85, 0.9, 0.95, 1.0],
                                 # params for tv smoothing
-                                    tv_weight=0.1, tv_eps=0.00001, tv_tau=0.125, tv_m_itr=50,
+                                    tv_weight=0.75, tv_eps=0.00001, tv_tau=0.125, tv_m_itr=50,
                                     # params for kmeans nr of clusters =nr_of_clases.Only used im tv
                                     # clustering with kmeans)
                                     km_m_itr=100,
@@ -163,25 +163,25 @@ class ConvNetParams:
     # Use padding to preserve feature map size and prevent downscaling
     padding = True
     # Use Batch normalization Yes/No
-    batch_normalization = True
+    batch_normalization = False
     # weight for each class if Cross Entropy loss is chosen. length must correspond to nr of classes.
     # None to not use any weighting
     class_weights_ce = [0.1, 1.0, 1.0, 1.0, 1.0]
     # weight for each class if Dice loss is chosen. length must correspond to nr of classes.
     class_weights_dice = None  # [0.01, 1.0, 1.0, 1.0, 1.0]
     # lambda value for l2 regualizer. Set None do not use l2 regularizer
-    lambda_l2_regularizer = 0.00002
+    lambda_l2_regularizer = 0.0001
     # lambda value for l1 regualizer. Set None do not use l2 regularizer
-    lambda_l1_regularizer = 0.0000005
+    lambda_l1_regularizer = 0.000001
     # tv regularize for TV loss. oly used if Cost funcion is TV
     tv_regularizer = 0.01
     # Add residual layer/skip layer at the end output = input + last_layer (only for tv regression). NOT useful
     add_residual_layer = False
     # freeze layers during training. Set None to train all layers
-    trainable_layers = {"down_conv_0": False, "down_conv_1": False, "down_conv_2": False, "down_conv_3": False,
+    trainable_layers = {"down_conv_0": True, "down_conv_1": True, "down_conv_2": True, "down_conv_3": True,
                         "down_conv_4": True,
                         # up_conv consists of transpose cond and two convolutions
-                        "up_conv_3": [False, True], "up_conv_2": [False, True], "up_conv_1": [False, True], "up_conv_0": [False, True],
+                        "up_conv_3": [True, True], "up_conv_2": [True, True], "up_conv_1": [True, True], "up_conv_0": [True, True],
                         "classifier": True}
     # trainable_layers = None
     # freeze layers during training. Set None to train all layers
@@ -189,7 +189,7 @@ class ConvNetParams:
                       "down_conv_4": True,
                       # up_conv consists of transpose cond and two convolutions
                       "up_conv_3": [True, True], "up_conv_2": [True, True], "up_conv_1": [True, True], "up_conv_0": [True, True],
-                      "classifier": True}
+                      "classifier": False}
     # trainable_layers = None
     # Act func for output map. ATTENTION: Please choose none. actfunc is added prediction step
     # softmax multi class classifiavtion, sigmoid binary
@@ -235,9 +235,9 @@ class TrainingParams:
     # but they did it in the original tf_unet implementation, so at least the option will be provided here.
     dropout_rate_conv1 = 0.2
     # dropout probability for the second convolution in each block
-    dropout_rate_conv2 = 0.0
+    dropout_rate_conv2 = 0.1
     # dropout_rate for the pooling and  layers
-    dropout_rate_pool = 0.0
+    dropout_rate_pool = 0.1
     # dropout_rate for the deconvolutional layers
     dropout_rate_tconv = 0.1
     # initial learning rate
@@ -259,7 +259,7 @@ class TrainingParams:
                      use_locking=False,
                      name='Adam',
                      decay_rate=0.1,
-                     decay_steps=60000)
+                     decay_steps=100000)
     # Hyperparameters for Momentum optimzer
     momentum_args = dict(momentum=0.99,
                          learning_rate=initial_learning_rate,

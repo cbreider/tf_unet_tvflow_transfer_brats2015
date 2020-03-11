@@ -19,7 +19,7 @@ from datetime import datetime
 from src.utils.enum_params import Cost, RestoreMode, TrainingModes
 import src.utils.tf_utils as tfu
 from configuration import ConvNetParams
-
+import tensorlayer as tl
 
 class ConvNetModel(object):
 
@@ -54,8 +54,8 @@ class ConvNetModel(object):
         self._loss_weight = self._convnet_config.cost_weight
         self._retore_layers = self._convnet_config.restore_layers
         self._mode = mode
-        self.l1regularizers = tf.constant(0.0)
-        self.l2regularizers = tf.constant(0.0)
+        self.l1regularizers = tf.constant(-1.0)
+        self.l2regularizers = tf.constant(-1.0)
 
         self.x = tf.placeholder("float", shape=[None, None, None, self._n_channels], name="x")
         self.y = tf.placeholder("float", shape=[None, None, None, self._n_class], name="y")
@@ -124,6 +124,8 @@ class ConvNetModel(object):
                                                            weights=None)
                 self.iou_coe = tfu.get_iou_coe(pre=self.predicter, gt=self.y)
                 self.dice = tfu.get_dice_score(pred=self.predicter, y=self.y, weights=None)
+                self.dice_loss_tl = tl.cost.dice_coe(self.logits, self.y, axis=(1,2,3,4))
+                self.dice_tl = tl.cost.dice_hard_coe(self.logits, self.y, axis=(1, 2, 3, 4))
                 self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
                 self.error = tf.constant(1.0) - self.accuracy
 
@@ -179,10 +181,10 @@ class ConvNetModel(object):
                 raise ValueError("Unknown cost function: " % self.cost_function.name)
 
             if self._l2_regularizer is not None:
-                self.l2regularizers = self._l2_regularizer * sum([tf.nn.l2_loss(variable) for variable in self.trainable_variables])
+                self.l2regularizers = self._l2_regularizer * sum([tf.nn.l2_loss(variable) for variable in self.variables])
                 loss += self.l2regularizers
             if self._l1_regularizer is not None:
-                self.l1regularizers = self._l1_regularizer * sum([tf.reduce_sum(tf.abs(variable)) for variable in self.trainable_variables])
+                self.l1regularizers = self._l1_regularizer * sum([tf.reduce_sum(tf.abs(variable)) for variable in self.variables])
                 loss += self.l1regularizers
 
             return loss
