@@ -19,7 +19,7 @@ from datetime import datetime
 from src.utils.enum_params import Cost, RestoreMode, TrainingModes
 import src.utils.tf_utils as tfu
 from configuration import ConvNetParams
-import tensorlayer as tl
+
 
 class ConvNetModel(object):
 
@@ -124,8 +124,8 @@ class ConvNetModel(object):
                                                            weights=None)
                 self.iou_coe = tfu.get_iou_coe(pre=self.predicter, gt=self.y)
                 self.dice = tfu.get_dice_score(pred=self.predicter, y=self.y, weights=None)
-                self.dice_loss_tl = tl.cost.dice_coe(self.logits, self.y, axis=(1,2,3,4))
-                self.dice_tl = tl.cost.dice_hard_coe(self.logits, self.y, axis=(1, 2, 3, 4))
+                self.dice_loss_tl = tf.constant(-1.)
+                self.dice_tl = tf.constant(-1.)
                 self.accuracy = tf.reduce_mean(tf.cast(self.correct_pred, tf.float32))
                 self.error = tf.constant(1.0) - self.accuracy
 
