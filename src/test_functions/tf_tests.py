@@ -6,6 +6,12 @@ from src.test_functions.np_tv_denoise_test import tv_denoise
 from PIL import Image
 
 
+ten = tf.ones([6, 5, 3, 3])
+drop_out =tf.nn.dropout(ten, keep_prob=2/3, noise_shape=[0, 0, 1, 1])
+
+with tf.Session() as sess:
+    dn = sess.run(drop_out)
+    a = 0
 img = np.array(plt.imread(
     "/home/christian/Projects/Lab_SS2019/dataset/2d_slices/png/raw/train/HGG/brats_2013_pat0006_1/VSD.Brain.XX.O.MR_Flair.54542/VSD.Brain.XX.O.MR_Flair.54542_82.png"))
 

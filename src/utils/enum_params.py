@@ -117,8 +117,8 @@ class Scores(Enum):
     LR = "LR"
     L1 = "L1"
     L2 = "L2"
-    DLTL = "L2"
-    DTL = "L2"
+    DLTL = "DLTL"
+    DTL = "DTL"
 
 
 ScoresLong = {
