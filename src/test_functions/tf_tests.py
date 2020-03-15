@@ -7,7 +7,7 @@ from PIL import Image
 
 
 ten = tf.ones([6, 5, 3, 3])
-drop_out =tf.nn.dropout(ten, keep_prob=2/3, noise_shape=[0, 0, 1, 1])
+drop_out =tf.nn.dropout(ten, keep_prob=2/3, noise_shape=[6, 5, 1, 1])
 
 with tf.Session() as sess:
     dn = sess.run(drop_out)

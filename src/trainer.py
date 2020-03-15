@@ -57,6 +57,7 @@ class Trainer(object):
         self._dropout_conv2 = 1.0 - self.config.dropout_rate_conv2
         self._dropout_pool = 1.0 - self.config.dropout_rate_pool
         self._dropout_tconv = 1.0 - self.config.dropout_rate_tconv
+        self._dropout_concat = 1.0 - self.config.dropout_rate_concat
         self._write_graph = self.config.write_graph
         self._caffemodel_path = caffemodel_path
         self._restore_path = restore_path
@@ -119,7 +120,7 @@ class Trainer(object):
 
     def _initialize(self):
 
-        global_step = tf.Variable(0, name="global_step", trainable=False)
+        global_step = tf.Variable(0, name="global_step")
         self.norm_gradients_node = tf.Variable(tf.constant(0.0, shape=[len(self.net.gradients_node)]),
                                                name="norm_gradients", trainable=False)
 
@@ -238,7 +239,8 @@ class Trainer(object):
                                    self.net.keep_prob_conv1: self._dropout_conv1,
                                    self.net.keep_prob_conv2: self._dropout_conv2,
                                    self.net.keep_prob_pool: self._dropout_pool,
-                                   self.net.keep_prob_tconv: self._dropout_tconv})
+                                   self.net.keep_prob_tconv: self._dropout_tconv,
+                                   self.net.keep_prob_concat: self._dropout_concat})
 
                     if np.max(batch_y) == 0.0:
                         zero_counter += 1
@@ -374,7 +376,8 @@ class Trainer(object):
                        self.net.keep_prob_conv1: 1.0,
                        self.net.keep_prob_conv2: 1.0,
                        self.net.keep_prob_pool: 1.0,
-                       self.net.keep_prob_tconv: 1.0})
+                       self.net.keep_prob_tconv: 1.0,
+                       self.net.keep_prob_concat: 1.0})
         scores = collections.OrderedDict()
 
         scores[Scores.LOSS] = loss
@@ -398,7 +401,8 @@ class Trainer(object):
                                                            self.net.keep_prob_conv1: 1.0,
                                                            self.net.keep_prob_conv2: 1.0,
                                                            self.net.keep_prob_pool: 1.0,
-                                                           self.net.keep_prob_tconv: 1.0})
+                                                           self.net.keep_prob_tconv: 1.0,
+                                                           self.net.keep_prob_concat: 1.0})
         summary_writer.add_summary(summary_str, step)
         summary_writer.flush()
 

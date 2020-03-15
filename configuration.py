@@ -170,9 +170,9 @@ class ConvNetParams:
     # weight for each class if Dice loss is chosen. length must correspond to nr of classes.
     class_weights_dice = None  # [0.01, 1.0, 1.0, 1.0, 1.0]
     # lambda value for l2 regualizer. Set None do not use l2 regularizer
-    lambda_l2_regularizer = 0.00001
+    lambda_l2_regularizer = 0.000001
     # lambda value for l1 regualizer. Set None do not use l2 regularizer
-    lambda_l1_regularizer = 0.0000001
+    lambda_l1_regularizer = 0.00000001
     # tv regularize for TV loss. oly used if Cost funcion is TV
     tv_regularizer = 0.01
     # Add residual layer/skip layer at the end output = input + last_layer (only for tv regression). NOT useful
@@ -221,7 +221,7 @@ class TrainingParams:
     # log (to terminal) mini batch stats after training_iters. If False only average is logged
     log_mini_batch_stats = False
     # number of training epochs
-    num_epochs = 8
+    num_epochs = 20
     # iterations per epoch
     training_iters = 500
     # number of iterations between each
@@ -233,13 +233,15 @@ class TrainingParams:
     # dropout probability for the first convolution in each block.
     # Note: it's unusual to use dropout in convolutional layers
     # but they did it in the original tf_unet implementation, so at least the option will be provided here.
-    dropout_rate_conv1 = 0.2
+    dropout_rate_conv1 = 0.0
     # dropout probability for the second convolution in each block
-    dropout_rate_conv2 = 0.2
+    dropout_rate_conv2 = 0.0
     # dropout_rate for the pooling and  layers
     dropout_rate_pool = 0.0
     # dropout_rate for the deconvolutional layers
     dropout_rate_tconv = 0.0
+    # dropout_rate for the deconvolutional layers
+    dropout_rate_concat = 0.3
     # initial learning rate
     initial_learning_rate = 0.0001
     # store output images of validation

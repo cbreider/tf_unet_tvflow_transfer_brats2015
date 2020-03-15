@@ -486,28 +486,47 @@ def get_dice_score(pred, y, eps=1e-5, axis=(1, 2), weights=None):
     return dice
 
 
-def get_dice_log_loss(logits, y, axis=(1, 2), eps=1e-5, exclude_zero_label=False):
+def get_dice_log_loss(logits, y, loss_type='jaccard', axis=(1, 2), eps=1e-5, weights=None, exclude_zero_label=False):
     """
-    Sorenson (Soft) Dice loss
-    Using -log(Dice) as the loss since it is better behaved.
-    Also, the log allows avoidance of the division which
-    can help prevent underflow when the numbers are very small.
+    calculates the (multiclass) dice score over a given batch of samples. In multiclass prediction (n_class > 1)
+    the dice score is the average dice score over all classes
+
+
+    :param logits: prediction tensor [batch_size, img_size1, img_size2, _nclasses] must be one hot encoded
+    :param y: max value of input image as it could be
+    :param eps: smoothing coeffient
+    :param loss_type: `jaccard`` or ``sorensen``, default is ``jaccard``.
+    :param axis: axis to sum over
+    :param weight: bool wether weight classes (not implemented)
+    :param class_axis: axis of class assignments
+    :returns: Dice score Tensor shape ():
     """
-    logits = tf.cast(logits, tf.float32)
-    y = tf.cast(y, tf.float32)
     if logits.get_shape().as_list()[3] > 1: # multiclass
-        prediction = tf.nn.softmax(logits)
+        pred = tf.nn.softmax(logits)
         if exclude_zero_label:
-            prediction = prediction[:, :, :, 1:]
+            pred = pred[:, :, :, 1:]
             y = y[:, :, :, 1:]
     else: # binary
-        prediction = tf.nn.sigmoid(logits)
-    intersection = tf.reduce_sum(prediction * y, axis=axis)
-    p = tf.reduce_sum(prediction, axis=axis)
-    t = tf.reduce_sum(y, axis=axis)
-    numerator = tf.reduce_mean(intersection + eps)
-    denominator = tf.reduce_mean(t + p + eps)
-    dice_loss = -tf.log(2.*numerator) + tf.log(denominator)
+        pred = tf.nn.sigmoid(logits)
+
+    numerator = tf.cast(tf.reduce_sum(y * pred, axis=axis), tf.float32)
+
+    if loss_type == 'jaccard':
+        pred = pred * pred
+        y = y * y
+    elif loss_type == 'sorensen':
+        pred = pred
+        y = y
+
+    denominator = tf.cast(tf.reduce_sum(y, axis=axis) + tf.reduce_sum(pred, axis=axis), tf.float32)
+    dice_ = ((2 * numerator) + eps) / (denominator + eps)
+    if weights:
+        if axis == (1, 2): # dice per slice
+            dice_ = tf.reduce_mean(dice_, axis=0)
+        dice_ = weights * dice_
+
+    dice = tf.reduce_mean(dice_)
+    dice_loss = -tf.log(dice)
 
     return dice_loss
 

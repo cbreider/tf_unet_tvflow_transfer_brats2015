@@ -23,8 +23,8 @@ def run_test(sess, net, data_provider_test, mode, nr, out_path):
     test_out_path = os.path.join(out_path, "Test_{}".format(nr))
     pred_shape, validation_results = Validator(sess, net, data_provider_test,
                                                test_out_path, mode=mode, mini_validation=False,
-                                               nr=nr, store_feature_maps=True,
-                                               store_predictions=True).run_validation()
+                                               nr=nr, store_feature_maps=False,
+                                               store_predictions=False).run_validation()
     l_string = "TEST RESULTS:"
     for k, v in validation_results.items():
         if v != -1.:
@@ -99,7 +99,8 @@ class Validator(object):
                            self._conv_net.keep_prob_conv1: 1.0,
                            self._conv_net.keep_prob_conv2: 1.0,
                            self._conv_net.keep_prob_pool: 1.0,
-                           self._conv_net.keep_prob_tconv: 1.0})
+                           self._conv_net.keep_prob_tconv: 1.0,
+                           self._conv_net.keep_prob_concat: 1.0})
 
             vals.append([loss, ce, err, acc, iou, dice, d_complete, d_core, d_enhancing, dltl, dtl])
             data[0].append(np.squeeze(np.array(test_x), axis=0))

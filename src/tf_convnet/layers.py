@@ -39,7 +39,7 @@ def conv2d(x, W, b, keep_prob, padding='VALID', bn=False):
         cs = tf.shape(conv_2d_b)
         if bn:
             conv_2d_b = tf.layers.batch_normalization(conv_2d_b)
-        return tf.nn.dropout(conv_2d_b, keep_prob=keep_prob, noise_shape=(cs[0], cs[1], cs[2], 1))
+        return tf.nn.dropout(conv_2d_b, keep_prob=keep_prob, noise_shape=(cs[0], 1, 1, cs[3]))
 
 
 def deconv2d(x, W, stride, keep_prob):
@@ -49,16 +49,16 @@ def deconv2d(x, W, stride, keep_prob):
         deconv = tf.nn.conv2d_transpose(x, W, output_shape, strides=[1, stride, stride, 1], padding='VALID',
                                         name="conv2d_transpose")
         cs = tf.shape(deconv)
-        return tf.nn.dropout(deconv, keep_prob=keep_prob, noise_shape=(cs[0], cs[1], cs[2], 1))
+        return tf.nn.dropout(deconv, keep_prob=keep_prob, noise_shape=(cs[0], 1, 1, cs[3]))
 
 
 def max_pool(x, n, keep_prob):
     mp = tf.nn.max_pool(x, ksize=[1, n, n, 1], strides=[1, n, n, 1], padding='VALID')
     ms = tf.shape(mp)
-    return tf.nn.dropout(mp, keep_prob, noise_shape=(ms[0], ms[1], ms[2], 1))
+    return tf.nn.dropout(mp, keep_prob, noise_shape=(ms[0], 1, 1, ms[3]))
 
 
-def crop_and_concat(x1, x2):
+def crop_and_concat(x1, x2, keep_prob=1.0):
     with tf.name_scope("crop_and_concat"):
         x1_shape = tf.shape(x1)
         x2_shape = tf.shape(x2)
@@ -68,7 +68,9 @@ def crop_and_concat(x1, x2):
         offsets = [0, (x1_shape[1] - x2_shape[1]) // 2, (x1_shape[2] - x2_shape[2]) // 2, 0]
         size = [-1, x2_shape[1], x2_shape[2], -1]
         x1_crop = tf.slice(x1, offsets, size)
-        return tf.concat([x1_crop, x2], 3)
+        conc = tf.concat([x1_crop, x2], 3)
+        cs = tf.shape(conc)
+        return tf.nn.dropout(conc, keep_prob=keep_prob, noise_shape=(cs[0], 1, 1, cs[3]))
 
 def cross_entropy(y_, output_map):
     return -tf.reduce_mean(y_*tf.log(tf.clip_by_value(output_map, 1e-10, 1.0)), name="cross_entropy")

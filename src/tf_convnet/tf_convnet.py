@@ -63,11 +63,14 @@ class ConvNetModel(object):
         self.keep_prob_conv2 = tf.placeholder(tf.float32, name="dropout_probability_conv2")  # dropout (keep probability)
         self.keep_prob_pool = tf.placeholder(tf.float32, name="dropout_probability_pool")  # dropout (keep probability)
         self.keep_prob_tconv = tf.placeholder(tf.float32, name="dropout_probability_tconv")  # dropout (keep probability)
+        self.keep_prob_concat = tf.placeholder(tf.float32, name="dropout_probability_concat")  # dropout (keep probability)
+
 
         [self.logits, self.last_feature_map, self.variables_to_restore, self.trainable_variables, self.variables,
          self.offset] = tf_unet.create_2d_unet(x=self.x,
                                                keep_prob_conv1=self.keep_prob_conv1, keep_prob_conv2=self.keep_prob_conv2,
                                                keep_prob_pool=self.keep_prob_pool, keep_prob_tconv=self.keep_prob_tconv,
+                                               keep_prob_concat=self.keep_prob_concat,
                                                channels=self._n_channels, n_class=self._n_class,
                                                n_layers=self._n_layers, filter_size=self._filter_size,
                                                pool_size=self._pool_size, summaries=self.summaries,

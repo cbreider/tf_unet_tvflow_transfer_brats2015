@@ -25,7 +25,8 @@ from src.tf_convnet.layers import (weight_variable, weight_variable_devonc, bias
                                    conv2d, deconv2d, max_pool, crop_and_concat)
 
 
-def create_2d_unet(x, keep_prob_conv1, keep_prob_conv2, keep_prob_pool, keep_prob_tconv, channels, n_class, n_layers=5,
+def create_2d_unet(x, keep_prob_conv1, keep_prob_conv2, keep_prob_pool, keep_prob_tconv, keep_prob_concat,
+                   channels, n_class, n_layers=5,
                    features_root=64, filter_size=3, pool_size=2, summaries=True, use_padding=False, bn=False,
                    trainable_layers=None, layers_to_restore=None, add_residual_layer=False, use_scale_image_as_gt=False,
                    act_func_out=Activation_Func.RELU):
@@ -162,7 +163,7 @@ def create_2d_unet(x, keep_prob_conv1, keep_prob_conv2, keep_prob_pool, keep_pro
                                         trainable=l_trainable_upconv)
             bd = bias_variable([features // 2], name="bd", trainable=l_trainable_upconv)
             h_deconv = tf.nn.relu(deconv2d(in_node, wd, pool_size, keep_prob_tconv) + bd)
-            h_deconv_concat = crop_and_concat(dw_h_convs[layer], h_deconv)
+            h_deconv_concat = crop_and_concat(dw_h_convs[layer], h_deconv, keep_prob=keep_prob_concat)
             deconv[layer] = h_deconv_concat
 
             w1 = weight_variable([filter_size, filter_size, features, features // 2], stddev, name="w1",
