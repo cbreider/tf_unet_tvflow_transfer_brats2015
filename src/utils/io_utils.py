@@ -238,6 +238,11 @@ def load_mha_volume_as_array(filename):
     return nda
 
 
+def save_scan_as_mha(scan, filepath, type=np.int16):
+    data = scan.astype(type)
+    sitk.WriteImage(data, filepath)
+
+
 def save_array_as_nifty_volume(data, filename, reference_name=None):
     """
     save a numpy array as nifty image

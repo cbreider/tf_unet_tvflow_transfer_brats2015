@@ -24,6 +24,8 @@ from src.validator import Validator
 from src.utils.enum_params import TrainingModes, DataModes, Optimizer, RestoreMode
 from src.tf_data_pipeline_wrapper import ImageData
 import numpy as np
+import json
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 
@@ -39,7 +41,7 @@ if __name__ == "__main__":
                         type=str, default=None, required=True)
     parser.add_argument("--name",
                         help="Name of the files. VSD.[name].patientID.mha",
-                        type=str, default=None)
+                        type=str, default=None, required=True)
     parser.add_argument("--use_brats_test_set",
                         help="Loads Scans from Brats test set instead of own test set from BRATS train samples",
                         action='store_true')
@@ -80,69 +82,79 @@ if __name__ == "__main__":
     data_paths = DataPaths(data_path="default", mode="SEGMENTATION_TEST",
                            tumor_mode=config.DataParams.segmentation_mask.name)
     data_paths.load_data_paths(mkdirs=False, restore_dir=model_path)
-    file_paths = None
 
     log.init_logger(type="test", path=data_paths.tf_out_path)
     logging.info("Allocating '{}'".format(data_paths.tf_out_path))
+    if use_Brats_Testing:
+        patient_paths = os.listdir(data_paths.brats_test_dir)
+    else:
+        split_file = os.path.join(data_paths.split_path, "fold_{}.json".format(fold_nr))
+        if not os.path.exists(split_file):
+            raise ValueError('{0:} file not found'.format(split_file))
+        file = open(split_file, 'r')
+        data = file.read()
+        split = json.loads(data)
+        patient_paths = split["testing"]
 
-    if not use_Brats_Testing:
-        file_paths = TestFilePaths(paths=data_paths,
-                                     mode=TrainingModes.BRATS_SEGMENTATION,
-                                     data_config=config.DataParams,
-                                     load_test_paths_only=True,
-                                     new_split=False,
-                                     is_five_fold=True if fold_nr > 0 else False,
-                                     five_fold_idx=fold_nr)
+    file_paths = TestFilePaths(paths=data_paths, patient_paths=patient_paths, config=config)
 
-    out_path = os.path.join(model_path, "predictions")
+    out_path_base = os.path.join(model_path, "predictions")
+    out_path_mha = os.path.join(out_path_base, "mha")
+    out_path_png = os.path.join(out_path_base, "png")
+
     if not os.path.exists(out_path):
         os.makedirs(out_path)
 
-    data = ImageData(data=file_paths.test_paths, mode=DataModes.VALIDATION, train_mode=TrainingModes.BRATS_SEGMENTATION,
-                     data_config=config.DataParams)
-
-    data.create()
+    data_iter = ImageData(data=file_paths.test_paths, mode=DataModes.TESTING,
+                          train_mode=TrainingModes.BRATS_SEGMENTATION, data_config=config.DataParams)
+    data_iter.create()
 
     net = ConvNetModel(convnet_config=config.ConvNetParams, mode=TrainingModes.BRATS_SEGMENTATION,
                        create_summaries=True)
-
+    data = [[], []]
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         ckpt = tf.train.get_checkpoint_state(model_path)
         if ckpt and ckpt.model_checkpoint_path:
             net.restore(sess, ckpt.model_checkpoint_path, restore_mode=RestoreMode.COMPLETE_SESSION)
-        sess.run(data.init_op)
-        """
-        for i in range(int(data.size / batch_size)):
+        sess.run(data_iter.init_op)
+        for i in range(int(data_iter.size / batch_size)):
 
-            test_x, id = sess.run(data.next_batch)
+            test_x, id = sess.run(data_iter.next_batch)
 
             prediction = sess.run(net.predicter,
                                   feed_dict={net.x: test_x,
-                                             net.keep_prob: 1.})
+                                             net.keep_prob_conv1: 1.0,
+                                             net.keep_prob_conv2: 1.0,
+                                             net.keep_prob_pool: 1.0,
+                                             net.keep_prob_tconv: 1.0,
+                                             net.keep_prob_concat: 1.0})
 
             data[0].append(np.squeeze(np.array(test_x), axis=0))
-            data[3].append(np.squeeze(np.array(prediction), axis=0))
+            data[1].append(np.squeeze(np.array(prediction), axis=0))
+
             shape = prediction.shape
 
             if len(data[1]) == 155:
 
                 file_name = "VSD.{}.{}".format(name, id)
-                pred_slice = np.argmax(np.array(data[3]), axis=3).astype(float)
+                pred_slice = np.argmax(np.array(data[3]), axis=3).astype(np.int16)
+                mha_path = png_path = os.path.join(out_path_mha, "{}.mha".format(file_name))
+                ioutil.save_scan_as_mha(pred_slice, mha_path)
 
-                #if save_pngs:
-                    #Validator.store_prediction(file_name, self._mode, self._output_path,
-                    #                      np.array(data[0]), np.array(data[1]), np.array(data[2]), np.array(data[3]),
-                    #                      gt_is_one_hot=False if self._conv_net.cost == Cost.MSE else True)
+                if save_pngs:
+                    png_path = os.path.join(out_path_png, "{}.png".format(file_name))
+                    Validator.store_prediction(file_name, mode=TrainingModes.BRATS_SEGMENTATION, path=png_path,
+                                               batch_x=np.array(data[0]), batch_y=np.array(data[0]),
+                                               batch_tv=np.array(data[0]), prediction=np.array(data[1]),
+                                               gt_is_one_hot=True)
 
+                data = [[], []]
 
-                data = [[], [], [], [], []]
-
-            ioutil.progress(i, int(data.size / batch_size))
+            ioutil.progress(i, int(data_iter.size / batch_size))
             
-            """
         if len(data[1]) > 0:
-            raise ValueError("Somthing seems to be wrong with number of scans")
+            raise ValueError("Something seems to be wrong with number of scans")
 
 
 

@@ -213,7 +213,7 @@ class Trainer(object):
             zero_counter = 0
 
             try:
-                for step in range(init_step, self._n_epochs*self._training_iters):
+                for step in range(init_step, (self._n_epochs*self._training_iters)+1):
                     s_train += 1
                     # renitialze dataprovider if looped through a hole dataset
                     if (s_train*self.config.batch_size_train+self.config.batch_size_train) > self.data_provider_train.size:

@@ -15,13 +15,12 @@ import sys
 
 gettrace = getattr(sys, 'gettrace', None)
 
+
 class DataParams:
     """ Data parameters"""
 
     # batch size used for training
     batch_size_train = 8
-    # batch size used for validation. Attention: Due to implementation only 1 is possible at the moment
-    batch_size_val = 1
     # buffer size for tf training data pipeline
     buffer_size_train = 32
     # buffer size for tf validation data pipeline
@@ -123,7 +122,8 @@ class DataParams:
     clustering_method = TV_clustering_method.STATIC_BINNING
     # To train the network with multiple TV scales set a range for the tv_weight. During training the tv weight will be
     # selected uniformly from the range. Set to None to train only with a single scale set in the parameters below
-    tv_multi_scale_range = [0.125, 1.125]
+    tv_multi_scale_range = None #[0.125, 1.125]
+    tv_static_multi_scale = [0.125, 0.25, 0.5, 0.75, 1.0]
     #tv_multi_scale_range = None
     # params for differnt tv clustering methods (tv smoothing
     tv_and_clustering_params = dict(
@@ -208,8 +208,6 @@ class TrainingParams:
     """ Training parameters"""
     # batch size used for training
     batch_size_train = DataParams.batch_size_train
-    # batch size used for validation
-    batch_size_val = DataParams.batch_size_val
     # buffer size for tf training data pipeline
     buffer_size_train = DataParams.buffer_size_train
     # buffer size for tf validation data pipeline

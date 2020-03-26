@@ -60,6 +60,7 @@ class TFImageDataGenerator:
         self._do_augmentation = None
         self._crop_to_non_zero = None
         self._tv_multi_scale_range = self._data_config.tv_multi_scale_range
+        self._tv_static_multi_scale = self._data_config.tv_static_multi_scale
         self.tv_tau = self._data_config.tv_and_clustering_params["tv_tau"]
         self.tv_weight = self._data_config.tv_and_clustering_params["tv_weight"]
         self.tv_eps = self._data_config.tv_and_clustering_params["tv_eps"]
@@ -106,13 +107,6 @@ class TFImageDataGenerator:
                                                                         new_max=self._data_norm_value_tv,
                                                                         normalize_std=False,
                                                                         data_vals=values)
-                    tvs = []
-                    for i in range(len(self._modalties_tv)):
-                        tvs.append(tf_utils.get_tv_smoothed(img=tf.expand_dims(tv_base[:, :, i], axis=2),
-                                                            tau=self.tv_tau, weight=self.tv_weight, eps=self.tv_eps,
-                                                            m_itr=self.tv_nr_itr))
-
-                    tv_img = tf.concat(tvs, axis=2)
 
                 else:
                     if self._segmentation_mask == Subtumral_Modes.COMPLETE:  # todo add case
@@ -127,29 +121,27 @@ class TFImageDataGenerator:
                                                                             new_max=self._data_norm_value_tv,
                                                                             mean=values[3, 1], var=values[3, 2])
                         tv_base = (tv_base1 + tv_base2) / 2
-                    elif self._segmentation_mask == Subtumral_Modes.CORE:
-                        tv_base = in_img[:, :, 2]
-                        tv_base = tf_utils.normalize_and_zero_center_slice(tv_base, max=values[2, 0],
-                                                                           normalize_std=False,
-                                                                           new_max=self._data_norm_value_tv,
-                                                                           mean=values[2, 1], var=values[2, 2])
-                    elif self._segmentation_mask == Subtumral_Modes.CORE:
-                        tv_base = in_img[:, :, 1]
-                        tv_base = tf_utils.normalize_and_zero_center_slice(tv_base, max=values[1, 0],
-                                                                           normalize_std=False,
-                                                                           new_max=self._data_norm_value_tv,
-                                                                           mean=values[1, 1], var=values[1, 2])
                     else:
                         raise ValueError()
 
-                if self._tv_multi_scale_range and len(self._tv_multi_scale_range) == 2:
-                    tv_weight = tf.random.uniform(minval=self._tv_multi_scale_range[0],
+                tvs = []
+                for i in range(self._nr_of_classes):
+                    if self._tv_multi_scale_range and len(self._tv_multi_scale_range) == 2:
+                        tv_weight = tf.random.uniform(minval=self._tv_multi_scale_range[0],
                                                       maxval=self._tv_multi_scale_range[1], shape=())
-                else:
-                    tv_weight = self.tv_weight
+                        tvs.append(tf_utils.get_tv_smoothed(img=tv_base[:, :, i], tau=self.tv_tau, weight=tv_weight,
+                                                            eps=self.tv_eps, m_itr=self.tv_nr_itr))
+                    elif self._tv_static_multi_scale:
+                        for y in range(self._tv_static_multi_scale):
+                            tv_weight = self._tv_static_multi_scale[y]
+                            tvs.append(tf_utils.get_tv_smoothed(img=tv_base[:, :, i], tau=self.tv_tau, weight=tv_weight,
+                                                                eps=self.tv_eps, m_itr=self.tv_nr_itr))
+                    else:
+                        tv_weight = self.tv_weight
+                        tvs.append(tf_utils.get_tv_smoothed(img=tv_base[:, :, i], tau=self.tv_tau, weight=tv_weight,
+                                                            eps=self.tv_eps, m_itr=self.tv_nr_itr))
 
-                tv_img = tf_utils.get_tv_smoothed(img=tv_base, tau=self.tv_tau, weight=tv_weight,
-                                                  eps=self.tv_eps, m_itr=self.tv_nr_itr)
+                    tv_img = tf.concat(tvs, axis=2)
 
             if self._mode == TrainingModes.TVFLOW_REGRESSION:
                 gt_img = tv_img
@@ -251,7 +243,7 @@ class TFTrainingImageDataGenerator(TFImageDataGenerator):
 class TFValidationImageDataGenerator(TFImageDataGenerator):
 
     def initialize(self):
-        self._batch_size = self._data_config.batch_size_val
+        self._batch_size = 1
         self._buffer_size = self._data_config.buffer_size_val
         self._do_augmentation = self._data_config.do_image_augmentation_val
         self._crop_to_non_zero = self._data_config.crop_to_non_zero_val
@@ -284,7 +276,7 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
 class TFTestImageDataGenerator(TFImageDataGenerator):
 
     def initialize(self):
-        self._batch_size = self._data_config.batch_size_val
+        self._batch_size = 1
         self._buffer_size = self._data_config.buffer_size_val
         self._do_augmentation = False
         self._crop_to_non_zero = False

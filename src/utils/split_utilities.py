@@ -57,6 +57,7 @@ class TestFilePaths(object):
 
         file_dict = collections.OrderedDict()
         for patient_path in patient_paths:
+            patient_path = os.path.join(paths.brats_test_dir, patient_path)
             file_paths = os.listdir(patient_path)
             file_paths = sorted(file_paths, reverse=True)
             patient_id = [f for f in file_paths if file_modality in f][0].split(".")[-1]
