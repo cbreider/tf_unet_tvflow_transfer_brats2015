@@ -240,7 +240,10 @@ def load_mha_volume_as_array(filename):
 
 def save_scan_as_mha(scan, filepath, type=np.int16):
     data = scan.astype(type)
-    sitk.WriteImage(data, filepath)
+    img = sitk.GetImageFromArray(data)
+    writer = sitk.ImageFileWriter()
+    writer.SetFileName(filepath)
+    writer.Execute(img)
 
 
 def save_array_as_nifty_volume(data, filename, reference_name=None):

@@ -80,7 +80,7 @@ class Validator(object):
         dice_core = -1.
         dice_enhancing = -1.
         dice_overall = -1.
-        if not os.path.exists(self._output_path):
+        if not os.path.exists(self._output_path) and(self._store_predictions or self._store_fmaps):
             os.makedirs(self._output_path)
         self._tf_session.run(self._data_provider.init_op)
 

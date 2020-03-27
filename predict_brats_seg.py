@@ -64,7 +64,7 @@ if __name__ == "__main__":
         model_path = args.model_path
     else:
         raise ValueError()
-    if args.use_Brats_Testing:
+    if args.use_brats_test_set:
         use_Brats_Testing = True
         print("TODO")
         exit(1)
@@ -96,7 +96,7 @@ if __name__ == "__main__":
         split = json.loads(data)
         patient_paths = split["testing"]
 
-    file_paths = TestFilePaths(paths=data_paths, patient_paths=patient_paths, config=config)
+    file_paths = TestFilePaths(paths=data_paths, patient_paths=patient_paths, config=config.DataParams)
 
     out_path_base = os.path.join(model_path, "predictions")
     out_path_mha = os.path.join(out_path_base, "mha")
@@ -104,6 +104,10 @@ if __name__ == "__main__":
 
     if not os.path.exists(out_path):
         os.makedirs(out_path)
+    if not os.path.exists(out_path_mha):
+        os.makedirs(out_path_mha)
+    if not os.path.exists(out_path_png) and save_pngs:
+        os.makedirs(out_path_png)
 
     data_iter = ImageData(data=file_paths.test_paths, mode=DataModes.TESTING,
                           train_mode=TrainingModes.BRATS_SEGMENTATION, data_config=config.DataParams)
@@ -138,13 +142,13 @@ if __name__ == "__main__":
             if len(data[1]) == 155:
 
                 file_name = "VSD.{}.{}".format(name, id)
-                pred_slice = np.argmax(np.array(data[3]), axis=3).astype(np.int16)
+                pred_slice = np.argmax(np.array(data[1]), axis=3).astype(np.int16)
                 mha_path = png_path = os.path.join(out_path_mha, "{}.mha".format(file_name))
                 ioutil.save_scan_as_mha(pred_slice, mha_path)
 
                 if save_pngs:
-                    png_path = os.path.join(out_path_png, "{}.png".format(file_name))
-                    Validator.store_prediction(file_name, mode=TrainingModes.BRATS_SEGMENTATION, path=png_path,
+                    png_path = "{}.png".format(file_name)
+                    Validator.store_prediction(file_name, mode=TrainingModes.BRATS_SEGMENTATION, path=out_path_png,
                                                batch_x=np.array(data[0]), batch_y=np.array(data[0]),
                                                batch_tv=np.array(data[0]), prediction=np.array(data[1]),
                                                gt_is_one_hot=True)

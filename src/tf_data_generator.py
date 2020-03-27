@@ -283,10 +283,12 @@ class TFTestImageDataGenerator(TFImageDataGenerator):
 
         logging.info("Training buffer size {}, batch size {}".format(self._buffer_size, self._batch_size))
         # convert lists to TF tensor
-        ids = list(self._raw_data.keys())
+        k = list(self._raw_data.keys())
+
         inputd = list(self._raw_data.values())
         input_imgs = [img[0] for img in inputd]
         input_vals = [v[1] for v in inputd]
+        ids = [v[2] for v in inputd]
 
         self._input_data = convert_to_tensor(input_imgs)
         self._ids = convert_to_tensor(ids)

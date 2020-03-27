@@ -53,6 +53,7 @@ class ConvNetModel(object):
         self._max_tv_value = self._convnet_config.max_tv_value
         self._loss_weight = self._convnet_config.cost_weight
         self._retore_layers = self._convnet_config.restore_layers
+        self._spatial_dropout = self._convnet_config.spatial_dropuout
         self._mode = mode
         self.l1regularizers = tf.constant(-1.0)
         self.l2regularizers = tf.constant(-1.0)
@@ -70,7 +71,7 @@ class ConvNetModel(object):
          self.offset] = tf_unet.create_2d_unet(x=self.x,
                                                keep_prob_conv1=self.keep_prob_conv1, keep_prob_conv2=self.keep_prob_conv2,
                                                keep_prob_pool=self.keep_prob_pool, keep_prob_tconv=self.keep_prob_tconv,
-                                               keep_prob_concat=self.keep_prob_concat,
+                                               keep_prob_concat=self.keep_prob_concat, spatial_dropout=self._spatial_dropout,
                                                channels=self._n_channels, n_class=self._n_class,
                                                n_layers=self._n_layers, filter_size=self._filter_size,
                                                pool_size=self._pool_size, summaries=self.summaries,
