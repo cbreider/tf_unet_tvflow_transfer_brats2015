@@ -36,21 +36,21 @@ class DataParams:
     ]
 
     # mask for segmentation training: Complete, core or enhancing. Or ALL if all five classes should be separatly predicted
-    segmentation_mask = Subtumral_Modes.COMPLETE
+    segmentation_mask = Subtumral_Modes.ALL
 
     # key for the four different modalities
     modalities = ["mr_flair", "mr_t1", "mr_t1c", "mr_t2"]
 
     # values (pre computed) per modality of all mri (training set) scans:  [max, mean, variance]
-    #data_values = {modalities[0]: [9971.0, 373.4186, 436.8327],
-    #               modalities[1]: [11737.0, 498.3364, 514.9137],
-    #               modalities[2]: [11737.0, 512.1146, 560.1438],
-    #               modalities[3]: [15281.0, 609.6377, 507.4553]}
+    data_values = {modalities[0]: [9971.0, 373.4186, 436.8327],
+                   modalities[1]: [11737.0, 498.3364, 514.9137],
+                   modalities[2]: [11737.0, 512.1146, 560.1438],
+                   modalities[3]: [15281.0, 609.6377, 507.4553]}
     # to norm every sclice by its own values uncomment this
-    data_values = {modalities[0]: [None, None, None],
-                   modalities[1]: [None, None, None],
-                   modalities[2]: [None, None, None],
-                   modalities[3]: [None, None, None]}
+    #data_values = {modalities[0]: [None, None, None],
+    #               modalities[1]: [None, None, None],
+    #               modalities[2]: [None, None, None],
+    #               modalities[3]: [None, None, None]}
 
     # size of the raw images
     raw_data_height = 240
@@ -115,7 +115,7 @@ class DataParams:
     # number of channels of generated input images (grayscale)
     nr_of_input_modalities = len(use_modalities) * nr_of_image_channels
     # nr of classes of segmentation map (binary for gt segmentation, more for tv segmentation)
-    nr_of_classes = 1
+    nr_of_classes = 5
     # modalities used and combined for tv. None for preset (COMPLETE = flair+T2, CORE=T1c, ENHANCING=T1)
     combine_modalities_for_tv = None #[modalities[0], modalities[1], modalities[2], modalities[3]]
     # method for clustering TV Images in TV segmentation mode (Static binning, Kmeans or mean shift)
@@ -147,11 +147,11 @@ class ConvNetParams:
     # number of encoder layers including bottom layer (5 for original U-net)
     num_layers = 5
     if gettrace():
-        num_layers = 3
+        num_layers = 5
     # number of feature maps/kernels in the first layer (original 64)
     feat_root = 64
     if gettrace():
-        feat_roots = 16
+        feat_roots = 64
     # kernel size = filter_size x filter_size
     filter_size = 3
     # size of max pooling pool_size x pool_size
@@ -173,6 +173,8 @@ class ConvNetParams:
     lambda_l2_regularizer = 0.000001
     # lambda value for l1 regualizer. Set None do not use l2 regularizer
     lambda_l1_regularizer = 0.00000001
+    # use spatial (channel dropout instead of single neuron dropout
+    spatial_dropuout = True
     # tv regularize for TV loss. oly used if Cost funcion is TV
     tv_regularizer = 0.01
     # Add residual layer/skip layer at the end output = input + last_layer (only for tv regression). NOT useful

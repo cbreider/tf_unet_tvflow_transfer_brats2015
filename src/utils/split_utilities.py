@@ -50,18 +50,17 @@ class TestFilePaths(object):
     """Constructor"""
     def __init__(self, paths, patient_paths, config, file_modality="mr_flair", ext=".png"):
         self._paths = paths
-        self._use_modalities = config.use_modalities,
+        self._use_modalities = config.use_modalities
         self._data_config = config
         self.test_paths = None
-        patient_paths.sort(key=TrainingDataset.natural_keys)
+        patient_paths.sort(key=self.natural_keys)
 
         file_dict = collections.OrderedDict()
         for patient_path in patient_paths:
             patient_path = os.path.join(paths.brats_test_dir, patient_path)
             file_paths = os.listdir(patient_path)
             file_paths = sorted(file_paths, reverse=True)
-            patient_id = [f for f in file_paths if file_modality in f][0].split(".")[-1]
-            file_dict[patient_id] = [[] for i in range(len(self._use_modalities))]
+            patient_id = [f for f in file_paths if file_modality in f.lower()][0].split(".")[-1]
             for file_path in file_paths:
                 file_path_full = os.path.join(patient_path, file_path)
                 file_slices = os.listdir(file_path_full)
@@ -103,12 +102,18 @@ class TestFilePaths(object):
                     mx = dvals["max"]
                     mn = dvals["mean"]
                     vr = dvals["variance"]
-
+                j = 0
                 for file in file_slices:
                     if file.endswith(ext):
+                        id = "{}_{}".format(patient_id, j)
+                        if not id in file_dict:
+                            file_dict[id] = [["" for m in range(len(self._use_modalities))],
+                                                     [[] for m in range(len(self._use_modalities))],
+                                                     patient_id]
                         file_path_img = os.path.join(file_path_full, file)
-
-                        file_dict[patient_id][i] = [file_path_img, [mx, mn, vr]]
+                        file_dict[id][0][i] = file_path_img
+                        file_dict[id][1][i] = [mx, mn, vr]
+                    j += 1
 
         self.test_paths = file_dict
 
