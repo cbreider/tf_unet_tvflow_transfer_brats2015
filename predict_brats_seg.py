@@ -66,8 +66,6 @@ if __name__ == "__main__":
         raise ValueError()
     if args.use_brats_test_set:
         use_Brats_Testing = True
-        print("TODO")
-        exit(1)
     if args.save_pngs:
         save_pngs = True
     if args.cuda_device >= 0:
