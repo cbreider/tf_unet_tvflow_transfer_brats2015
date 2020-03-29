@@ -281,7 +281,7 @@ class TFTestImageDataGenerator(TFImageDataGenerator):
         self._do_augmentation = False
         self._crop_to_non_zero = False
 
-        logging.info("Training buffer size {}, batch size {}".format(self._buffer_size, self._batch_size))
+        logging.info("Test buffer size {}, batch size {}".format(self._buffer_size, self._batch_size))
         # convert lists to TF tensor
         k = list(self._raw_data.keys())
 

@@ -123,7 +123,7 @@ if __name__ == "__main__":
         for i in range(int(data_iter.size / batch_size)):
 
             test_x, pat_id = sess.run(data_iter.next_batch)
-            pat_id = id[0].decode("utf-8")
+            pat_id = pat_id[0].decode("utf-8")
 
             prediction = sess.run(net.predicter,
                                   feed_dict={net.x: test_x,
