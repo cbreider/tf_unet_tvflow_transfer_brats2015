@@ -132,7 +132,7 @@ class TFImageDataGenerator:
                         tvs.append(tf_utils.get_tv_smoothed(img=tv_base[:, :, i], tau=self.tv_tau, weight=tv_weight,
                                                             eps=self.tv_eps, m_itr=self.tv_nr_itr))
                     elif self._tv_static_multi_scale:
-                        for y in range(self._tv_static_multi_scale):
+                        for y in range(len(self._tv_static_multi_scale)):
                             tv_weight = self._tv_static_multi_scale[y]
                             tvs.append(tf_utils.get_tv_smoothed(img=tv_base[:, :, i], tau=self.tv_tau, weight=tv_weight,
                                                                 eps=self.tv_eps, m_itr=self.tv_nr_itr))
@@ -302,7 +302,7 @@ class TFTestImageDataGenerator(TFImageDataGenerator):
         tmp_data = tmp_data.batch(self._batch_size)
         self.data = tmp_data
 
-    def _parse_function(self, input_ob, values, id):
+    def _parse_function(self, input_ob, values, pat_id):
         # load and preprocess the image
         # if data is given as png path load the data first
         slices = []
@@ -315,6 +315,6 @@ class TFTestImageDataGenerator(TFImageDataGenerator):
                                                            normalize_std=self._normalize_std,
                                                            data_vals=values)
 
-        return in_img, id
+        return in_img, pat_id
 
 

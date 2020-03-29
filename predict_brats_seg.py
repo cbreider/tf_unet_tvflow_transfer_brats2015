@@ -86,9 +86,9 @@ if __name__ == "__main__":
     log.init_logger(type="test", path=data_paths.tf_out_path)
     logging.info("Allocating '{}'".format(data_paths.tf_out_path))
     if use_Brats_Testing:
-        patient_paths = os.listdir(data_paths.brats_test_dir)
+        patient_paths = [os.path.join(data_paths.raw_test_dir, path) for path in os.listdir(data_paths.raw_test_dir)]
     else:
-        split_file = os.path.join(data_paths.split_path, "fold_{}.json".format(fold_nr))
+        split_file = os.path.join(data_paths.split_path, "split.json")
         if not os.path.exists(split_file):
             raise ValueError('{0:} file not found'.format(split_file))
         file = open(split_file, 'r')
@@ -124,7 +124,8 @@ if __name__ == "__main__":
         sess.run(data_iter.init_op)
         for i in range(int(data_iter.size / batch_size)):
 
-            test_x, id = sess.run(data_iter.next_batch)
+            test_x, pat_id = sess.run(data_iter.next_batch)
+            pat_id = id[0].decode("utf-8")
 
             prediction = sess.run(net.predicter,
                                   feed_dict={net.x: test_x,
@@ -141,7 +142,7 @@ if __name__ == "__main__":
 
             if len(data[1]) == 155:
 
-                file_name = "VSD.{}.{}".format(name, id)
+                file_name = "VSD.{}.{}".format(name, pat_id)
                 pred_slice = np.argmax(np.array(data[1]), axis=3).astype(np.int16)
                 mha_path = png_path = os.path.join(out_path_mha, "{}.mha".format(file_name))
                 ioutil.save_scan_as_mha(pred_slice, mha_path)

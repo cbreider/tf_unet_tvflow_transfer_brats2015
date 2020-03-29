@@ -36,7 +36,7 @@ class DataPaths(object):
         self.png_dir = "png"
         self.nrrd_dir = "nrrd"
         self.raw_train_dir = "train"
-        self.raw_test_dir = "test"
+        self.raw_test_dir = "test/HGG_LGG"
         self.tv_flow_out_dir = "tvflow"
         self.raw_dir = "raw"
         self.brats_train_dir = "BRATS2015_Training"

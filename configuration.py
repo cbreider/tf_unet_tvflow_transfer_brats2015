@@ -170,9 +170,9 @@ class ConvNetParams:
     # weight for each class if Dice loss is chosen. length must correspond to nr of classes.
     class_weights_dice = None  # [0.01, 1.0, 1.0, 1.0, 1.0]
     # lambda value for l2 regualizer. Set None do not use l2 regularizer
-    lambda_l2_regularizer = 0.000001
+    lambda_l2_regularizer = None #0.000001
     # lambda value for l1 regualizer. Set None do not use l2 regularizer
-    lambda_l1_regularizer = 0.00000001
+    lambda_l1_regularizer = None #0.00000001
     # use spatial (channel dropout instead of single neuron dropout
     spatial_dropuout = True
     # tv regularize for TV loss. oly used if Cost funcion is TV
