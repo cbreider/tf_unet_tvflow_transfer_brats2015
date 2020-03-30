@@ -93,7 +93,7 @@ class Validator(object):
                 [self._conv_net.cost, self._conv_net.accuracy, self._conv_net.error,
                  self._conv_net.predicter, self._conv_net.dice, self._conv_net.cross_entropy, self._conv_net.iou_coe,
                  self._conv_net.last_feature_map, self._conv_net.dice_complete, self._conv_net.dice_core,
-                 self._conv_net.dice_enhancing, self._conv_net.dice_loss_tl, self._conv_net.dice_tl],
+                 self._conv_net.dice_enhancing],
                 feed_dict={self._conv_net.x: test_x,
                            self._conv_net.y: test_y,
                            self._conv_net.keep_prob_conv1: 1.0,

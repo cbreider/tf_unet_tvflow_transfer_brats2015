@@ -221,7 +221,7 @@ class TrainingParams:
     # log (to terminal) mini batch stats after training_iters. If False only average is logged
     log_mini_batch_stats = False
     # number of training epochs
-    num_epochs = 20
+    num_epochs = 30
     # iterations per epoch
     training_iters = 4000
     # number of iterations between each
@@ -245,9 +245,9 @@ class TrainingParams:
     # initial learning rate
     initial_learning_rate = 0.0001
     # store output images of validation
-    store_val_images = False
+    store_val_images = True
     # store last feature maps  from cnn during validation ( only for middle scan)
-    store_val_feature_maps = False
+    store_val_feature_maps = True
     if gettrace():
         store_val_feature_maps = False
         store_val_images = False
