@@ -132,13 +132,13 @@ class Validator(object):
 
                 dices_per_volume.append([dice_overall, dice_complete, dice_core, dice_enhancing])
 
-                if self._store_predictions:
+                if self._store_predictions and self._nr % 5 == 0:
                     self.store_prediction("{}_{}".format(self._nr, itr), self._mode, self._output_path,
                                           np.array(data[0]), np.array(data[1]), np.array(data[2]), np.array(data[3]),
                                           gt_is_one_hot=0 if self._conv_net.cost_function == Cost.MSE else 1)
 
                 # safe one feature_map
-                if self._store_fmaps:
+                if self._store_fmaps and self._nr % 5 == 0:
                     fmap = dutil.revert_zero_centering(np.squeeze(np.array(data[4][75]), axis=0))
                     map_s = [fmap.shape[0], fmap.shape[1]]
                     im = fmap.reshape(map_s[0], map_s[0], self.fmap_size[0], self.fmap_size[1]

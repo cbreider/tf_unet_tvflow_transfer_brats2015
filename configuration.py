@@ -191,7 +191,7 @@ class ConvNetParams:
                       "down_conv_4": True,
                       # up_conv consists of transpose cond and two convolutions
                       "up_conv_3": [True, True], "up_conv_2": [True, True], "up_conv_1": [True, True], "up_conv_0": [True, True],
-                      "classifier": False}
+                      "classifier": True}
     # trainable_layers = None
     # Act func for output map. ATTENTION: Please choose none. actfunc is added prediction step
     # softmax multi class classifiavtion, sigmoid binary
@@ -223,7 +223,7 @@ class TrainingParams:
     # number of training epochs
     num_epochs = 20
     # iterations per epoch
-    training_iters = 500
+    training_iters = 4000
     # number of iterations between each
     display_step = 100
     # smooth label values int gt to confuse network. Not used  TODO ?
@@ -233,15 +233,15 @@ class TrainingParams:
     # dropout probability for the first convolution in each block.
     # Note: it's unusual to use dropout in convolutional layers
     # but they did it in the original tf_unet implementation, so at least the option will be provided here.
-    dropout_rate_conv1 = 0.0
+    dropout_rate_conv1 = 0.15
     # dropout probability for the second convolution in each block
-    dropout_rate_conv2 = 0.0
+    dropout_rate_conv2 = 0.15
     # dropout_rate for the pooling and  layers
     dropout_rate_pool = 0.0
     # dropout_rate for the deconvolutional layers
     dropout_rate_tconv = 0.0
     # dropout_rate for the deconvolutional layers
-    dropout_rate_concat = 0.3
+    dropout_rate_concat = 0.0
     # initial learning rate
     initial_learning_rate = 0.0001
     # store output images of validation
@@ -261,11 +261,11 @@ class TrainingParams:
                      use_locking=False,
                      name='Adam',
                      decay_rate=0.1,
-                     decay_steps=100000)
-    # Hyperparameters for Momentum optimzer
+                     decay_steps=60000)
+    # Hyperparameters for Momentum wawddwawoptimzer
     momentum_args = dict(momentum=0.99,
                          learning_rate=initial_learning_rate,
-                         decay_rate=0.90,
+                         decay_rate=0.9,
                          use_locking=False,
                          name='Momentum',
                          use_nesterov=False,

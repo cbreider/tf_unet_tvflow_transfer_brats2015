@@ -554,6 +554,9 @@ def combine_img_prediction(data, gt, pred, mode=1):
         gt_rgb = one_hot_to_rgb(gt, data_for_gt)
         pred_rgb = one_hot_to_rgb(pred, data_for_gt)
     elif mode == 1:
+        index = gt.shape[3]-1
+        gt = gt[:, :, :, random.randint(0, index)]
+        pred = pred[:, :, :, index]
         gt = revert_zero_centering(gt)
         pred = revert_zero_centering(pred)
         gt = gt.reshape(-1, gt.shape[2], 1)
