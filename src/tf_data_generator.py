@@ -125,23 +125,26 @@ class TFImageDataGenerator:
                         raise ValueError()
 
                 tvs = []
-                for i in range(self._nr_of_classes):
+                nr_tv_base = tv_base.get_shape().as_list()[2]
+                for i in range(nr_tv_base):
                     if self._tv_multi_scale_range and len(self._tv_multi_scale_range) == 2:
                         tv_weight = tf.random.uniform(minval=self._tv_multi_scale_range[0],
                                                       maxval=self._tv_multi_scale_range[1], shape=())
-                        tvs.append(tf_utils.get_tv_smoothed(img=tv_base[:, :, i], tau=self.tv_tau, weight=tv_weight,
+                        tvs.append(tf_utils.get_tv_smoothed(img=tf.expand_dims(tv_base[:, :, i], axis=2),
+                                                            tau=self.tv_tau, weight=tv_weight,
                                                             eps=self.tv_eps, m_itr=self.tv_nr_itr))
                     elif self._tv_static_multi_scale:
                         for y in range(len(self._tv_static_multi_scale)):
                             tv_weight = self._tv_static_multi_scale[y]
-                            tvs.append(tf_utils.get_tv_smoothed(img=tv_base[:, :, i], tau=self.tv_tau, weight=tv_weight,
+                            tvs.append(tf_utils.get_tv_smoothed(img=tf.expand_dims(tv_base[:, :, i], axis=2),
+                                                                tau=self.tv_tau, weight=tv_weight,
                                                                 eps=self.tv_eps, m_itr=self.tv_nr_itr))
                     else:
                         tv_weight = self.tv_weight
                         tvs.append(tf_utils.get_tv_smoothed(img=tv_base[:, :, i], tau=self.tv_tau, weight=tv_weight,
                                                             eps=self.tv_eps, m_itr=self.tv_nr_itr))
 
-                    tv_img = tf.concat(tvs, axis=2)
+                tv_img = tf.concat(tvs, axis=2)
 
             if self._mode == TrainingModes.TVFLOW_REGRESSION:
                 gt_img = tv_img

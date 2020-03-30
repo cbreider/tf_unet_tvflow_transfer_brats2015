@@ -115,9 +115,9 @@ class DataParams:
     # number of channels of generated input images (grayscale)
     nr_of_input_modalities = len(use_modalities) * nr_of_image_channels
     # nr of classes of segmentation map (binary for gt segmentation, more for tv segmentation)
-    nr_of_classes = 5
+    nr_of_classes = 20
     # modalities used and combined for tv. None for preset (COMPLETE = flair+T2, CORE=T1c, ENHANCING=T1)
-    combine_modalities_for_tv = None #[modalities[0], modalities[1], modalities[2], modalities[3]]
+    combine_modalities_for_tv = [modalities[0], modalities[1], modalities[2], modalities[3]]
     # method for clustering TV Images in TV segmentation mode (Static binning, Kmeans or mean shift)
     clustering_method = TV_clustering_method.STATIC_BINNING
     # To train the network with multiple TV scales set a range for the tv_weight. During training the tv weight will be
