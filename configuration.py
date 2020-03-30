@@ -250,6 +250,7 @@ class TrainingParams:
     store_val_feature_maps = False
     if gettrace():
         store_val_feature_maps = False
+        store_val_images = False
     # stop training if validation loss has not decreased over last three epochs
     early_stopping = False
 

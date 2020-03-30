@@ -89,7 +89,7 @@ class Validator(object):
 
         for i in range(int(self._data_provider.size / self._batch_size)):
             test_x, test_y, test_tv = self._tf_session.run(self._data_provider.next_batch)
-            [loss, acc, err, prediction, dice, ce, iou, feature, d_complete, d_core, d_enhancing, dltl, dtl] = self._tf_session.run(
+            [loss, acc, err, prediction, dice, ce, iou, feature, d_complete, d_core, d_enhancing] = self._tf_session.run(
                 [self._conv_net.cost, self._conv_net.accuracy, self._conv_net.error,
                  self._conv_net.predicter, self._conv_net.dice, self._conv_net.cross_entropy, self._conv_net.iou_coe,
                  self._conv_net.last_feature_map, self._conv_net.dice_complete, self._conv_net.dice_core,
@@ -102,7 +102,7 @@ class Validator(object):
                            self._conv_net.keep_prob_tconv: 1.0,
                            self._conv_net.keep_prob_concat: 1.0})
 
-            vals.append([loss, ce, err, acc, iou, dice, d_complete, d_core, d_enhancing, dltl, dtl])
+            vals.append([loss, ce, err, acc, iou, dice, d_complete, d_core, d_enhancing])
             data[0].append(np.squeeze(np.array(test_x), axis=0))
             data[1].append(np.squeeze(np.array(test_y), axis=0))
             data[2].append(np.squeeze(np.array(test_tv), axis=0))
@@ -174,8 +174,6 @@ class Validator(object):
         scores[Scores.DSC_COMP] = sbatch[6]
         scores[Scores.DSC_CORE] = sbatch[7]
         scores[Scores.DSC_EN] = sbatch[8]
-        scores[Scores.DLTL] = sbatch[9]
-        scores[Scores.DTL] = sbatch[10]
 
         scores[Scores.DSCP] = d_per_patient[0]
         scores[Scores.DSCP_COMP] = d_per_patient[1]

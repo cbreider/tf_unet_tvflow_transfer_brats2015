@@ -228,7 +228,7 @@ class Trainer(object):
 
                     # Run optimization op (backprop)
                     _, loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing, l1, l2, lr, gradients, pred,\
-                        dltl, dtl = sess.run(
+                        = sess.run(
                         (self.optimizer, self.net.cost, self.net.cross_entropy, self.net.error, self.net.accuracy,
                          self.net.iou_coe, self.net.dice, self.net.dice_complete, self.net.dice_core,
                          self.net.dice_enhancing, self.net.l1regularizers, self.net.l2regularizers,
@@ -245,8 +245,7 @@ class Trainer(object):
                     if np.max(batch_y) == 0.0:
                         zero_counter += 1
 
-                    avg_score_vals_batch.append([loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing, l1, l2,
-                                                 dltl, dtl])
+                    avg_score_vals_batch.append([loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing, l1, l2])
                     avg_score_vals_epoch.append([loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing])
 
                     #x = random.randint(1, 50)
@@ -282,8 +281,6 @@ class Trainer(object):
                         scores[Scores.DSC_EN] = avg_score_vals_batch[8]
                         scores[Scores.L1] = avg_score_vals_batch[9]
                         scores[Scores.L2] = avg_score_vals_batch[10]
-                        scores[Scores.DLTL] = avg_score_vals_batch[11]
-                        scores[Scores.DTL] = avg_score_vals_batch[12]
 
                         self.write_tf_summary_scores(step, scores, summary_writer_training)
                         self.write_log_string("Iteration {} Average:".format(step), scores)
