@@ -123,7 +123,7 @@ class DataParams:
     # To train the network with multiple TV scales set a range for the tv_weight. During training the tv weight will be
     # selected uniformly from the range. Set to None to train only with a single scale set in the parameters below
     tv_multi_scale_range = None #[0.125, 1.125]
-    tv_static_multi_scale = [0.125, 0.25, 0.5, 0.75, 1.0]
+    tv_static_multi_scale = [0.125, 0.5, 0.75, 1.0, 1.125]
     #tv_multi_scale_range = None
     # params for differnt tv clustering methods (tv smoothing
     tv_and_clustering_params = dict(
@@ -147,11 +147,11 @@ class ConvNetParams:
     # number of encoder layers including bottom layer (5 for original U-net)
     num_layers = 5
     if gettrace():
-        num_layers = 5
+        num_layers = 2
     # number of feature maps/kernels in the first layer (original 64)
     feat_root = 64
     if gettrace():
-        feat_roots = 64
+        feat_roots = 16
     # kernel size = filter_size x filter_size
     filter_size = 3
     # size of max pooling pool_size x pool_size
@@ -233,7 +233,7 @@ class TrainingParams:
     # dropout probability for the first convolution in each block.
     # Note: it's unusual to use dropout in convolutional layers
     # but they did it in the original tf_unet implementation, so at least the option will be provided here.
-    dropout_rate_conv1 = 0.15
+    dropout_rate_conv1 = 0.25
     # dropout probability for the second convolution in each block
     dropout_rate_conv2 = 0.15
     # dropout_rate for the pooling and  layers
@@ -250,7 +250,7 @@ class TrainingParams:
     store_val_feature_maps = True
     if gettrace():
         store_val_feature_maps = False
-        store_val_images = False
+        store_val_images = True
     # stop training if validation loss has not decreased over last three epochs
     early_stopping = False
 
