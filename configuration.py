@@ -183,7 +183,7 @@ class ConvNetParams:
     trainable_layers = {"down_conv_0": False, "down_conv_1": False, "down_conv_2": False, "down_conv_3": False,
                         "down_conv_4": False,
                         # up_conv consists of transpose cond and two convolutions
-                        "up_conv_3": [False, False], "up_conv_2": [True, True], "up_conv_1": [True, True], "up_conv_0": [True, True],
+                        "up_conv_3": [False, False], "up_conv_2": [False, False], "up_conv_1": [False, False], "up_conv_0": [False, True],
                         "classifier": False}
     # trainable_layers = None
     # freeze layers during training. Set None to train all layers
@@ -191,7 +191,7 @@ class ConvNetParams:
                       "down_conv_4": True,
                       # up_conv consists of transpose cond and two convolutions
                       "up_conv_3": [True, True], "up_conv_2": [True, True], "up_conv_1": [True, True], "up_conv_0": [True, True],
-                      "classifier": True}
+                      "classifier": False}
     # trainable_layers = None
     # Act func for output map. ATTENTION: Please choose none. actfunc is added prediction step
     # softmax multi class classifiavtion, sigmoid binary
@@ -223,7 +223,7 @@ class TrainingParams:
     # number of training epochs
     num_epochs = 30
     # iterations per epoch
-    training_iters = 1000
+    training_iters = 2000
     # number of iterations between each
     display_step = 100
     # smooth label values int gt to confuse network. Not used  TODO ?
@@ -243,7 +243,7 @@ class TrainingParams:
     # dropout_rate for the deconvolutional layers
     dropout_rate_concat = 0.0
     # initial learning rate
-    initial_learning_rate = 0.00001
+    initial_learning_rate = 0.0001
     # store output images of validation
     store_val_images = False
     # store last feature maps  from cnn during validation ( only for middle scan)
