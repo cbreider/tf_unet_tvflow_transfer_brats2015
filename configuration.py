@@ -36,7 +36,7 @@ class DataParams:
     ]
 
     # mask for segmentation training: Complete, core or enhancing. Or ALL if all five classes should be separatly predicted
-    segmentation_mask = Subtumral_Modes.COMPLETE
+    segmentation_mask = Subtumral_Modes.ALL
 
     # key for the four different modalities
     modalities = ["mr_flair", "mr_t1", "mr_t1c", "mr_t2"]
@@ -81,7 +81,7 @@ class DataParams:
     do_image_augmentation_val = False
     # parameters for image distortion
     image_disort_params = [[2, 3, 3],  # displacement vector [img dim, plane, heigh
-                           25.0,  # sigma deformation magnitude
+                           20.0,  # sigma deformation magnitude
                            0.8]  # max zoom factor
     # normalize standard deviation for images during pre processing
     normailze_std = True
@@ -115,7 +115,7 @@ class DataParams:
     # number of channels of generated input images (grayscale)
     nr_of_input_modalities = len(use_modalities) * nr_of_image_channels
     # nr of classes of segmentation map (binary for gt segmentation, more for tv segmentation)
-    nr_of_classes = 1
+    nr_of_classes = 20
     # modalities used and combined for tv. None for preset (COMPLETE = flair+T2, CORE=T1c, ENHANCING=T1)
     combine_modalities_for_tv = [modalities[0], modalities[1], modalities[2], modalities[3]]
     # method for clustering TV Images in TV segmentation mode (Static binning, Kmeans or mean shift)
@@ -157,7 +157,7 @@ class ConvNetParams:
     # size of max pooling pool_size x pool_size
     pool_size = 2
     # Cost function to use. Choose from class Cost(Enum)
-    cost_function = Cost.BATCH_DICE_SOFT
+    cost_function = Cost.MSE
     # weighting if BATCH_DICE_SOFT_CE is chosen. loss = cost_weight * Dice_loss + (1-cost_weight) * cross_entropy_loss
     cost_weight = 0.7
     # Use padding to preserve feature map size and prevent downscaling
@@ -180,11 +180,11 @@ class ConvNetParams:
     # Add residual layer/skip layer at the end output = input + last_layer (only for tv regression). NOT useful
     add_residual_layer = False
     # freeze layers during training. Set None to train all layers
-    trainable_layers = {"down_conv_0": False, "down_conv_1": False, "down_conv_2": False, "down_conv_3": False,
-                        "down_conv_4": False,
+    trainable_layers = {"down_conv_0": True, "down_conv_1": True, "down_conv_2": True, "down_conv_3": True,
+                        "down_conv_4": True,
                         # up_conv consists of transpose cond and two convolutions
-                        "up_conv_3": [False, False], "up_conv_2": [True, True], "up_conv_1": [True, True], "up_conv_0": [True, True],
-                        "classifier": False}
+                        "up_conv_3": [True, True], "up_conv_2": [True, True], "up_conv_1": [True, True], "up_conv_0": [True, True],
+                        "classifier": True}
     # trainable_layers = None
     # freeze layers during training. Set None to train all layers
     restore_layers = {"down_conv_0": True, "down_conv_1": True, "down_conv_2": True, "down_conv_3": True,
@@ -223,7 +223,7 @@ class TrainingParams:
     # number of training epochs
     num_epochs = 30
     # iterations per epoch
-    training_iters = 1000
+    training_iters = 4000
     # number of iterations between each
     display_step = 100
     # smooth label values int gt to confuse network. Not used  TODO ?
@@ -233,9 +233,9 @@ class TrainingParams:
     # dropout probability for the first convolution in each block.
     # Note: it's unusual to use dropout in convolutional layers
     # but they did it in the original tf_unet implementation, so at least the option will be provided here.
-    dropout_rate_conv1 = 0.0
+    dropout_rate_conv1 = 0.25
     # dropout probability for the second convolution in each block
-    dropout_rate_conv2 = 0.5
+    dropout_rate_conv2 = 0.15
     # dropout_rate for the pooling and  layers
     dropout_rate_pool = 0.0
     # dropout_rate for the deconvolutional layers
@@ -243,14 +243,14 @@ class TrainingParams:
     # dropout_rate for the deconvolutional layers
     dropout_rate_concat = 0.0
     # initial learning rate
-    initial_learning_rate = 0.00001
+    initial_learning_rate = 0.0001
     # store output images of validation
-    store_val_images = False
+    store_val_images = True
     # store last feature maps  from cnn during validation ( only for middle scan)
-    store_val_feature_maps = False
+    store_val_feature_maps = True
     if gettrace():
         store_val_feature_maps = False
-        store_val_images = False
+        store_val_images = True
     # stop training if validation loss has not decreased over last three epochs
     early_stopping = False
 
