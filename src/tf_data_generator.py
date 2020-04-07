@@ -98,78 +98,53 @@ class TFImageDataGenerator:
         in_img = tf.concat(slices, axis=2)
         if self._mode == TrainingModes.BRATS_SEGMENTATION:
             gt_img = tf_utils.load_png_image(gt_ob, nr_channels=self._nr_channels, img_size=self._in_img_size)
-        elif self._mode == TrainingModes.TVFLOW_SEGMENTATION or self._mode == TrainingModes.TVFLOW_REGRESSION:
-            if self._load_tv_from_file:
-                tv_img = tf_utils.load_png_image(gt_ob, nr_channels=self._nr_channels, img_size=self._in_img_size)
+            if self._modalties_tv:
+                tv_base = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._modalties_tv,
+                                                                    new_max=self._data_norm_value_tv,
+                                                                    normalize_std=False,
+                                                                    data_vals=values)
+
             else:
-                if self._modalties_tv:
-                    tv_base = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._modalties_tv,
-                                                                        new_max=self._data_norm_value_tv,
+                if self._segmentation_mask == Subtumral_Modes.COMPLETE:  # todo add case
+                    tv_base1 = tf.expand_dims(in_img[:, :, 0], axis=2)  # flair + t2
+                    tv_base2 = tf.expand_dims(in_img[:, :, 3], axis=2)
+                    tv_base1 = tf_utils.normalize_and_zero_center_slice(tv_base1, max=values[0, 0],
                                                                         normalize_std=False,
-                                                                        data_vals=values)
-
+                                                                        new_max=self._data_norm_value_tv,
+                                                                        mean=values[0, 1], var=values[0, 2])
+                    tv_base2 = tf_utils.normalize_and_zero_center_slice(tv_base2, max=values[3, 0],
+                                                                        normalize_std=False,
+                                                                        new_max=self._data_norm_value_tv,
+                                                                        mean=values[3, 1], var=values[3, 2])
+                    tv_base = (tv_base1 + tv_base2) / 2
                 else:
-                    if self._segmentation_mask == Subtumral_Modes.COMPLETE:  # todo add case
-                        tv_base1 = tf.expand_dims(in_img[:, :, 0], axis=2)  # flair + t2
-                        tv_base2 = tf.expand_dims(in_img[:, :, 3], axis=2)
-                        tv_base1 = tf_utils.normalize_and_zero_center_slice(tv_base1, max=values[0, 0],
-                                                                            normalize_std=False,
-                                                                            new_max=self._data_norm_value_tv,
-                                                                            mean=values[0, 1], var=values[0, 2])
-                        tv_base2 = tf_utils.normalize_and_zero_center_slice(tv_base2, max=values[3, 0],
-                                                                            normalize_std=False,
-                                                                            new_max=self._data_norm_value_tv,
-                                                                            mean=values[3, 1], var=values[3, 2])
-                        tv_base = (tv_base1 + tv_base2) / 2
-                    else:
-                        raise ValueError()
+                    raise ValueError()
 
-                tvs = []
-                nr_tv_base = tv_base.get_shape().as_list()[2]
-                for i in range(nr_tv_base):
-                    if self._tv_multi_scale_range and len(self._tv_multi_scale_range) == 2:
-                        tv_weight = tf.random.uniform(minval=self._tv_multi_scale_range[0],
-                                                      maxval=self._tv_multi_scale_range[1], shape=())
+            tvs = []
+            nr_tv_base = tv_base.get_shape().as_list()[2]
+            for i in range(nr_tv_base):
+                if self._tv_multi_scale_range and len(self._tv_multi_scale_range) == 2:
+                    tv_weight = tf.random.uniform(minval=self._tv_multi_scale_range[0],
+                                                  maxval=self._tv_multi_scale_range[1], shape=())
+                    tvs.append(tf_utils.get_tv_smoothed(img=tf.expand_dims(tv_base[:, :, i], axis=2),
+                                                        tau=self.tv_tau, weight=tv_weight,
+                                                        eps=self.tv_eps, m_itr=self.tv_nr_itr))
+                elif self._tv_static_multi_scale:
+                    for y in range(len(self._tv_static_multi_scale)):
+                        tv_weight = self._tv_static_multi_scale[y]
                         tvs.append(tf_utils.get_tv_smoothed(img=tf.expand_dims(tv_base[:, :, i], axis=2),
                                                             tau=self.tv_tau, weight=tv_weight,
                                                             eps=self.tv_eps, m_itr=self.tv_nr_itr))
-                    elif self._tv_static_multi_scale:
-                        for y in range(len(self._tv_static_multi_scale)):
-                            tv_weight = self._tv_static_multi_scale[y]
-                            tvs.append(tf_utils.get_tv_smoothed(img=tf.expand_dims(tv_base[:, :, i], axis=2),
-                                                                tau=self.tv_tau, weight=tv_weight,
-                                                                eps=self.tv_eps, m_itr=self.tv_nr_itr))
-                    else:
-                        tv_weight = self.tv_weight
-                        tvs.append(tf_utils.get_tv_smoothed(img=tv_base[:, :, i], tau=self.tv_tau, weight=tv_weight,
-                                                            eps=self.tv_eps, m_itr=self.tv_nr_itr))
-
-                tv_img = tf.concat(tvs, axis=2)
-
-            if self._mode == TrainingModes.TVFLOW_REGRESSION:
-                gt_img = tv_img
-
-            elif self._mode == TrainingModes.TVFLOW_SEGMENTATION:
-                if self.clustering_method == TV_clustering_method.STATIC_BINNING:
-                    gt_img = tf_utils.get_fixed_bin_clustering(image=tv_img, n_bins=self._nr_of_classes,
-                                                               val_range=[-self._data_norm_value_tv,
-                                                                          self._data_norm_value_tv])
-                elif self.clustering_method == TV_clustering_method.STATIC_CLUSTERS:
-                    gt_img = tf_utils.get_static_clustering(image=tv_img, cluster_centers=self.static_cluster_center)
-                elif self.clustering_method == TV_clustering_method.K_MEANS:
-                    gt_img = tf_utils.get_kmeans(img=tv_img, clusters_n=self._nr_of_classes, iteration_n=self.km_nr_itr)
-                    gt_img = tf.expand_dims(gt_img, axis=2)
-                elif self.clustering_method == TV_clustering_method.MEAN_SHIFT:
-                    gt_img = tf_utils.get_meanshift_clustering(image=tv_img, ms_itr=self.mean_shift_n_itr,
-                                                               win_r=self.mean_shift_win_size,
-                                                               n_clusters=self._nr_of_classes,
-                                                               bin_seeding=self.mean_shift_bin_seeding)
                 else:
-                    raise ValueError()
-            else:
-                raise ValueError()
-        else:
-            raise ValueError()
+                    tv_weight = self.tv_weight
+                    tvs.append(tf_utils.get_tv_smoothed(img=tv_base[:, :, i], tau=self.tv_tau, weight=tv_weight,
+                                                        eps=self.tv_eps, m_itr=self.tv_nr_itr))
+
+            tv_img = tf.concat(tvs, axis=2)
+
+            tv_img = tf_utils.get_fixed_bin_clustering(image=tv_img, n_bins=self._nr_of_classes,
+                                                       val_range=[-self._data_norm_value_tv,
+                                                                  self._data_norm_value_tv])
 
         if self._crop_to_non_zero:
             in_img, gt_img, tv_img = tf_utils.crop_images_to_to_non_zero(scan=in_img, ground_truth=gt_img,

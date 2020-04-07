@@ -38,9 +38,9 @@ def conv2d(x, W, b, keep_prob, padding='VALID', bn=False, spatial_droput=True):
         conv_2d_b = tf.nn.bias_add(conv_2d, b)
         if spatial_droput:
             cs = tf.shape(conv_2d_b)
-            ds = (cs[0], 1, 1, cs[3])
+            ds = [cs[0], 1, 1, cs[3]]
         else:
-            ds = ()
+            ds = None
         if bn:
             conv_2d_b = tf.layers.batch_normalization(conv_2d_b)
         return tf.nn.dropout(conv_2d_b, keep_prob=keep_prob, noise_shape=ds)
@@ -54,9 +54,9 @@ def deconv2d(x, W, stride, keep_prob, spatial_droput=True):
                                         name="conv2d_transpose")
         if spatial_droput:
             cs = tf.shape(deconv)
-            ds = (cs[0], 1, 1, cs[3])
+            ds = [cs[0], 1, 1, cs[3]]
         else:
-            ds = ()
+            ds = None
         return tf.nn.dropout(deconv, keep_prob=keep_prob, noise_shape=ds)
 
 
@@ -64,9 +64,9 @@ def max_pool(x, n, keep_prob, spatial_droput=True):
     mp = tf.nn.max_pool(x, ksize=[1, n, n, 1], strides=[1, n, n, 1], padding='VALID')
     if spatial_droput:
         cs = tf.shape(mp)
-        ds = (cs[0], 1, 1, cs[3])
+        ds = [cs[0], 1, 1, cs[3]]
     else:
-        ds = ()
+        ds = None
     return tf.nn.dropout(mp, keep_prob, noise_shape=ds)
 
 
@@ -83,9 +83,9 @@ def crop_and_concat(x1, x2, keep_prob=1.0, spatial_droput=True):
         conc = tf.concat([x1_crop, x2], 3)
         if spatial_droput:
             cs = tf.shape(conc)
-            ds = (cs[0], 1, 1, cs[3])
+            ds = [cs[0], 1, 1, cs[3]]
         else:
-            ds = ()
+            ds = None
         return tf.nn.dropout(conc, keep_prob=keep_prob, noise_shape=ds)
 
 

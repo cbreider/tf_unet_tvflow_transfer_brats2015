@@ -96,6 +96,7 @@ class Validator(object):
                  self._conv_net.dice_enhancing],
                 feed_dict={self._conv_net.x: test_x,
                            self._conv_net.y: test_y,
+                           self._conv_net.tv: test_tv,
                            self._conv_net.keep_prob_conv1: 1.0,
                            self._conv_net.keep_prob_conv2: 1.0,
                            self._conv_net.keep_prob_pool: 1.0,

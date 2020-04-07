@@ -19,7 +19,8 @@ from datetime import datetime
 from src.utils.enum_params import Cost, RestoreMode, TrainingModes
 import src.utils.tf_utils as tfu
 from configuration import ConvNetParams
-
+from src.tf_convnet.layers import (weight_variable, weight_variable_devonc, bias_variable,
+                                   conv2d, deconv2d, max_pool, crop_and_concat)
 
 class ConvNetModel(object):
 
@@ -60,12 +61,12 @@ class ConvNetModel(object):
 
         self.x = tf.placeholder("float", shape=[None, None, None, self._n_channels], name="x")
         self.y = tf.placeholder("float", shape=[None, None, None, self._n_class], name="y")
+        self.tv = tf.placeholder("float", shape=[None, None, None, 12], name="TV")
         self.keep_prob_conv1 = tf.placeholder(tf.float32, name="dropout_probability_conv1")  # dropout (keep probability)
         self.keep_prob_conv2 = tf.placeholder(tf.float32, name="dropout_probability_conv2")  # dropout (keep probability)
         self.keep_prob_pool = tf.placeholder(tf.float32, name="dropout_probability_pool")  # dropout (keep probability)
         self.keep_prob_tconv = tf.placeholder(tf.float32, name="dropout_probability_tconv")  # dropout (keep probability)
         self.keep_prob_concat = tf.placeholder(tf.float32, name="dropout_probability_concat")  # dropout (keep probability)
-
 
         [self.logits, self.last_feature_map, self.variables_to_restore, self.trainable_variables, self.variables,
          self.offset] = tf_unet.create_2d_unet(x=self.x,
@@ -190,7 +191,11 @@ class ConvNetModel(object):
             if self._l1_regularizer is not None:
                 self.l1regularizers = self._l1_regularizer * sum([tf.reduce_sum(tf.abs(variable)) for variable in self.variables])
                 loss += self.l1regularizers
-
+            weight = weight_variable([1, 1, 64, 12], 0.1, trainable=False)
+            bias = bias_variable([12], name="bias", trainable=False)
+            conv = conv2d(self.last_feature_map, weight, bias, tf.constant(1.0))
+            loss += 0.5 * (1.0 - tfu.get_dice_loss(logits=conv, y=self.ytv, axis=axis,
+                                               weights=None, exclude_zero_label=False))
             return loss
 
     def predict(self, model_path, x_test):

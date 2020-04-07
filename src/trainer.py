@@ -224,7 +224,7 @@ class Trainer(object):
 
                     if step == 0:
                         self.output_minibatch_stats(sess, step, batch_x, dutil.crop_to_shape(batch_y, pred_shape),
-                                                    summary_writer=summary_writer_training)
+                                                    summary_writer=summary_writer_training, batch_tv=batch_tv)
 
                     # Run optimization op (backprop)
                     _, loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing, l1, l2, lr, gradients, pred,\
@@ -235,6 +235,7 @@ class Trainer(object):
                          self.learning_rate_node, self.net.gradients_node, self.net.predicter),
                         feed_dict={self.net.x: batch_x,
                                    self.net.y: dutil.crop_to_shape(batch_y, pred_shape),
+                                   self.net.tv: batch_tv,
                                    self.net.keep_prob_conv1: self._dropout_conv1,
                                    self.net.keep_prob_conv2: self._dropout_conv2,
                                    self.net.keep_prob_pool: self._dropout_pool,
@@ -260,10 +261,11 @@ class Trainer(object):
 
                     if step % self._display_step == 0 and step != 0:
                         if self._log_mini_batch_stats:
-                            self.output_minibatch_stats(sess, step, batch_x, dutil.crop_to_shape(batch_y, pred_shape))
+                            self.output_minibatch_stats(sess, step, batch_x, dutil.crop_to_shape(batch_y, pred_shape),
+                                                        batch_tv)
 
                         self.run_summary(sess, summary_writer_training, step, batch_x,
-                                         dutil.crop_to_shape(batch_y, pred_shape))
+                                         dutil.crop_to_shape(batch_y, pred_shape), batch_tv)
 
                         avg_score_vals_batch = np.mean(np.array(avg_score_vals_batch), axis=0)
 
@@ -361,7 +363,7 @@ class Trainer(object):
 
         self.write_log_string("Epoch {} Training Average:".format(epoch), scores)
 
-    def output_minibatch_stats(self, sess, step, batch_x, batch_y, summary_writer=None):
+    def output_minibatch_stats(self, sess, step, batch_x, batch_y, summary_writer=None, batch_tv=None):
 
         loss, ce, err, acc, iou, dice, d_complete, d_core, d_enhancing = sess.run(
             (self.net.cost, self.net.cross_entropy, self.net.error, self.net.accuracy,
@@ -369,6 +371,7 @@ class Trainer(object):
              self.net.dice_enhancing),
             feed_dict={self.net.x: batch_x,
                        self.net.y: batch_y,
+                       self.net.tv: batch_tv,
                        self.net.keep_prob_conv1: 1.0,
                        self.net.keep_prob_conv2: 1.0,
                        self.net.keep_prob_pool: 1.0,
@@ -390,10 +393,11 @@ class Trainer(object):
         if summary_writer:
             self.write_tf_summary_scores(step, scores, summary_writer=summary_writer)
 
-    def run_summary(self, sess, summary_writer, step, batch_x, batch_y):
+    def run_summary(self, sess, summary_writer, step, batch_x, batch_y, batch_tv):
         # Calculate batch loss and accuracy
         summary_str = sess.run(self.summary_op, feed_dict={self.net.x: batch_x,
                                                            self.net.y: batch_y,
+                                                           self.net.tv: batch_tv,
                                                            self.net.keep_prob_conv1: 1.0,
                                                            self.net.keep_prob_conv2: 1.0,
                                                            self.net.keep_prob_pool: 1.0,
