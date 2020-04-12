@@ -107,9 +107,9 @@ def create_2d_unet(x, keep_prob_conv1, keep_prob_conv2, keep_prob_pool, keep_pro
             b1 = bias_variable([features], name="b1", trainable=l_trainable)
             b2 = bias_variable([features], name="b2", trainable=l_trainable)
 
-            conv1 = conv2d(in_node, w1, b1, 1.0, padding=padding, bn=bn, spatial_droput=spatial_dropout)
+            conv1 = conv2d(in_node, w1, b1, keep_prob_conv1, padding=padding, bn=bn, spatial_droput=spatial_dropout)
             tmp_h_conv = tf.nn.relu(conv1)
-            conv2 = conv2d(tmp_h_conv, w2, b2, 1.0, padding=padding, bn=bn, spatial_droput=spatial_dropout)
+            conv2 = conv2d(tmp_h_conv, w2, b2, keep_prob_conv1, padding=padding, bn=bn, spatial_droput=spatial_dropout)
             dw_h_convs[layer] = tf.nn.relu(conv2)
 
             convs.append((conv1, conv2))
@@ -174,9 +174,9 @@ def create_2d_unet(x, keep_prob_conv1, keep_prob_conv2, keep_prob_pool, keep_pro
             b1 = bias_variable([features // 2], name="b1", trainable=l_trainable_conv)
             b2 = bias_variable([features // 2], name="b2", trainable=l_trainable_conv)
 
-            conv1 = conv2d(h_deconv_concat, w1, b1, 1.0, padding=padding, bn=bn, spatial_droput=spatial_dropout)
+            conv1 = conv2d(h_deconv_concat, w1, b1, keep_prob_conv1, padding=padding, bn=bn, spatial_droput=spatial_dropout)
             h_conv = tf.nn.relu(conv1)
-            conv2 = conv2d(h_conv, w2, b2, keep_prob_conv2 if layer == 0 else 1.0, padding=padding, bn=bn, spatial_droput=spatial_dropout)
+            conv2 = conv2d(h_conv, w2, b2, keep_prob_conv2, padding=padding, bn=bn, spatial_droput=spatial_dropout)
             in_node = tf.nn.relu(conv2)
             up_h_convs[layer] = in_node
 
