@@ -32,6 +32,9 @@ def run_test(sess, net, data_provider_test, mode, nr, out_path):
     l_string = l_string[:-1]
     logging.info(l_string)
 
+    if not os.path.exists(test_out_path):
+        os.makedirs(test_out_path)
+
     outF = open(os.path.join(test_out_path, "results.txt"), "w")
     for k, v in validation_results.items():
         if v != -1.:
