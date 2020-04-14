@@ -119,6 +119,7 @@ class Scores(Enum):
     L2 = "L2"
     DLTL = "DLTL"
     DTL = "DTL"
+    VALSCORE = "ValScore"
 
 
 ScoresLong = {
@@ -141,4 +142,5 @@ ScoresLong = {
     Scores.L2: "L2-Weight",
     Scores.DLTL: "DLTL",
     Scores.DTL : "DTL",
+    Scores.VALSCORE: "Validation Score",
 }
