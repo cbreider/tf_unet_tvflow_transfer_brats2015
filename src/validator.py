@@ -130,7 +130,8 @@ class Validator(object):
                     dice_complete = dutil.get_hard_dice_score(pred=pred_complete, gt=y_complete, eps=1e-5, axis=(0,1,2))
                     dice_core = dutil.get_hard_dice_score(pred=pred_core, gt=y_core, eps=1e-5, axis=(0,1,2))
                     dice_enhancing = dutil.get_hard_dice_score(pred=pred_enhancing, gt=y_enhancing, eps=1e-5, axis=(0,1,2))
-                if self._conv_net.cost_function != Cost.MSE:
+                    dice_overall = (dice_complete + dice_core + dice_enhancing) / 3.0
+                elif self._conv_net.cost_function != Cost.MSE:
                     dice_overall = dutil.get_hard_dice_score(np.array(data[1]), np.array(data[3]), axis=(0,1,2,3))
 
                 dices_per_volume.append([dice_overall, dice_complete, dice_core, dice_enhancing])
@@ -182,6 +183,11 @@ class Validator(object):
         scores[Scores.DSCP_COMP] = d_per_patient[1]
         scores[Scores.DSCP_CORE] = d_per_patient[2]
         scores[Scores.DSCP_EN] = d_per_patient[3]
+
+        if self._mode == TrainingModes.BRATS_SEGMENTATION:
+            scores[Scores.VALSCORE] = scores[Scores.DSCP]
+        else:
+            scores[Scores.VALSCORE] = scores[Scores.LOSS]
 
         return shape, scores
 

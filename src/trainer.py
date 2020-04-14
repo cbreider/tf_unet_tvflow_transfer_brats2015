@@ -209,7 +209,7 @@ class Trainer(object):
             logging.info("Start optimization...")
             avg_score_vals_batch = []
             avg_score_vals_epoch = []
-            last_validation_scores = [init_loss, init_loss]
+            last_best_validation_scores = [0, init_loss]
             zero_counter = 0
 
             try:
@@ -297,11 +297,13 @@ class Trainer(object):
                         # save epoch and step
                         self.save_step_nr(step_file, step, epoch)
 
-                        if (last_validation_scores[0] < val_score > last_validation_scores[1]) and self._early_stopping:
+                        if (last_best_validation_scores[1] <= val_score[Scores.VALSCORE] and
+                            epoch - last_best_validation_scores[0] > 2) and self._early_stopping:
                             logging.info("Stooping training because of validation convergence...")
                             break
-                        last_validation_scores[0] = last_validation_scores[1]
-                        last_validation_scores[1] = val_score
+                        elif last_best_validation_scores[1] > val_score[Scores.VALSCORE]:
+                            last_best_validation_scores[0] = epoch
+                            last_best_validation_scores[1] = val_score[Scores.VALSCORE]
 
                 logging.info("Optimization Finished!")
 

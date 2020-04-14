@@ -105,7 +105,7 @@ class TFImageDataGenerator:
                 if self._modalties_tv:
                     tv_base = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._modalties_tv,
                                                                         new_max=self._data_norm_value_tv,
-                                                                        normalize_std=False,
+                                                                        normalize_std=True,
                                                                         data_vals=values)
 
                 else:
@@ -113,11 +113,11 @@ class TFImageDataGenerator:
                         tv_base1 = tf.expand_dims(in_img[:, :, 0], axis=2)  # flair + t2
                         tv_base2 = tf.expand_dims(in_img[:, :, 3], axis=2)
                         tv_base1 = tf_utils.normalize_and_zero_center_slice(tv_base1, max=values[0, 0],
-                                                                            normalize_std=False,
+                                                                            normalize_std=True,
                                                                             new_max=self._data_norm_value_tv,
                                                                             mean=values[0, 1], var=values[0, 2])
                         tv_base2 = tf_utils.normalize_and_zero_center_slice(tv_base2, max=values[3, 0],
-                                                                            normalize_std=False,
+                                                                            normalize_std=True,
                                                                             new_max=self._data_norm_value_tv,
                                                                             mean=values[3, 1], var=values[3, 2])
                         tv_base = (tv_base1 + tv_base2) / 2
