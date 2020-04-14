@@ -297,13 +297,13 @@ class Trainer(object):
                         # save epoch and step
                         self.save_step_nr(step_file, step, epoch)
 
-                        if (last_best_validation_scores[1] <= val_score[Scores.VALSCORE] and
+                        if (last_best_validation_scores[1] <= val_score and
                             epoch - last_best_validation_scores[0] > 2) and self._early_stopping:
                             logging.info("Stooping training because of validation convergence...")
                             break
-                        elif last_best_validation_scores[1] > val_score[Scores.VALSCORE]:
+                        elif last_best_validation_scores[1] > val_score:
                             last_best_validation_scores[0] = epoch
-                            last_best_validation_scores[1] = val_score[Scores.VALSCORE]
+                            last_best_validation_scores[1] = val_score
 
                 logging.info("Optimization Finished!")
 
@@ -345,7 +345,7 @@ class Trainer(object):
 
         self.write_log_string("EPOCH {} Verification:".format(epoch), scores)
 
-        return pred_shape, scores[Scores.LOSS]
+        return pred_shape, scores[Scores.VALSCORE]
 
     def output_training_epoch_stats(self, epoch, val_scores, lr):
         scores = collections.OrderedDict()
