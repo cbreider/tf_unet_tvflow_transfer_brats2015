@@ -297,11 +297,11 @@ class Trainer(object):
                         # save epoch and step
                         self.save_step_nr(step_file, step, epoch)
 
-                        if (last_best_validation_scores[1] <= val_score and
+                        if (last_best_validation_scores[1] >= val_score and
                             epoch - last_best_validation_scores[0] > 2) and self._early_stopping:
                             logging.info("Stooping training because of validation convergence...")
                             break
-                        elif last_best_validation_scores[1] > val_score:
+                        elif last_best_validation_scores[1] < val_score:
                             last_best_validation_scores[0] = epoch
                             last_best_validation_scores[1] = val_score
 

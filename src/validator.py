@@ -187,7 +187,7 @@ class Validator(object):
         if self._mode == TrainingModes.BRATS_SEGMENTATION:
             scores[Scores.VALSCORE] = scores[Scores.DSCP]
         else:
-            scores[Scores.VALSCORE] = scores[Scores.LOSS]
+            scores[Scores.VALSCORE] = - scores[Scores.LOSS]
 
         return shape, scores
 
