@@ -27,28 +27,28 @@ def distort_imgs(scan, ground_truth, params=[[2, 3, 1], 25.0, 0.7]):
     :param params: params for image disorion and zoom
     :returns:cobmbined padded,cropped and flipped images
     """
-    with tf.name_scope("Data augmentation"):
+    with tf.name_scope("Data_augmentation"):
         last_label_dim = tf.shape(ground_truth)[-1]
         last_image_dim = tf.shape(scan)[-1]
         #  preprocess the image
         combined = tf.concat([scan, ground_truth], axis=2)
         image_shape = tf.shape(scan)
-        with tf.name_scope("random flipping"):
+        with tf.name_scope("random_flipping"):
             combined_flip = tf.image.random_flip_left_right(combined)
             combined_flip = tf.image.random_flip_up_down(combined_flip)
 
-        with tf.name_scope("elastic deformation"):
+        with tf.name_scope("elastic_deformation"):
             # displacement_val = np.random.randn(3, 2, 3) * dispacement_sigma
             # construct TensorFlow input and top gradient
             displacement = tf.random.uniform(minval=-1.0, maxval=1.0, shape=params[0]) * params[1]
             combined_deform = etf.deform_grid(combined_flip, displacement, order=0, axis=(0, 1),
                                               prefilter=False, mode="nearest")
-        w
-        size = tf.random.uniform((), minval=tf.cast(tf.cast(image_shape[0], tf.float32) * params[2], tf.int32),
-                                 maxval=tf.cast(tf.cast(image_shape[0], tf.float32), tf.int32),
-                                 dtype=tf.int32) # TODO  Zoom out?
-        combined_crop = tf.random_crop(value=combined_deform,
-                                      size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0))
+        with tf.name_scope("random_cropping"):
+            size = tf.random.uniform((), minval=tf.cast(tf.cast(image_shape[0], tf.float32) * params[2], tf.int32),
+                                     maxval=tf.cast(tf.cast(image_shape[0], tf.float32), tf.int32),
+                                     dtype=tf.int32) # TODO  Zoom out?
+            combined_crop = tf.random_crop(value=combined_deform,
+                                           size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0))
 
         #combined_crop = tf.cond(tf.random.uniform(()) > 0.5,
          #                       lambda: tf.random_crop(value=combined,
@@ -58,11 +58,13 @@ def distort_imgs(scan, ground_truth, params=[[2, 3, 1], 25.0, 0.7]):
         #combined_rot = rotate_image_tensor(combined_crop,
         #                                   angle=tf.random_uniform(shape=[], minval=-0.5, maxval=0.5, dtype=tf.float32),
          #                                  img_size=[image_shape[0], image_shape[1]])
-        combined_rot = tf.image.rot90(combined_crop, tf.random_uniform(shape=[], minval=0, maxval=4, dtype=tf.int32))
+        with tf.name_scope("random_cropping"):
+            combined_rot = tf.image.rot90(combined_crop, tf.random_uniform(shape=[], minval=0, maxval=4, dtype=tf.int32))
 
-        im = tf.image.random_brightness(tf.image.resize_images(combined_rot[:, :, :last_image_dim],
-                                                               size=[image_shape[0], image_shape[1]],
-                                                               method=tf.image.ResizeMethod.NEAREST_NEIGHBOR), 0.05)
+        with tf.name_scope("random_cropping"):
+            im = tf.image.random_brightness(tf.image.resize_images(combined_rot[:, :, :last_image_dim],
+                                                                   size=[image_shape[0], image_shape[1]],
+                                                                   method=tf.image.ResizeMethod.NEAREST_NEIGHBOR), 0.05)
 
         #im = tf.image.resize_images(combined_rot[:, :, :last_image_dim], size=[image_shape[0], image_shape[1]])
         gt = tf.image.resize_images(combined_rot[:, :, last_image_dim:], size=[image_shape[0], image_shape[1]],
