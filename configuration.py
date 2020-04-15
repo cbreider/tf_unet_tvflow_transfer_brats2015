@@ -36,7 +36,7 @@ class DataParams:
     ]
 
     # mask for segmentation training: Complete, core or enhancing. Or ALL if all five classes should be separatly predicted
-    segmentation_mask = Subtumral_Modes.COMPLETE
+    segmentation_mask = Subtumral_Modes.ALL
 
     # key for the four different modalities
     modalities = ["mr_flair", "mr_t1", "mr_t1c", "mr_t2"]
@@ -88,7 +88,7 @@ class DataParams:
     # value to which images should be normed to during pre processing. If None original max vales are kept
     norm_max_image_value = None
     # value to which images should be normed to during pre processing. If None original max vales are kept
-    norm_max_image_value_tv = 10.0
+    norm_max_image_value_tv = None
     # Max value of input images (uint16)
     data_max_value = 65535.0
     # nr of folds for k fold cross validation
@@ -179,6 +179,8 @@ class ConvNetParams:
     tv_regularizer = 0.01
     # Add residual layer/skip layer at the end output = input + last_layer (only for tv regression). NOT useful
     add_residual_layer = False
+    # remove skip layer connections
+    remove_skip_layers = False
     # freeze layers during training. Set None to train all layers
     trainable_layers = {"down_conv_0": False, "down_conv_1": False, "down_conv_2": False, "down_conv_3": False,
                         "down_conv_4": False,
@@ -221,7 +223,7 @@ class TrainingParams:
     # log (to terminal) mini batch stats after training_iters. If False only average is logged
     log_mini_batch_stats = False
     # number of training epochs
-    num_epochs = 30
+    num_epochs = 40
     # iterations per epoch
     training_iters = 1000
     # number of iterations between each
@@ -251,8 +253,8 @@ class TrainingParams:
     if gettrace():
         store_val_feature_maps = False
         store_val_images = False
-    # stop training if validation loss has not decreased over last three epochs
-    early_stopping = False
+    # stop training if validation loss has not decreased over the given epochs. Set None to not use early stopping
+    early_stopping_epochs = 4
 
     # Hyperparameters for Adam optimzer
     adam_args = dict(learning_rate=initial_learning_rate,

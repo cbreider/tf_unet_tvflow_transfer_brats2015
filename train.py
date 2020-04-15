@@ -29,7 +29,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode",
                         help="Mode of training session. 1=TV regression training, 2=TV clustering training, "
-                             "3=BRATS Segmentation",
+                             "3=BRATS Segmentation, 4=Auto Encoder, 5= Denoising Autoencoder",
                         type=int, default=1, required=True)
     parser.add_argument("--create_new_split",
                         help="create a new split rather than loading one (default False)",

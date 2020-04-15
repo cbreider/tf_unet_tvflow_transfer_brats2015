@@ -66,7 +66,7 @@ class Trainer(object):
         self._log_mini_batch_stats = self.config.log_mini_batch_stats
         self._store_feature_maps = self.config.store_val_feature_maps
         self._store_result_images = self.config.store_val_images
-        self._early_stopping = self.config.early_stopping
+        self._early_stopping_epochs = self.config.early_stopping_epochs
         self.data_provider_test = data_provider_test
         self._fold_nr = fold_nr
 
@@ -296,14 +296,14 @@ class Trainer(object):
                         save_path = self.net.save(sess, save_path)
                         # save epoch and step
                         self.save_step_nr(step_file, step, epoch)
-
-                        if (last_best_validation_scores[1] >= val_score and
-                            epoch - last_best_validation_scores[0] > 2) and self._early_stopping:
-                            logging.info("Stooping training because of validation convergence...")
-                            break
-                        elif last_best_validation_scores[1] < val_score:
-                            last_best_validation_scores[0] = epoch
-                            last_best_validation_scores[1] = val_score
+                        if self._early_stopping_epochs:
+                            if (last_best_validation_scores[1] >= val_score and
+                                    epoch - last_best_validation_scores[0] >= self._early_stopping_epochs):
+                                logging.info("Stooping training because of validation convergence...")
+                                break
+                            elif last_best_validation_scores[1] < val_score:
+                                last_best_validation_scores[0] = epoch
+                                last_best_validation_scores[1] = val_score
 
                 logging.info("Optimization Finished!")
 

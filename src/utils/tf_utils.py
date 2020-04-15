@@ -27,44 +27,46 @@ def distort_imgs(scan, ground_truth, params=[[2, 3, 1], 25.0, 0.7]):
     :param params: params for image disorion and zoom
     :returns:cobmbined padded,cropped and flipped images
     """
-    last_label_dim = tf.shape(ground_truth)[-1]
-    last_image_dim = tf.shape(scan)[-1]
-    #  preprocess the image
-    combined = tf.concat([scan, ground_truth], axis=2)
-    image_shape = tf.shape(scan)
+    with tf.name_scope("Data augmentation"):
+        last_label_dim = tf.shape(ground_truth)[-1]
+        last_image_dim = tf.shape(scan)[-1]
+        #  preprocess the image
+        combined = tf.concat([scan, ground_truth], axis=2)
+        image_shape = tf.shape(scan)
+        with tf.name_scope("random flipping"):
+            combined_flip = tf.image.random_flip_left_right(combined)
+            combined_flip = tf.image.random_flip_up_down(combined_flip)
 
-    combined_flip = tf.image.random_flip_left_right(combined)
-    combined_flip = tf.image.random_flip_up_down(combined_flip)
+        with tf.name_scope("elastic deformation"):
+            # displacement_val = np.random.randn(3, 2, 3) * dispacement_sigma
+            # construct TensorFlow input and top gradient
+            displacement = tf.random.uniform(minval=-1.0, maxval=1.0, shape=params[0]) * params[1]
+            combined_deform = etf.deform_grid(combined_flip, displacement, order=0, axis=(0, 1),
+                                              prefilter=False, mode="nearest")
+        w
+        size = tf.random.uniform((), minval=tf.cast(tf.cast(image_shape[0], tf.float32) * params[2], tf.int32),
+                                 maxval=tf.cast(tf.cast(image_shape[0], tf.float32), tf.int32),
+                                 dtype=tf.int32) # TODO  Zoom out?
+        combined_crop = tf.random_crop(value=combined_deform,
+                                      size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0))
 
-    # displacement_val = np.random.randn(3, 2, 3) * dispacement_sigma
-    # construct TensorFlow input and top gradient
-    displacement = tf.random.uniform(minval=-1.0, maxval=1.0, shape=params[0]) * params[1]
-    combined_deform = etf.deform_grid(combined_flip, displacement, order=0, axis=(0, 1),
-                                      prefilter=False, mode="nearest")
+        #combined_crop = tf.cond(tf.random.uniform(()) > 0.5,
+         #                       lambda: tf.random_crop(value=combined,
+         #                                  size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0)),
+         #                       lambda: combined)
 
-    size = tf.random.uniform((), minval=tf.cast(tf.cast(image_shape[0], tf.float32) * params[2], tf.int32),
-                             maxval=tf.cast(tf.cast(image_shape[0], tf.float32), tf.int32),
-                             dtype=tf.int32) # TODO  Zoom out?
-    combined_crop = tf.random_crop(value=combined_deform,
-                                  size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0))
+        #combined_rot = rotate_image_tensor(combined_crop,
+        #                                   angle=tf.random_uniform(shape=[], minval=-0.5, maxval=0.5, dtype=tf.float32),
+         #                                  img_size=[image_shape[0], image_shape[1]])
+        combined_rot = tf.image.rot90(combined_crop, tf.random_uniform(shape=[], minval=0, maxval=4, dtype=tf.int32))
 
-    #combined_crop = tf.cond(tf.random.uniform(()) > 0.5,
-     #                       lambda: tf.random_crop(value=combined,
-     #                                  size=tf.concat([[size, size], [last_label_dim + last_image_dim]], axis=0)),
-     #                       lambda: combined)
+        im = tf.image.random_brightness(tf.image.resize_images(combined_rot[:, :, :last_image_dim],
+                                                               size=[image_shape[0], image_shape[1]],
+                                                               method=tf.image.ResizeMethod.NEAREST_NEIGHBOR), 0.05)
 
-    #combined_rot = rotate_image_tensor(combined_crop,
-    #                                   angle=tf.random_uniform(shape=[], minval=-0.5, maxval=0.5, dtype=tf.float32),
-     #                                  img_size=[image_shape[0], image_shape[1]])
-    combined_rot = tf.image.rot90(combined_crop, tf.random_uniform(shape=[], minval=0, maxval=4, dtype=tf.int32))
-
-    im = tf.image.random_brightness(tf.image.resize_images(combined_rot[:, :, :last_image_dim],
-                                                           size=[image_shape[0], image_shape[1]],
-                                                           method=tf.image.ResizeMethod.NEAREST_NEIGHBOR), 0.05)
-
-    #im = tf.image.resize_images(combined_rot[:, :, :last_image_dim], size=[image_shape[0], image_shape[1]])
-    gt = tf.image.resize_images(combined_rot[:, :, last_image_dim:], size=[image_shape[0], image_shape[1]],
-                                method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        #im = tf.image.resize_images(combined_rot[:, :, :last_image_dim], size=[image_shape[0], image_shape[1]])
+        gt = tf.image.resize_images(combined_rot[:, :, last_image_dim:], size=[image_shape[0], image_shape[1]],
+                                    method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
     return im, gt
 
 
@@ -165,17 +167,16 @@ def get_static_clustering(image, cluster_centers):
 
 def get_tv_smoothed(img, tau, weight, eps, m_itr):
 
-    inimg = img
-
-    u = tf.zeros_like(inimg)
-    px = tf.zeros_like(inimg)
-    py = tf.zeros_like(inimg)
+    u = tf.zeros_like(img)
+    px = tf.zeros_like(img)
+    py = tf.zeros_like(img)
     nm = tf.cast(tf.shape(img)[0] * tf.shape(img)[1] * tf.shape(img)[2], tf.float32)
     error = tf.constant(0.0)
     err_prev = tf.constant(eps)
     err_init = tf.constant(0.0)
     i = tf.constant(0)
 
+    """ break condition: repeat tv body till max iteration number is reached or eps*initial error"""
     def _tv_cond(img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr):
         return tf.logical_and(tf.greater_equal(tf.math.abs(err_prev - error), tf.multiply(eps, err_init)),
                               tf.less_equal(i, m_itr))
@@ -204,10 +205,10 @@ def get_tv_smoothed(img, tau, weight, eps, m_itr):
         i = tf.math.add(i, tf.constant(1))
         return [img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr]
 
-    inimg, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr = tf.while_loop(
+    img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr = tf.while_loop(
         _tv_cond,
         _tv_body,
-        [inimg, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr])
+        [img, u, px, py, tau, weight, nm, error, err_prev, err_init, eps, i, m_itr])
 
     return u
 
@@ -407,12 +408,13 @@ def normalize_and_zero_center_tensor(tensor, modalities, data_vals, normalize_st
         :param normalize_std: True if std should be normalized
         :returns: One hot Tensor of depth = depth
         """
-    slices = []
-    for i in range(len(modalities)):
-        v = data_vals[i, :]
-        slices.append(normalize_and_zero_center_slice(tf.expand_dims(tensor[:, :, i], axis=2), max=v[0],
-                                                      normalize_std=normalize_std,
-                                                      new_max=new_max, mean=v[1], var=v[2]))
+    with tf.name_scope("Normalize"):
+        slices = []
+        for i in range(len(modalities)):
+            v = data_vals[i, :]
+            slices.append(normalize_and_zero_center_slice(tf.expand_dims(tensor[:, :, i], axis=2), max=v[0],
+                                                          normalize_std=normalize_std,
+                                                          new_max=new_max, mean=v[1], var=v[2]))
 
     return tf.concat(slices, axis=2)
 
@@ -546,31 +548,32 @@ def get_dice_loss(logits, y, loss_type='jaccard', axis=(1, 2), eps=1e-5, weights
     :param class_axis: axis of class assignments
     :returns: Dice score Tensor shape ():
     """
-    if logits.get_shape().as_list()[3] > 1: # multiclass
-        pred = tf.nn.softmax(logits)
-        if exclude_zero_label:
-            pred = pred[:, :, :, 1:]
-            y = y[:, :, :, 1:]
-    else: # binary
-        pred = tf.nn.sigmoid(logits)
+    with tf.name_scope("Dice Loss"):
+        if logits.get_shape().as_list()[3] > 1: # multiclass
+            pred = tf.nn.softmax(logits)
+            if exclude_zero_label:
+                pred = pred[:, :, :, 1:]
+                y = y[:, :, :, 1:]
+        else: # binary
+            pred = tf.nn.sigmoid(logits)
 
-    numerator = tf.cast(tf.reduce_sum(y * pred, axis=axis), tf.float32)
+        numerator = tf.cast(tf.reduce_sum(y * pred, axis=axis), tf.float32)
 
-    if loss_type == 'jaccard':
-        pred = pred * pred
-        y = y * y
-    elif loss_type == 'sorensen':
-        pred = pred
-        y = y
+        if loss_type == 'jaccard':
+            pred = pred * pred
+            y = y * y
+        elif loss_type == 'sorensen':
+            pred = pred
+            y = y
 
-    denominator = tf.cast(tf.reduce_sum(y, axis=axis) + tf.reduce_sum(pred, axis=axis), tf.float32)
-    dice_ = ((2 * numerator) + eps) / (denominator + eps)
-    if weights:
-        if axis == (1, 2): # dice per slice
-            dice_ = tf.reduce_mean(dice_, axis=0)
-        dice_ = weights * dice_
+        denominator = tf.cast(tf.reduce_sum(y, axis=axis) + tf.reduce_sum(pred, axis=axis), tf.float32)
+        dice_ = ((2 * numerator) + eps) / (denominator + eps)
+        if weights:
+            if axis == (1, 2): # dice per slice
+                dice_ = tf.reduce_mean(dice_, axis=0)
+            dice_ = weights * dice_
 
-    dice = tf.reduce_mean(dice_)
+        dice = tf.reduce_mean(dice_)
     return dice
 
 

@@ -60,6 +60,8 @@ class TrainingModes(Enum):
     TVFLOW_REGRESSION = 1
     TVFLOW_SEGMENTATION = 2
     BRATS_SEGMENTATION = 3
+    AUTO_ENCODER = 4
+    DENOISING_AUTOENCODER = 5
 
 
 class Optimizer(Enum):
