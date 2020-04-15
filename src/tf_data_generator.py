@@ -169,13 +169,6 @@ class TFImageDataGenerator:
                         raise ValueError()
                 else:
                     raise ValueError()
-            elif self._mode == TrainingModes.AUTO_ENCODER or self._mode == TrainingModes.DENOISING_AUTOENCODER:
-                gt_img = in_img
-                if self._mode == TrainingModes.DENOISING_AUTOENCODER:
-                    noise = tf.random_normal(shape=tf.shape(in_img), mean=0.0, stddev=1.0, dtype=tf.float32)
-                    in_img += noise
-            else:
-                raise ValueError()
 
             if self._crop_to_non_zero:
                 in_img, gt_img, tv_img = tf_utils.crop_images_to_to_non_zero(scan=in_img, ground_truth=gt_img,
@@ -188,6 +181,12 @@ class TFImageDataGenerator:
                                                                new_max=self._data_norm_value,
                                                                normalize_std=self._normalize_std,
                                                                data_vals=values)
+
+            if self._mode == TrainingModes.AUTO_ENCODER or self._mode == TrainingModes.DENOISING_AUTOENCODER:
+                gt_img = in_img
+                if self._mode == TrainingModes.DENOISING_AUTOENCODER:
+                    noise = tf.random_normal(shape=tf.shape(in_img), mean=0.0, stddev=1.0, dtype=tf.float32)
+                    in_img += noise
 
             if self._mode == TrainingModes.BRATS_SEGMENTATION:
                 if self._segmentation_mask == Subtumral_Modes.ALL:
