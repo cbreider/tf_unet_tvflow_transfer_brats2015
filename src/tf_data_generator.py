@@ -186,8 +186,9 @@ class TFImageDataGenerator:
                 gt_img = in_img
                 if self._mode == TrainingModes.DENOISING_AUTOENCODER:
                     noise = tf.random_normal(shape=tf.shape(in_img), mean=0.0, stddev=1.0, dtype=tf.float32)
-                    noise = tf.nn.dropout(noise, keep_prob=0.5, noise_shape=None)
-                    in_img += noise
+                    mask = tf.cast(tf.random.uniform(shape=tf.shape(in_img), minval=0, maxval=1,
+                                                     dtype=tf.float32) > 0.5, tf.float32)
+                    in_img += noise * mask
 
             if self._mode == TrainingModes.BRATS_SEGMENTATION:
                 if self._segmentation_mask == Subtumral_Modes.ALL:
