@@ -185,7 +185,7 @@ class ConvNetParams:
     trainable_layers = {"down_conv_0": True, "down_conv_1": True, "down_conv_2": True, "down_conv_3": True,
                         "down_conv_4": True,
                         # up_conv consists of transpose cond and two convolutions
-                        "up_conv_3": [True, True], "up_conv_2": [True, True], "up_conv_1": [True, False], "up_conv_0": [True, True],
+                        "up_conv_3": [True, True], "up_conv_2": [True, True], "up_conv_1": [True, True], "up_conv_0": [True, True],
                         "classifier": True}
     # trainable_layers = None
     # freeze layers during training. Set None to train all layers
@@ -227,7 +227,7 @@ class TrainingParams:
     # iterations per epoch
     training_iters = 5000
     # number of iterations between each
-    display_step = 100
+    display_step = 500
     # smooth label values int gt to confuse network. Not used  TODO ?
     label_smothing = 0
     # Optimizer to use. Choose from class Optimizer(Enum):
