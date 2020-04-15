@@ -254,7 +254,7 @@ class TrainingParams:
         store_val_feature_maps = False
         store_val_images = False
     # stop training if validation loss has not decreased over the given epochs. Set None to not use early stopping
-    early_stopping_epochs = 10
+    early_stopping_epochs = 15
 
     # Hyperparameters for Adam optimzer
     adam_args = dict(learning_rate=initial_learning_rate,
