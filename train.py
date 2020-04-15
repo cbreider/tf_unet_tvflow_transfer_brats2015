@@ -40,6 +40,9 @@ if __name__ == "__main__":
     parser.add_argument("--restore_path",
                         help="Path of a pretrained stored model. If given it will load this model",
                         type=str, default=None)
+    parser.add_argument("--name",
+                        help="name to include in the output path",
+                        type=str, default="")
     parser.add_argument("--caffemodel_path",
                         help="Path of a pretrained caffe model (hfd5). If given it will load this model",
                         type=str, default=None)
@@ -70,7 +73,7 @@ if __name__ == "__main__":
     include_testing = False
     data_path = "default"
     fold_nr = args.take_fold_nr
-
+    name = ""
     if args.create_new_split:
         create_new_training_split = True
     if args.do_not_create_summaries:
@@ -89,6 +92,8 @@ if __name__ == "__main__":
         include_testing = True
     if args.data_path:
         data_path = args.data_path
+    if args.name:
+        name = args.name
     if args.training_data_portion and args.training_data_portion >= 0:
         config.DataParams.training_data_portion = args.training_data_portion
 
@@ -99,7 +104,7 @@ if __name__ == "__main__":
     tf.reset_default_graph()
 
     data_paths = DataPaths(data_path=data_path, mode=train_mode.name,
-                           tumor_mode=config.DataParams.segmentation_mask.name)
+                           tumor_mode=config.DataParams.segmentation_mask.name, name=name)
     data_paths.load_data_paths(mkdirs=True, restore_dir=restore_path if (restore_mode == RestoreMode.COMPLETE_SESSION
                                                                          or restore_mode == RestoreMode.COMPLETE_NET)
                                                                     else None)

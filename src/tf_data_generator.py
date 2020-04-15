@@ -172,7 +172,7 @@ class TFImageDataGenerator:
             elif self._mode == TrainingModes.AUTO_ENCODER or self._mode == TrainingModes.DENOISING_AUTOENCODER:
                 gt_img = in_img
                 if self._mode == TrainingModes.DENOISING_AUTOENCODER:
-                    noise = tf.random_normal(shape=tf.shape(in_img), mean=0.0, stddev=0.2, dtype=tf.float32)
+                    noise = tf.random_normal(shape=tf.shape(in_img), mean=0.0, stddev=1.0, dtype=tf.float32)
                     in_img += noise
             else:
                 raise ValueError()

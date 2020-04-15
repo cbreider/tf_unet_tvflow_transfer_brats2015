@@ -98,7 +98,7 @@ class DataParams:
     # Ration of Nr iraining images to Val images (optioanl test) if new random split is created. Only used if not k fold
     # argumnet is passed (k_fold cross validation is not used). Must sum up to 1
     #split_train_val_ratio = [0.75, 0.25]
-    split_train_val_ratio = [0.6, 0.15, 0.25]
+    split_train_val_ratio = [0.85, 0.15]
     # use only a subset of training images. values from >0.0 - 1.0 (1.0 for all traing data)
     training_data_portion = 1.0
     # set True if pre computed tv images should be red from disc. If False tv is computed in data pipeline
@@ -115,7 +115,7 @@ class DataParams:
     # number of channels of generated input images (grayscale)
     nr_of_input_modalities = len(use_modalities) * nr_of_image_channels
     # nr of classes of segmentation map (binary for gt segmentation, more for tv segmentation)
-    nr_of_classes = 5
+    nr_of_classes = 4
     # modalities used and combined for tv. None for preset (COMPLETE = flair+T2, CORE=T1c, ENHANCING=T1)
     combine_modalities_for_tv = [modalities[0], modalities[1], modalities[2], modalities[3]]
     # method for clustering TV Images in TV segmentation mode (Static binning, Kmeans or mean shift)
@@ -157,7 +157,7 @@ class ConvNetParams:
     # size of max pooling pool_size x pool_size
     pool_size = 2
     # Cost function to use. Choose from class Cost(Enum)
-    cost_function = Cost.BATCH_DICE_SOFT
+    cost_function = Cost.MSE
     # weighting if BATCH_DICE_SOFT_CE is chosen. loss = cost_weight * Dice_loss + (1-cost_weight) * cross_entropy_loss
     cost_weight = 0.7
     # Use padding to preserve feature map size and prevent downscaling
@@ -245,11 +245,11 @@ class TrainingParams:
     # dropout_rate for the deconvolutional layers
     dropout_rate_concat = 0.0
     # initial learning rate
-    initial_learning_rate = 0.00001
+    initial_learning_rate = 0.0001
     # store output images of validation
-    store_val_images = False
+    store_val_images = True
     # store last feature maps  from cnn during validation ( only for middle scan)
-    store_val_feature_maps = False
+    store_val_feature_maps = True
     if gettrace():
         store_val_feature_maps = False
         store_val_images = False
@@ -264,7 +264,7 @@ class TrainingParams:
                      use_locking=False,
                      name='Adam',
                      decay_rate=0.1,
-                     decay_steps=000)
+                     decay_steps=125000)
     # Hyperparameters for Momentum wawddwawoptimzer
     momentum_args = dict(momentum=0.99,
                          learning_rate=initial_learning_rate,

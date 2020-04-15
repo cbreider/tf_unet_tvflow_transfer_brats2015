@@ -15,13 +15,12 @@ import sys
 
 gettrace = getattr(sys, 'gettrace', None)
 
+
 class DataParams:
     """ Data parameters"""
 
     # batch size used for training
     batch_size_train = 8
-    # batch size used for validation. Attention: Due to implementation only 1 is possible at the moment
-    batch_size_val = 1
     # buffer size for tf training data pipeline
     buffer_size_train = 32
     # buffer size for tf validation data pipeline
@@ -37,21 +36,21 @@ class DataParams:
     ]
 
     # mask for segmentation training: Complete, core or enhancing. Or ALL if all five classes should be separatly predicted
-    segmentation_mask = Subtumral_Modes.COMPLETE
+    segmentation_mask = Subtumral_Modes.ALL
 
     # key for the four different modalities
     modalities = ["mr_flair", "mr_t1", "mr_t1c", "mr_t2"]
 
     # values (pre computed) per modality of all mri (training set) scans:  [max, mean, variance]
-    #data_values = {modalities[0]: [9971.0, 373.4186, 436.8327],
-    #               modalities[1]: [11737.0, 498.3364, 514.9137],
-    #               modalities[2]: [11737.0, 512.1146, 560.1438],
-    #               modalities[3]: [15281.0, 609.6377, 507.4553]}
+    data_values = {modalities[0]: [9971.0, 373.4186, 436.8327],
+                   modalities[1]: [11737.0, 498.3364, 514.9137],
+                   modalities[2]: [11737.0, 512.1146, 560.1438],
+                   modalities[3]: [15281.0, 609.6377, 507.4553]}
     # to norm every sclice by its own values uncomment this
-    data_values = {modalities[0]: [None, None, None],
-                   modalities[1]: [None, None, None],
-                   modalities[2]: [None, None, None],
-                   modalities[3]: [None, None, None]}
+    #data_values = {modalities[0]: [None, None, None],
+    #               modalities[1]: [None, None, None],
+    #               modalities[2]: [None, None, None],
+    #               modalities[3]: [None, None, None]}
 
     # size of the raw images
     raw_data_height = 240
@@ -82,14 +81,14 @@ class DataParams:
     do_image_augmentation_val = False
     # parameters for image distortion
     image_disort_params = [[2, 3, 3],  # displacement vector [img dim, plane, heigh
-                           20.0,  # sigma deformation magnitude
+                           25.0,  # sigma deformation magnitude
                            0.8]  # max zoom factor
     # normalize standard deviation for images during pre processing
     normailze_std = True
     # value to which images should be normed to during pre processing. If None original max vales are kept
     norm_max_image_value = None
     # value to which images should be normed to during pre processing. If None original max vales are kept
-    norm_max_image_value_tv = 10.0
+    norm_max_image_value_tv = None
     # Max value of input images (uint16)
     data_max_value = 65535.0
     # nr of folds for k fold cross validation
@@ -99,7 +98,7 @@ class DataParams:
     # Ration of Nr iraining images to Val images (optioanl test) if new random split is created. Only used if not k fold
     # argumnet is passed (k_fold cross validation is not used). Must sum up to 1
     #split_train_val_ratio = [0.75, 0.25]
-    split_train_val_ratio = [0.6, 0.15, 0.25]
+    split_train_val_ratio = [0.85, 0.15]
     # use only a subset of training images. values from >0.0 - 1.0 (1.0 for all traing data)
     training_data_portion = 1.0
     # set True if pre computed tv images should be red from disc. If False tv is computed in data pipeline
@@ -116,21 +115,22 @@ class DataParams:
     # number of channels of generated input images (grayscale)
     nr_of_input_modalities = len(use_modalities) * nr_of_image_channels
     # nr of classes of segmentation map (binary for gt segmentation, more for tv segmentation)
-    nr_of_classes = 1
+    nr_of_classes = 16
     # modalities used and combined for tv. None for preset (COMPLETE = flair+T2, CORE=T1c, ENHANCING=T1)
-    combine_modalities_for_tv = None #[modalities[0], modalities[1], modalities[2], modalities[3]]
+    combine_modalities_for_tv = [modalities[0], modalities[1], modalities[2], modalities[3]]
     # method for clustering TV Images in TV segmentation mode (Static binning, Kmeans or mean shift)
     clustering_method = TV_clustering_method.STATIC_BINNING
     # To train the network with multiple TV scales set a range for the tv_weight. During training the tv weight will be
     # selected uniformly from the range. Set to None to train only with a single scale set in the parameters below
-    tv_multi_scale_range = [0.125, 1.125]
+    tv_multi_scale_range = None #[0.125, 1.125]
+    tv_static_multi_scale = [0.2, 0.4, 0.6, 0.8]
     #tv_multi_scale_range = None
     # params for differnt tv clustering methods (tv smoothing
     tv_and_clustering_params = dict(
         k_means_pre_cluster=[-0.5, 0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7,
                              0.75, 0.8, 0.85, 0.9, 0.95, 1.0],
                                 # params for tv smoothing
-                                    tv_weight=0.75, tv_eps=0.00001, tv_tau=0.125, tv_m_itr=50,
+                                    tv_weight=0.5, tv_eps=0.00001, tv_tau=0.125, tv_m_itr=50,
                                     # params for kmeans nr of clusters =nr_of_clases.Only used im tv
                                     # clustering with kmeans)
                                     km_m_itr=100,
@@ -147,7 +147,7 @@ class ConvNetParams:
     # number of encoder layers including bottom layer (5 for original U-net)
     num_layers = 5
     if gettrace():
-        num_layers = 3
+        num_layers = 2
     # number of feature maps/kernels in the first layer (original 64)
     feat_root = 64
     if gettrace():
@@ -157,7 +157,7 @@ class ConvNetParams:
     # size of max pooling pool_size x pool_size
     pool_size = 2
     # Cost function to use. Choose from class Cost(Enum)
-    cost_function = Cost.BATCH_DICE_SOFT
+    cost_function = Cost.MSE
     # weighting if BATCH_DICE_SOFT_CE is chosen. loss = cost_weight * Dice_loss + (1-cost_weight) * cross_entropy_loss
     cost_weight = 0.7
     # Use padding to preserve feature map size and prevent downscaling
@@ -173,15 +173,19 @@ class ConvNetParams:
     lambda_l2_regularizer = None #0.000001
     # lambda value for l1 regualizer. Set None do not use l2 regularizer
     lambda_l1_regularizer = None #0.00000001
+    # use spatial (channel dropout instead of single neuron dropout
+    spatial_dropuout = True
     # tv regularize for TV loss. oly used if Cost funcion is TV
     tv_regularizer = 0.01
     # Add residual layer/skip layer at the end output = input + last_layer (only for tv regression). NOT useful
     add_residual_layer = False
+    # remove skip layer connections
+    remove_skip_layers = False
     # freeze layers during training. Set None to train all layers
     trainable_layers = {"down_conv_0": True, "down_conv_1": True, "down_conv_2": True, "down_conv_3": True,
                         "down_conv_4": True,
                         # up_conv consists of transpose cond and two convolutions
-                        "up_conv_3": [True, True], "up_conv_2": [True, True], "up_conv_1": [True, True], "up_conv_0": [True, True],
+                        "up_conv_3": [True, True], "up_conv_2": [True, True], "up_conv_1": [True, False], "up_conv_0": [True, True],
                         "classifier": True}
     # trainable_layers = None
     # freeze layers during training. Set None to train all layers
@@ -189,7 +193,7 @@ class ConvNetParams:
                       "down_conv_4": True,
                       # up_conv consists of transpose cond and two convolutions
                       "up_conv_3": [True, True], "up_conv_2": [True, True], "up_conv_1": [True, True], "up_conv_0": [True, True],
-                      "classifier": True}
+                      "classifier": False}
     # trainable_layers = None
     # Act func for output map. ATTENTION: Please choose none. actfunc is added prediction step
     # softmax multi class classifiavtion, sigmoid binary
@@ -204,13 +208,10 @@ class ConvNetParams:
     max_tv_value = 1.0
 
 
-
 class TrainingParams:
     """ Training parameters"""
     # batch size used for training
     batch_size_train = DataParams.batch_size_train
-    # batch size used for validation
-    batch_size_val = DataParams.batch_size_val
     # buffer size for tf training data pipeline
     buffer_size_train = DataParams.buffer_size_train
     # buffer size for tf validation data pipeline
@@ -222,9 +223,9 @@ class TrainingParams:
     # log (to terminal) mini batch stats after training_iters. If False only average is logged
     log_mini_batch_stats = False
     # number of training epochs
-    num_epochs = 8
+    num_epochs = 50
     # iterations per epoch
-    training_iters = 1000
+    training_iters = 5000
     # number of iterations between each
     display_step = 100
     # smooth label values int gt to confuse network. Not used  TODO ?
@@ -234,24 +235,26 @@ class TrainingParams:
     # dropout probability for the first convolution in each block.
     # Note: it's unusual to use dropout in convolutional layers
     # but they did it in the original tf_unet implementation, so at least the option will be provided here.
-    dropout_rate_conv1 = 0.6
-    # dropout probability f0r the second convolution in each block
-    dropout_rate_conv2 = 1.0
+    dropout_rate_conv1 = 0.15
+    # dropout probability for the second convolution in each block
+    dropout_rate_conv2 = 0.15
     # dropout_rate for the pooling and  layers
     dropout_rate_pool = 0.0
     # dropout_rate for the deconvolutional layers
     dropout_rate_tconv = 0.0
+    # dropout_rate for the deconvolutional layers
     dropout_rate_concat = 0.0
     # initial learning rate
     initial_learning_rate = 0.0001
     # store output images of validation
-    store_val_images = False
+    store_val_images = True
     # store last feature maps  from cnn during validation ( only for middle scan)
-    store_val_feature_maps = False
+    store_val_feature_maps = True
     if gettrace():
         store_val_feature_maps = False
-    # stop training if validation loss has not decreased over last three epochs
-    early_stopping = False
+        store_val_images = False
+    # stop training if validation loss has not decreased over the given epochs. Set None to not use early stopping
+    early_stopping_epochs = 10
 
     # Hyperparameters for Adam optimzer
     adam_args = dict(learning_rate=initial_learning_rate,
@@ -260,12 +263,12 @@ class TrainingParams:
                      epsilon=1e-08,
                      use_locking=False,
                      name='Adam',
-                     decay_rate=0.2,
-                     decay_steps=150000)
-    # Hyperparameters for Momentum optimzer
+                     decay_rate=0.1,
+                     decay_steps=125000)
+    # Hyperparameters for Momentum wawddwawoptimzer
     momentum_args = dict(momentum=0.99,
                          learning_rate=initial_learning_rate,
-                         decay_rate=0.90,
+                         decay_rate=0.9,
                          use_locking=False,
                          name='Momentum',
                          use_nesterov=False,
@@ -275,6 +278,8 @@ class TrainingParams:
                         initial_accumulator_value=0.1,
                         use_locking=False,
                         name='Adagrad')
+
+
 
 
 

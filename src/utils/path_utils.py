@@ -17,7 +17,7 @@ import logging
 
 class DataPaths(object):
 
-    def __init__(self, data_path="default", mode="TVFLOW_REGRESSION", tumor_mode="COMPLETE"):
+    def __init__(self, data_path="default", mode="TVFLOW_REGRESSION", tumor_mode="COMPLETE", name=""):
         self.is_loaded = False
         self.nrrd_ext = ".nrrd"
         self.png_ext = ".png"
@@ -45,6 +45,7 @@ class DataPaths(object):
         self.tf_out_path = "tf_model_output"
         self.mode = mode
         self.tumor_mode = tumor_mode
+        self.name = name
 
     def load_data_paths(self, mkdirs=True, restore_dir=None):
         self.project_dir = os.getcwd()  # os.path.dirname(os.path.realpath(__file__))
@@ -65,7 +66,7 @@ class DataPaths(object):
 
         self.tf_out_path = os.path.join(self.project_dir, self.tf_out_path)
         tf_out_path_tmp = "{0:%Y-%m-%d_%H:%M:%S}".format(datetime.now())
-        tf_out_path_tmp = "{}_{}_{}".format(self.mode, self.tumor_mode, tf_out_path_tmp)
+        tf_out_path_tmp = "{}_{}_{}_{}".format(self.mode, self.tumor_mode, self.name, tf_out_path_tmp)
 
         self.tf_out_path = os.path.join(self.tf_out_path, tf_out_path_tmp)
 
