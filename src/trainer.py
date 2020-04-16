@@ -199,7 +199,7 @@ class Trainer(object):
                 epoch = int(fl[1])
 
             pred_shape, init_loss = self.run_validtaion(sess, epoch, init_step, summary_writer_validation,
-                                                        log_tf_summary=True if epoch == 0 else False, mini_validation=True)
+                                                        log_tf_summary=True if epoch == 0 else False, mini_validation=False)
 
             avg_gradients = None
 
@@ -209,7 +209,7 @@ class Trainer(object):
             logging.info("Start optimization...")
             avg_score_vals_batch = []
             avg_score_vals_epoch = []
-            last_best_validation_scores = [0, init_loss]
+            last_best_validation_scores = [epoch, init_loss]
             zero_counter = 0
 
             try:
