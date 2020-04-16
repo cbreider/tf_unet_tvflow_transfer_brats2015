@@ -52,7 +52,8 @@ class ConvNetModel(object):
         self._l1_regularizer = self._convnet_config.lambda_l1_regularizer
         self._max_tv_value = self._convnet_config.max_tv_value
         self._loss_weight = self._convnet_config.cost_weight
-        self._retore_layers = self._convnet_config.restore_layers
+        self._restore_layers = self._convnet_config.restore_layers
+        self._remove_skip_layers = self._convnet_config.remove_skip_layers
         self._spatial_dropout = self._convnet_config.spatial_dropuout
         self._mode = mode
         self.l1regularizers = tf.constant(-1.0)
@@ -79,7 +80,8 @@ class ConvNetModel(object):
                                                bn=self._batch_norm, add_residual_layer=self._add_residual_layer,
                                                use_scale_image_as_gt=self._use_scale_image_as_gt,
                                                act_func_out=self._activation_func_out, features_root=self._features_root,
-                                               layers_to_restore=self._retore_layers)
+                                               layers_to_restore=self._restore_layers,
+                                               remove_skip_layers=self._remove_skip_layers)
 
         self.cost = self._get_cost()
 

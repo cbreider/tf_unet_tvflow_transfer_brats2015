@@ -188,7 +188,10 @@ class TFImageDataGenerator:
                     noise = tf.random_normal(shape=tf.shape(in_img), mean=0.0, stddev=1.0, dtype=tf.float32)
                     mask = tf.cast(tf.greater(tf.random.uniform(shape=tf.shape(in_img), minval=0.0, maxval=1.0,
                                                                 dtype=tf.float32), 0.5), tf.float32)
+                    in_min = tf.reduce_min(in_img)
+                    in_max = tf.reduce_max(in_img)
                     in_img += noise * mask
+                    tf.clip_by_value(in_img, in_min, in_max)
 
             if self._mode == TrainingModes.BRATS_SEGMENTATION:
                 if self._segmentation_mask == Subtumral_Modes.ALL:
