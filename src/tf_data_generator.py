@@ -40,6 +40,7 @@ class TFImageDataGenerator:
         self._segmentation_mask = self._data_config.segmentation_mask
 
         self._nr_of_classes = self._data_config.nr_classes
+        self._nr_classes_clustering = self._data_config.nr_clusters
         self._normalize_std = self._data_config.normailze_std
         self._nr_channels = self._data_config.nr_of_image_channels
         self._nr_modalities = self._data_config.nr_input_channels
@@ -152,7 +153,7 @@ class TFImageDataGenerator:
 
                 elif self._mode == TrainingModes.TVFLOW_SEGMENTATION:
                     if self.clustering_method == TV_clustering_method.STATIC_BINNING:
-                        gt_img = tf_utils.get_fixed_bin_clustering(image=tv_img, n_bins=self._nr_of_classes,
+                        gt_img = tf_utils.get_fixed_bin_clustering(image=tv_img, n_bins=self._nr_classes_clustering,
                                                                    val_range=[-self._data_norm_value_tv,
                                                                               self._data_norm_value_tv])
                     elif self.clustering_method == TV_clustering_method.STATIC_CLUSTERS:
@@ -163,7 +164,7 @@ class TFImageDataGenerator:
                     elif self.clustering_method == TV_clustering_method.MEAN_SHIFT:
                         gt_img = tf_utils.get_meanshift_clustering(image=tv_img, ms_itr=self.mean_shift_n_itr,
                                                                    win_r=self.mean_shift_win_size,
-                                                                   n_clusters=self._nr_of_classes,
+                                                                   n_clusters=self._nr_classes_clustering,
                                                                    bin_seeding=self.mean_shift_bin_seeding)
                     else:
                         raise ValueError()

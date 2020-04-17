@@ -112,7 +112,7 @@ if __name__ == "__main__":
     data_iter.create()
 
     net = ConvNetModel(convnet_config=config, mode=TrainingModes.BRATS_SEGMENTATION,
-                       create_summaries=True)
+                       create_summaries=False)
     data = [[], []]
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())

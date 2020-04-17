@@ -50,7 +50,6 @@ def create_2d_unet(x, nr_channels, n_class, n_layers=5, features_root=64, filter
     :param use_padding: True to use padding and preserve image sizes. in_size=out_size, default False
     :param bn: True to use batch normalization, default False
     :param add_residual_layer: Add skip layer from input to output new_out = out + in
-    :param use_scale_image_as_gt: Use scale layer from tv as gt (only for tv learning) default False
     :param layers_to_restore: Dict of names and bool indicating if variables of layer should be restored e.g
     from tf checkpoint
     :param spatial_dropout: use channel dropout instead of , default True

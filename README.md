@@ -1,4 +1,4 @@
-# Pre-train 2D U-Net on Total Variation smoothed Data and fine-tuning it on Brats2015 brain tumor segmentation
+#Learning Feature Preserving Smoothing as Prior for Image Segmentation (U-Net, Total Variation smoothing)
 
 Lab Visualization & Medical Image Analysis SS2019
 Institute of Computer Science II
@@ -6,11 +6,14 @@ Institute of Computer Science II
 Author: Christian Breiderhoff
 created  2019-2020
 
-Python3 tool to pre train Unet on total variation smoothed images (regression with MSE), to enhance segmentation performance on brats 2015 dataset.
+Python3 Tool to pre-train a CNN Model on Total Variation smoothed images (regression with MSE), to enhance segmentation performance.
+It is also possible to pre-train the CNN in an auto encoder fashion.
+
+Currently only 2D U-Net with Brats 2015 data set are implemented
 
 This Projects is still under development so check out for changes some time.
 ## Requirements
-
+tool
 Written in python 3.5
 
 Necessary packages
@@ -21,6 +24,7 @@ Necessary packages
   - tensorflow 1.12.0
   - sipy
   - PIL
+  - SimpleITK
 
 ## Training
 
@@ -42,22 +46,32 @@ Both scripts offer the following (optional) arguments:
 
 ## Testing
 
-The script *predict_brats_seg.py* evaluates the test segmentation performance on a given test split. It requires the following arguments:
+The script *predict_brats_seg.py* runs a trained model on the Brats test set or a given test split and saves the 
+predicted scans as MHA (for BRATS2015 challenge) and as PNG files (optional). It requires the following arguments:
 
-* --model_path: Path to the (trained) tf model
-* --cuda_device: Use a specific cuda device )(optional)
-* --save_all_predictions: Safe all predictions as PNG. If not given it will only (randomly) save 1/100 of the data.
+
+* --model_path: Path to the (trained) tf model checkpoint
+* --name [NAME]: Name for the test run. The output siles will be saved as "VSD.[name].PATIENTID.mha" 
+* --cuda_device [NR]: Use a specific cuda device )(optional)
+* --save_pngs: save predictions also as PNG images
+* --take_fold_nr [NR]: use the test split from a given fold. *fold[NR],json*
 
 ## Provide Data
 The Brats dataset should be provided as follows:
 
   - Image Scan ata / Segmentation ground truth data: *./../Dataset/2D-Slices/png/raw/...[Default Brats2015 path schema] *
   - TV smoothed Data: *./../Dataset/2D-Slices/png/tvflow/... [Default Brats2015 path schema] *
-  - Split configuration as json: *./../Dataset/splits/...*
+  - You can easily provide your own paths. To do so please have a look at *src/utils/path_utils.py*
+  - Split configuration as json: *./../Dataset/splits/...*. The split could be provided as single split "split.json" 
+  or k-fold splits ("fold1.json", ..., "fold[k],json). For futher details see *src/utilities/split_utilities.py*
+  - All Data pre-processing, augmentation and smoothing is done on the fly with TF Datapipeline on the CPU. Please see 
+  *src/tf_data_pipeline_wrapper.py* and *src/tf_data_generator.py*. Currently it is only possible to load the data from 
+  PNG images. Therefore the script *convert_brats2015_to_png.py* is provided to convert the BRATS2015 dataset from 3D MHA
+  scans to 2D axial PNG slices. Secondly mean, max and vaiance of each scan are stored as *values.json* file in the
+  corresponding folder. the
  
- You can easily provide your own paths. To do so please have a look at *src/utils/path_utils.py*
 
 
  ## Options and Configuration
  
-There are a lots of configuration options for the Unet, Training, and Data processing. Plea have a look at *configuration.py* to make sure you have chosen the right configurations.
+There are a lots of configuration options for the U-Net, Training, data processing and augmentation. Plea have a look at *configuration.py* to make sure you have chosen the right configurations.

@@ -28,7 +28,8 @@ import random
 class Trainer(object):
 
     def __init__(self, net, data_provider_train, data_provider_val, out_path, train_config, mode,  restore_path=None,
-                 caffemodel_path=None, restore_mode=RestoreMode.COMPLETE_SESSION, data_provider_test=None, fold_nr=0):
+                 caffemodel_path=None, restore_mode=RestoreMode.COMPLETE_SESSION, data_provider_test=None, fold_nr=0,
+                 create_summaries=True):
 
         """
         Trains a convnet instance
@@ -69,6 +70,7 @@ class Trainer(object):
         self._early_stopping_epochs = self.config.early_stopping_epochs
         self.data_provider_test = data_provider_test
         self._fold_nr = fold_nr
+        self._create_summaries = create_summaries
 
     def _get_optimizer(self, global_step):
         tvars = tf.trainable_variables()
@@ -124,7 +126,7 @@ class Trainer(object):
         self.norm_gradients_node = tf.Variable(tf.constant(0.0, shape=[len(self.net.gradients_node)]),
                                                name="norm_gradients", trainable=False)
 
-        if self.net.summaries and self._norm_grads:
+        if self._create_summaries and self._norm_grads:
             tf.summary.histogram('norm_grads', self.norm_gradients_node)
 
         self.optimizer = self._get_optimizer(global_step)
@@ -173,17 +175,19 @@ class Trainer(object):
             if self._caffemodel_path:
                 load_pre_trained_caffe_variables(session=sess, file_path=self._caffemodel_path)
 
-            train_summary_path = os.path.join(self.output_path, "training_summary")
-            val_summary_path = os.path.join(self.output_path, "validation_summary")
+            if self._create_summaries:
+                train_summary_path = os.path.join(self.output_path, "training_summary")
+                val_summary_path = os.path.join(self.output_path, "validation_summary")
 
-            if not os.path.exists(train_summary_path):
-                os.makedirs(train_summary_path)
-            if not os.path.exists(val_summary_path):
-                os.makedirs(val_summary_path)
-            summary_writer_training = tf.summary.FileWriter(train_summary_path,
-                                                            graph=sess.graph)
-            summary_writer_validation = tf.summary.FileWriter(val_summary_path,
-                                                              graph=sess.graph)
+                if not os.path.exists(train_summary_path):
+                    os.makedirs(train_summary_path)
+                if not os.path.exists(val_summary_path):
+                    os.makedirs(val_summary_path)
+                summary_writer_training = tf.summary.FileWriter(train_summary_path, graph=sess.graph)
+                summary_writer_validation = tf.summary.FileWriter(val_summary_path, graph=sess.graph)
+            else:
+                summary_writer_training = None
+                summary_writer_validation = None
 
             # load epoch and step count from prev run if exists
             step_file = os.path.join(self.output_path, "epoch.txt")
@@ -259,9 +263,9 @@ class Trainer(object):
                     if step % self._display_step == 0 and step != 0:
                         if self._log_mini_batch_stats:
                             self.output_minibatch_stats(sess, step, batch_x, dutil.crop_to_shape(batch_y, pred_shape))
-
-                        self.run_summary(sess, summary_writer_training, step, batch_x,
-                                         dutil.crop_to_shape(batch_y, pred_shape))
+                        if self._create_summaries:
+                            self.run_summary(sess, summary_writer_training, step, batch_x,
+                                             dutil.crop_to_shape(batch_y, pred_shape))
 
                         avg_score_vals_batch = np.mean(np.array(avg_score_vals_batch), axis=0)
 
@@ -278,8 +282,8 @@ class Trainer(object):
                         scores[Scores.DSC_EN] = avg_score_vals_batch[8]
                         scores[Scores.L1] = avg_score_vals_batch[9]
                         scores[Scores.L2] = avg_score_vals_batch[10]
-
-                        self.write_tf_summary_scores(step, scores, summary_writer_training)
+                        if self._create_summaries:
+                            self.write_tf_summary_scores(step, scores, summary_writer_training)
                         self.write_log_string("Iteration {} Average:".format(step), scores)
                         avg_score_vals_batch = []
 
@@ -330,7 +334,7 @@ class Trainer(object):
         outF.write("{}".format(epoch))
         outF.close()
 
-    def run_validtaion(self, sess, epoch, step, summary_writer, log_tf_summary=True, mini_validation=False):
+    def run_validtaion(self, sess, epoch, step, summary_writer=None, mini_validation=False, log_tf_summary=True):
         logging.info("Running Validation for epoch {}...".format(epoch))
         epoch_out_path = os.path.join(self.output_path, "Epoch_{}".format(epoch))
 
@@ -338,7 +342,7 @@ class Trainer(object):
                                        mini_validation=mini_validation, nr=epoch,
                                        store_feature_maps=self._store_feature_maps,
                                        store_predictions=self._store_result_images).run_validation()
-        if log_tf_summary:
+        if summary_writer and log_tf_summary:
             self.write_tf_summary_scores(step, scores, summary_writer)
 
         self.write_log_string("EPOCH {} Verification:".format(epoch), scores)
