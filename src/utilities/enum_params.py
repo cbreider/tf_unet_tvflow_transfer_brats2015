@@ -79,7 +79,8 @@ class Activation_Func(Enum):
     """
     RELU = 1
     SIGMOID = 2
-    NONE = 3
+    SOFTMAX = 3
+    NONE = 4
 
 
 class RestoreMode(Enum):
@@ -87,18 +88,18 @@ class RestoreMode(Enum):
     training optimzer
     """
     COMPLETE_SESSION = 1    # complete session including hyper params
-    ONLY_BASE_NET = 2       # only base net without out put cov and variables for chnaged from tv to segmenation
-    COMPLETE_NET = 3
+    ONLY_BASE_NET = 2       # import varibales from tf checkpoint but safe them to new path including summary
+    COMPLETE_NET = 3        # continue using the same path to store as restore path
 
 
 class TV_clustering_method(Enum):
     """
     modes for clustering tv smoothed images
     """
-    STATIC_BINNING = 1
-    STATIC_CLUSTERS = 2
-    K_MEANS = 3
-    MEAN_SHIFT = 4
+    STATIC_BINNING = 1      # cluster by deving into equal bins
+    STATIC_CLUSTERS = 2     # cluster using pre given cluster centers
+    K_MEANS = 3             # use k-means to cluster
+    MEAN_SHIFT = 4          # use mean shift to cluster
 
 
 class Scores(Enum):

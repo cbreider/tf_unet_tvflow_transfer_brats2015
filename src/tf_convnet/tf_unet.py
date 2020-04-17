@@ -18,49 +18,61 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 import numpy as np
 import logging
 import tensorflow as tf
-import src.utils.tf_utils as tfu
-from src.utils.enum_params import Activation_Func
+import src.utilities.tf_utils as tfu
+from src.utilities.enum_params import Activation_Func
 from collections import OrderedDict
 from src.tf_convnet.layers import (weight_variable, weight_variable_devonc, bias_variable,
                                    conv2d, deconv2d, max_pool, crop_and_concat)
 
 
-def create_2d_unet(x, keep_prob_conv1, keep_prob_conv2, keep_prob_pool, keep_prob_tconv, keep_prob_concat,
-                   channels, n_class, n_layers=5, spatial_dropout=True,
-                   features_root=64, filter_size=3, pool_size=2, summaries=True, use_padding=False, bn=False,
-                   trainable_layers=None, layers_to_restore=None, add_residual_layer=False, use_scale_image_as_gt=False,
-                   act_func_out=Activation_Func.RELU, remove_skip_layers=False):
+def create_2d_unet(x, nr_channels, n_class, n_layers=5, features_root=64, filter_size=3, pool_size=2,
+                   add_residual_layer=False, spatial_dropout= True, remove_skip_layers=False,
+                   keep_prob_conv1=None, keep_prob_conv2=None, keep_prob_pool=None, keep_prob_tconv=None,
+                   keep_prob_concat=None, use_padding=False, bn=False,trainable_layers=None,
+                   layers_to_restore=None, summaries=True):
     """
     Creates a new convolutional unet for the given parametrization.
 
     :param x: input tensor, shape [?,nx,ny,channels]
-    :param keep_prob_conv: dropout probability tensor for convolutions
-    :param channels: number of channels in the input image
+
+    :param nr_channels: number of channels in the input image
     :param n_class: number of output labels
     :param n_layers: number of layers in the net, default 5
     :param features_root: number of features in the first layer, default 64
     :param filter_size: size of the convolution filter, default 3
     :param pool_size: size of the max pooling operation, default 2
-    :param summaries: Flag if summaries should be created, default True
+    :param keep_prob_conv1: keep probability tensor for dropout after first convolution of each layer
+    :param keep_prob_conv2: keep probability tensor for dropout after second convolution of each layer
+    :param keep_prob_pool: keep probability tensor for dropout after pooling
+    :param keep_prob_tconv: keep probability tensor for dropout after transpose convolutions
+    :param keep_prob_concat: keep probability tensor for dropout after skip and concating operation
     :param trainable_layers: Dictionary of layer to train or not. None to train complete network
     :param use_padding: True to use padding and preserve image sizes. in_size=out_size, default False
     :param bn: True to use batch normalization, default False
     :param add_residual_layer: Add skip layer from input to output new_out = out + in
     :param use_scale_image_as_gt: Use scale layer from tv as gt (only for tv learning) default False
-    :param act_func_out: Activation function for out map
+    :param layers_to_restore: Dict of names and bool indicating if variables of layer should be restored e.g
+    from tf checkpoint
+    :param spatial_dropout: use channel dropout instead of , default True
+    :param remove_skip_layers: Flag if summaries should be created, default True
+    :param summaries: Flag if summaries should be created, default True
+
     """
 
-    logging.info("Building Unet with: "
+    logging.info("Building U-Net with: "
                  "Layers= {layers}, "
                  "Root feature size= {features}, "
+                 "Remove Skip Layer connection= {rskip}"
                  "Filter size= {filter_size}x{filter_size}, "
-                 "Pool size= {pool_size}x{pool_size}".format(layers=n_layers,
-                                                             features=features_root,
-                                                             filter_size=filter_size,
-                                                             pool_size=pool_size))
+                 "Pool size= {pool_size}x{pool_size},"
+                 "Nr. of input channels= {input_size},"
+                 "Nr. of classes={nr_classes}".format(layers=n_layers, features=features_root, rskip=remove_skip_layers,
+                                                      filter_size=filter_size, pool_size=pool_size,
+                                                      input_size=nr_channels, nr_classes=n_class))
 
     in_node = x
 
+    # tf variables
     convs = []
     pools = OrderedDict()
     deconv = OrderedDict()
@@ -75,12 +87,15 @@ def create_2d_unet(x, keep_prob_conv1, keep_prob_conv2, keep_prob_pool, keep_pro
         train_all = False
 
     if use_padding:
-        padding = "SAME" # pad convolution outputs to original map size
+        # pad convolution outputs to original map size
+        padding = "SAME"
     else:
-        padding = "VALID" # no padding
+        # no padding
+        padding = "VALID"
 
     in_size = 1000
     size = in_size
+
     # down layers
     for layer in range(0, n_layers):
         l_name = "down_conv_{}".format(str(layer))
@@ -93,12 +108,17 @@ def create_2d_unet(x, keep_prob_conv1, keep_prob_conv2, keep_prob_pool, keep_pro
             logging.info("Restoring layer {} from checkpoint".format(l_name))
 
         with tf.name_scope(l_name):
+            # calc number of features
             features = 2 ** layer * features_root
+            # calc std of newly initialized weights
             stddev = np.sqrt(2 / (filter_size ** 2 * features))
+            # init weights for first convolution
             if layer == 0:
-                w1 = weight_variable([filter_size, filter_size, channels, features], stddev, name="w1",
+                # if first layer start with nur of input channels
+                w1 = weight_variable([filter_size, filter_size, nr_channels, features], stddev, name="w1",
                                      trainable=l_trainable)
             else:
+                # else use calculated number of features
                 w1 = weight_variable([filter_size, filter_size, features // 2, features], stddev, name="w1",
                                      trainable=l_trainable)
 
@@ -237,19 +257,11 @@ def create_2d_unet(x, keep_prob_conv1, keep_prob_conv2, keep_prob_pool, keep_pro
             trainable_variables.append(weight)
             trainable_variables.append(bias)
 
-        if act_func_out == Activation_Func.NONE or n_class == 1:  # in binary sigmoid is added within cs loss
-            output_map = conv
-        elif act_func_out == Activation_Func.RELU:
-            output_map = tf.nn.relu(conv)
-        elif act_func_out == Activation_Func.SIGMOID:
-            output_map = tf.nn.sigmoid(conv)
-        else:
-            raise ValueError()
+        output_map = conv
+
         if add_residual_layer:
             if not padding == 'SAME':
                 raise ValueError("Residual Layer only possible with padding to preserve same size feature maps")
-            if use_scale_image_as_gt:
-                output_map = x - output_map
             else:
                 output_map = output_map + x
         up_h_convs["out"] = output_map

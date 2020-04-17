@@ -18,8 +18,8 @@ from __future__ import print_function, division, absolute_import, unicode_litera
 import numpy as np
 import logging
 import tensorflow as tf
-import src.utils.tf_utils as tfu
-from src.utils.enum_params import Activation_Func
+import src.utilities.tf_utils as tfu
+from src.utilities.enum_params import Activation_Func
 from collections import OrderedDict
 from src.tf_convnet.layers import (weight_variable, weight_variable_devonc, bias_variable,
                                    conv2d, deconv2d, max_pool, crop_and_concat)

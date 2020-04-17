@@ -10,7 +10,7 @@ Author: Christian Breiderhoff
 """
 
 
-from src.utils.enum_params import Optimizer, Cost, Activation_Func, TV_clustering_method, ConvNetType, Subtumral_Modes
+from src.utilities.enum_params import Optimizer, Cost, Activation_Func, TV_clustering_method, ConvNetType, Subtumral_Modes
 import sys
 
 gettrace = getattr(sys, 'gettrace', None)

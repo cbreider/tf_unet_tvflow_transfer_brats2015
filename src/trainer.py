@@ -12,13 +12,13 @@ Author: Christian Breiderhoff
 import tensorflow as tf
 import logging
 import os
-import src.utils.data_utils as dutil
-import src.utils.io_utils as ioutil
+import src.utilities.np_data_process_utils as dutil
+import src.utilities.io_utils as ioutil
 import numpy as np
 from src.tf_convnet.caffe2tensorflow_mapping import load_pre_trained_caffe_variables
-from src.utils.enum_params import Cost, Optimizer, RestoreMode, TrainingModes, Scores, ScoresLong
+from src.utilities.enum_params import Cost, Optimizer, RestoreMode, TrainingModes, Scores, ScoresLong
 from src.tf_data_pipeline_wrapper import ImageData
-from configuration import TrainingParams
+from configuration import Configuration
 from src.validator import Validator
 import src.validator as vali
 import collections
@@ -45,7 +45,7 @@ class Trainer(object):
 
         self.net = net
         self.mode = mode  # type: TrainingModes
-        self.config = train_config  # type: TrainingParams
+        self.config = train_config  # type: Configuration
         self.data_provider_train = data_provider_train # type: ImageData
         self.data_provider_val = data_provider_val  # type: ImageData
         self.output_path = out_path
@@ -144,14 +144,12 @@ class Trainer(object):
         init = self._initialize()
 
         logging.info(
-            "Start optimizing model with,"
-            "Optimizer: {}, "
-            "Learning rate {}, Decay rate {}, Decay steps {},"
-            "Nr of Epochs: {}, "
-            "Epoch size: {}, "
-            "Keep prob {} {} {} {}".format(self.optimizer_name, self.learning_rate, self.decay_rate, self.decay_steps,
-                                  self._n_epochs, self._training_iters, self._dropout_conv1, self._dropout_conv2,
-                                     self._dropout_pool, self._dropout_tconv))
+            "Start optimizing model with, Optimizer: {opt}, Learning rate {lr}, Decay rate {dr}, Decay steps {ds},"
+            "Nr of Epochs: {ne}, Epoch size: {es}, Dropout Keep probs: conv1={dc1}, conv2={dc2}, pool={dp}, "
+            "upconv={duc}, concat={dco}".format(opt=self.optimizer_name, lr=self.learning_rate, dr=self.decay_rate,
+                                                ds=self.decay_steps, ne=self._n_epochs, es=self._training_iters,
+                                                dc1=self._dropout_conv1, dc2=self._dropout_conv2, dp=self._dropout_pool,
+                                                duc=self._dropout_tconv, dco=self._dropout_concat))
 
         save_path = os.path.join(self.output_path, "model.ckpt")
         if self._n_epochs == 0:

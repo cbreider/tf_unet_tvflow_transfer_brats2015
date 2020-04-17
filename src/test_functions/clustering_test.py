@@ -3,17 +3,17 @@ from sklearn.cluster import MeanShift, estimate_bandwidth
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
-import src.utils.tf_utils as tfu
+import src.utilities.tf_utils as tfu
 import copy as copy
 import src.test_functions.np_tv_denoise_test as nptv
-from src.utils.path_utils import DataPaths
-from src.utils.split_utilities import TrainingDataset
-import src.utils.enum_params as enp
+from src.utilities.path_utils import DataPaths
+from src.utilities.split_utilities import TrainingDataset
+import src.utilities.enum_params as enp
 import os
-import src.utils.data_utils as dutils
+import src.utilities.np_data_process_utils as dutils
 import time
 import configuration as config
-import  src.utils.io_utils as iou
+import  src.utilities.io_utils as iou
 
 
 def recreate_image(codebook, labels, w, h):

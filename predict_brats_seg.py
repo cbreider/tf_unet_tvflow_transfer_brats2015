@@ -9,19 +9,19 @@ Author: Christian Breiderhoff
 2019-2020
 """
 
-from src.utils.path_utils import DataPaths
-from src.utils.split_utilities import TestFilePaths
+from src.utilities.path_utils import DataPaths
+from src.utilities.split_utilities import TestFilePaths
 from src.tf_convnet.tf_convnet import ConvNetModel
-import src.utils.gpu_selector as cuda_selector
+import src.utilities.gpu_selector as cuda_selector
 import argparse
 import os
-import configuration as config
+from configuration import Configuration as config
 import tensorflow as tf
 import logging
-import  src.utils.io_utils as ioutil
-import src.utils.logger as log
+import  src.utilities.io_utils as ioutil
+import src.utilities.logger as log
 from src.validator import Validator
-from src.utils.enum_params import TrainingModes, DataModes, Optimizer, RestoreMode
+from src.utilities.enum_params import TrainingModes, DataModes, Optimizer, RestoreMode
 from src.tf_data_pipeline_wrapper import ImageData
 import numpy as np
 import json
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     tf.reset_default_graph()
     out_path=model_path
     data_paths = DataPaths(data_path="default", mode="SEGMENTATION_TEST",
-                           tumor_mode=config.DataParams.segmentation_mask.name)
+                           tumor_mode=config.segmentation_mask.name)
     data_paths.load_data_paths(mkdirs=False, restore_dir=model_path)
 
     log.init_logger(type="test", path=data_paths.tf_out_path)
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         split = json.loads(data)
         patient_paths = split["testing"]
 
-    file_paths = TestFilePaths(paths=data_paths, patient_paths=patient_paths, config=config.DataParams)
+    file_paths = TestFilePaths(paths=data_paths, patient_paths=patient_paths, config=config)
 
     out_path_base = os.path.join(model_path, "predictions")
     out_path_mha = os.path.join(out_path_base, "mha")
@@ -108,10 +108,10 @@ if __name__ == "__main__":
         os.makedirs(out_path_png)
 
     data_iter = ImageData(data=file_paths.test_paths, mode=DataModes.TESTING,
-                          train_mode=TrainingModes.BRATS_SEGMENTATION, data_config=config.DataParams)
+                          train_mode=TrainingModes.BRATS_SEGMENTATION, data_config=config)
     data_iter.create()
 
-    net = ConvNetModel(convnet_config=config.ConvNetParams, mode=TrainingModes.BRATS_SEGMENTATION,
+    net = ConvNetModel(convnet_config=config, mode=TrainingModes.BRATS_SEGMENTATION,
                        create_summaries=True)
     data = [[], []]
     with tf.Session() as sess:

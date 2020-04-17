@@ -14,12 +14,12 @@ import datetime
 import json
 import logging
 import numpy as np
-from src.utils.enum_params import TrainingModes
+from src.utilities.enum_params import TrainingModes
 from random import shuffle
 from configuration import DataParams
 import re
 import collections
-import src.utils.io_utils as ioutil
+import src.utilities.io_utils as ioutil
 import random
 import warnings
 from PIL import  Image
