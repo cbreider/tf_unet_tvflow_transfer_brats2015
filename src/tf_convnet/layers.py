@@ -40,7 +40,9 @@ def conv2d(x, W, b, keep_prob, padding='VALID', bn=False, spatial_droput=True):
         ds = [cs[0], 1, 1, cs[3]]
         if bn:
             conv_2d_b = tf.layers.batch_normalization(conv_2d_b)
-        return tf.nn.dropout(conv_2d_b, keep_prob=keep_prob, noise_shape=ds if spatial_droput else None)
+        if keep_prob:
+            conv_2d_b = tf.nn.dropout(conv_2d_b, keep_prob=keep_prob, noise_shape=ds if spatial_droput else None)
+        return conv_2d_b
 
 
 def deconv2d(x, W, stride, keep_prob, spatial_droput=True):
@@ -51,14 +53,18 @@ def deconv2d(x, W, stride, keep_prob, spatial_droput=True):
                                         name="conv2d_transpose")
         cs = tf.shape(deconv)
         ds = [cs[0], 1, 1, cs[3]]
-        return tf.nn.dropout(deconv, keep_prob=keep_prob, noise_shape=ds if spatial_droput else None)
+        if keep_prob:
+            deconv = tf.nn.dropout(deconv, keep_prob=keep_prob, noise_shape=ds if spatial_droput else None)
+        return deconv
 
 
 def max_pool(x, n, keep_prob, spatial_droput=True):
     mp = tf.nn.max_pool(x, ksize=[1, n, n, 1], strides=[1, n, n, 1], padding='VALID')
     cs = tf.shape(mp)
     ds = [cs[0], 1, 1, cs[3]]
-    return tf.nn.dropout(mp, keep_prob, noise_shape=ds if spatial_droput else None)
+    if keep_prob:
+        mp = tf.nn.dropout(mp, keep_prob, noise_shape=ds if spatial_droput else None)
+    return mp
 
 
 def crop_and_concat(x1, x2, keep_prob=1.0, spatial_droput=True):
@@ -66,15 +72,18 @@ def crop_and_concat(x1, x2, keep_prob=1.0, spatial_droput=True):
         x1_shape = tf.shape(x1)
         x2_shape = tf.shape(x2)
         if x1_shape == x1_shape:
-            return tf.concat([x1, x2], 3)
-        # offsets for the top left corner of the crop
-        offsets = [0, (x1_shape[1] - x2_shape[1]) // 2, (x1_shape[2] - x2_shape[2]) // 2, 0]
-        size = [-1, x2_shape[1], x2_shape[2], -1]
-        x1_crop = tf.slice(x1, offsets, size)
-        conc = tf.concat([x1_crop, x2], 3)
-        cs = tf.shape(conc)
-        ds = [cs[0], 1, 1, cs[3]]
-        return tf.nn.dropout(conc, keep_prob=keep_prob, noise_shape=ds if spatial_droput else None)
+            conc = tf.concat([x1, x2], 3)
+        else:
+            # offsets for the top left corner of the crop
+            offsets = [0, (x1_shape[1] - x2_shape[1]) // 2, (x1_shape[2] - x2_shape[2]) // 2, 0]
+            size = [-1, x2_shape[1], x2_shape[2], -1]
+            x1_crop = tf.slice(x1, offsets, size)
+            conc = tf.concat([x1_crop, x2], 3)
+        if keep_prob:
+            cs = tf.shape(conc)
+            ds = [cs[0], 1, 1, cs[3]]
+            conc = tf.nn.dropout(conc, keep_prob=keep_prob, noise_shape=ds if spatial_droput else None)
+        return conc
 
 
 def cross_entropy(y_, output_map):

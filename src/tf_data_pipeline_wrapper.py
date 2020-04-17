@@ -12,7 +12,7 @@ Author: Christian Breiderhoff
 from src.tf_data_generator import TFTrainingImageDataGenerator, TFValidationImageDataGenerator, TFTestImageDataGenerator
 import tensorflow as tf
 import tensorflow.data as tf_data
-from src.utils.enum_params import TrainingModes, DataModes, TV_clustering_method
+from src.utilities.enum_params import TrainingModes, DataModes, TV_clustering_method
 
 
 class ImageData(object):

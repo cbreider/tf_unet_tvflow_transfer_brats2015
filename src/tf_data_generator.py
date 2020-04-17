@@ -11,39 +11,38 @@ Author: Christian Breiderhoff
 """
 
 import tensorflow as tf
-import numpy as np
 from tensorflow.python.framework.ops import convert_to_tensor
 from abc import abstractmethod
-import src.utils.tf_utils as tf_utils
+import src.utilities.tf_utils as tf_utils
 import logging
-from src.utils.enum_params import TrainingModes, TV_clustering_method, Subtumral_Modes
-from configuration import DataParams
+from src.utilities.enum_params import TrainingModes, TV_clustering_method, Subtumral_Modes
+from configuration import Configuration
 
 
 class TFImageDataGenerator:
     """Wrapper class around the  TensorFlow dataset pipeline.
 
     Requires TensorFlow >= version 1.12rc0
+
     """
 
     def __init__(self, data, data_config, mode):
 
-        self._data_config = data_config  # type: DataParams
+        self._data_config = data_config  # type: Configuration
         self._in_img_size = self._data_config.raw_image_size
         self._set_img_size = self._data_config.set_image_size
         self._data_max_value = self._data_config.data_max_value
         self._data_norm_value = self._data_config.norm_max_image_value
         self._data_norm_value_tv = self._data_config.norm_max_image_value_tv
         self._raw_data = data
-        self._shuffle = self._data_config.shuffle
         self._mode = mode  # type: TrainingModes
 
         self._segmentation_mask = self._data_config.segmentation_mask
 
-        self._nr_of_classes = self._data_config.nr_of_classes
+        self._nr_of_classes = self._data_config.nr_classes
         self._normalize_std = self._data_config.normailze_std
         self._nr_channels = self._data_config.nr_of_image_channels
-        self._nr_modalities = self._data_config.nr_of_input_modalities
+        self._nr_modalities = self._data_config.nr_input_channels
         self._use_modalities = self._data_config.use_modalities
         self._data_vals = self._data_config.data_values
         self._input_data = None
@@ -52,7 +51,7 @@ class TFImageDataGenerator:
         self._ids = None
         self._load_tv_from_file = self._data_config.load_tv_from_file
         self.clustering_method = self._data_config.clustering_method
-        self._modalties_tv = self._data_config.combine_modalities_for_tv
+        self._modalties_tv = self._data_config.use_modalities_for_tv
         self._disort_params = self._data_config.image_disort_params
 
         self._batch_size = None
@@ -61,15 +60,15 @@ class TFImageDataGenerator:
         self._crop_to_non_zero = None
         self._tv_multi_scale_range = self._data_config.tv_multi_scale_range
         self._tv_static_multi_scale = self._data_config.tv_static_multi_scale
-        self.tv_tau = self._data_config.tv_and_clustering_params["tv_tau"]
-        self.tv_weight = self._data_config.tv_and_clustering_params["tv_weight"]
-        self.tv_eps = self._data_config.tv_and_clustering_params["tv_eps"]
-        self.tv_nr_itr = self._data_config.tv_and_clustering_params["tv_m_itr"]
-        self.km_nr_itr = self._data_config.tv_and_clustering_params["km_m_itr"]
-        self.mean_shift_n_itr = self._data_config.tv_and_clustering_params["ms_m_itr"] # till convergence
-        self.mean_shift_win_size = self._data_config.tv_and_clustering_params["window_size"]
-        self.mean_shift_bin_seeding = self._data_config.tv_and_clustering_params["bin_seeding"]
-        self.static_cluster_center = self._data_config.tv_and_clustering_params["k_means_pre_cluster"]
+        self.tv_tau = self._data_config.tv_tau
+        self.tv_weight = self._data_config.tv_weight
+        self.tv_eps = self._data_config.tv_eps
+        self.tv_nr_itr = self._data_config.tv_m_itr
+        self.km_nr_itr = self._data_config.kmeans_m_iter
+        self.mean_shift_n_itr = self._data_config.meanshift_m_iter  # till convergence
+        self.mean_shift_win_size = self._data_config.meanshift_window_size
+        self.mean_shift_bin_seeding = self._data_config.meanshift_bin_seeding
+        self.static_cluster_center = self._data_config.static_cluster_centers
 
     def __exit__(self, exc_type, exc_value, traceback):
         self._data = None
@@ -142,8 +141,9 @@ class TFImageDataGenerator:
                                                                     eps=self.tv_eps, m_itr=self.tv_nr_itr))
                         else:
                             tv_weight = self.tv_weight
-                            tvs.append(tf_utils.get_tv_smoothed(img=tv_base[:, :, i], tau=self.tv_tau, weight=tv_weight,
-                                                                eps=self.tv_eps, m_itr=self.tv_nr_itr))
+                            tvs.append(tf_utils.get_tv_smoothed(img=tf.expand_dims(tv_base[:, :, i], axis=2),
+                                                                tau=self.tv_tau, weight=tv_weight, eps=self.tv_eps,
+                                                                m_itr=self.tv_nr_itr))
 
                     tv_img = tf.concat(tvs, axis=2)
 
@@ -241,8 +241,7 @@ class TFTrainingImageDataGenerator(TFImageDataGenerator):
         tmp_data = tmp_data.map(self._parse_function, num_parallel_calls=6)
         # shuffle the first `buffer_size` elements of the dataset
         tmp_data = tmp_data.prefetch(buffer_size=self._buffer_size)
-        if self._shuffle:
-            tmp_data = tmp_data.shuffle(buffer_size=self._buffer_size)
+        tmp_data = tmp_data.shuffle(buffer_size=self._buffer_size)
         # create a new dataset with batches of images
         tmp_data = tmp_data.batch(self._batch_size)
         self.data = tmp_data

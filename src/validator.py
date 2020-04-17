@@ -10,10 +10,10 @@ Author: Christian Breiderhoff
 """
 
 import os
-import src.utils.data_utils as dutil
-import src.utils.io_utils as ioutil
+import src.utilities.np_data_process_utils as dutil
+import src.utilities.io_utils as ioutil
 import numpy as np
-from src.utils.enum_params import Cost, TrainingModes, Scores
+from src.utilities.enum_params import Cost, TrainingModes, Scores
 import logging
 import collections
 

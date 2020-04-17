@@ -10,18 +10,18 @@ Author: Christian Breiderhoff
 """
 
 
-from src.utils.path_utils import DataPaths
-from src.utils.split_utilities import TrainingDataset
+from src.utilities.path_utils import DataPaths
+from src.utilities.split_utilities import TrainingDataset
 from src.tf_data_pipeline_wrapper import ImageData
 from src.tf_convnet import tf_convnet
-import src.utils.gpu_selector as cuda_selector
+import src.utilities.gpu_selector as cuda_selector
 import src.trainer as trainer
 import argparse
-import configuration as config
+from configuration import Configuration as config
 import tensorflow as tf
 import logging
-import src.utils.logger as log
-from src.utils.enum_params import TrainingModes, DataModes, Optimizer, RestoreMode
+import src.utilities.logger as log
+from src.utilities.enum_params import TrainingModes, DataModes, Optimizer, RestoreMode
 
 
 if __name__ == "__main__":
@@ -81,7 +81,7 @@ if __name__ == "__main__":
     if args.restore_path is not None:
         restore_path = args.restore_path
     else:
-        config.ConvNetParams.restore_layers = None
+        config.restore_layers = None
     if args.restore_mode:
         restore_mode = RestoreMode(args.restore_mode)
     if args.caffemodel_path is not None:
@@ -95,19 +95,16 @@ if __name__ == "__main__":
     if args.name:
         name = args.name
     if args.training_data_portion and args.training_data_portion >= 0:
-        config.DataParams.training_data_portion = args.training_data_portion
-
-
-
+        config.training_data_portion = args.training_data_portion
 
     # tf.enable_eager_execution()
     tf.reset_default_graph()
 
     data_paths = DataPaths(data_path=data_path, mode=train_mode.name,
-                           tumor_mode=config.DataParams.segmentation_mask.name, name=name)
-    data_paths.load_data_paths(mkdirs=True, restore_dir=restore_path if (restore_mode == RestoreMode.COMPLETE_SESSION
-                                                                         or restore_mode == RestoreMode.COMPLETE_NET)
-                                                                    else None)
+                           tumor_mode=config.segmentation_mask.name, name=name)
+    data_paths.load_data_paths(mkdirs=True,
+                               restore_dir=restore_path if (restore_mode == RestoreMode.COMPLETE_SESSION
+                                                            or restore_mode == RestoreMode.COMPLETE_NET) else None)
 
     log.init_logger(type="train", path=data_paths.tf_out_path)
 
@@ -115,62 +112,58 @@ if __name__ == "__main__":
                  " restore_mode: {}, caffemodel_path: {}, cuda_dev: {}, fold nr: {}, testing: {}, data path: {}, "
                  "train data portion: {}".format(
         train_mode, create_new_training_split, restore_path, restore_mode, caffemodel_path, args.cuda_device, fold_nr,
-        include_testing, data_path, config.DataParams.training_data_portion))
+        include_testing, data_path, config.training_data_portion))
 
     logging.info("Training mode: {}".format(train_mode))
 
-    logging.info("Modalities for training: {}".format(config.DataParams.use_modalities))
+    logging.info("Modalities for training: {}".format(config.use_modalities))
 
     logging.info("Allocating '{}'".format(data_paths.tf_out_path))
 
-    file_paths = TrainingDataset(paths=data_paths, mode=train_mode, data_config=config.DataParams,
+    file_paths = TrainingDataset(paths=data_paths, mode=train_mode, data_config=config,
                                  new_split=create_new_training_split,
                                  is_five_fold=True if fold_nr > 0 else False,
-                                 five_fold_idx=fold_nr, nr_of_folds=config.DataParams.nr_k_folds,
-                                 k_fold_nr_val_samples=config.DataParams.k_fold_nr_val_samples)
+                                 five_fold_idx=fold_nr, nr_of_folds=config.nr_k_folds,
+                                 k_fold_nr_val_samples=config.k_fold_nr_val_samples)
 
     training_data = ImageData(data=file_paths.train_paths,
                               mode=DataModes.TRAINING,
                               train_mode=train_mode,
-                              data_config=config.DataParams)
+                              data_config=config)
 
     validation_data = ImageData(data=file_paths.validation_paths,
                                 mode=DataModes.VALIDATION,
                                 train_mode=train_mode,
-                                data_config=config.DataParams)
-
+                                data_config=config)
     training_data.create()
     validation_data.create()
-
     test_data = None
     if include_testing:
         try:
-            file_paths_test = TrainingDataset(paths=data_paths, mode=train_mode, data_config=config.DataParams,
-                                         new_split=False, load_test_paths_only=True,
-                                         is_five_fold=True if fold_nr > 0 else False,
-                                         five_fold_idx=fold_nr)
+            file_paths_test = TrainingDataset(paths=data_paths, mode=train_mode, data_config=config, new_split=False,
+                                              load_test_paths_only=True, is_five_fold=True if fold_nr > 0 else False,
+                                              five_fold_idx=fold_nr)
             test_data = ImageData(data=file_paths_test.test_paths,
                                                     mode=DataModes.VALIDATION,
                                                     train_mode=train_mode,
-                                                    data_config=config.DataParams)
+                                                    data_config=config)
             test_data.create()
             logging.info("Loaded {} test smaples".format(test_data.size))
         except:
             logging.ERROR("Failed to load test dataset. Skipping testing!!!")
 
-    net = tf_convnet.ConvNetModel(convnet_config=config.ConvNetParams, mode=train_mode,
+    net = tf_convnet.ConvNetModel(convnet_config=config, mode=train_mode,
                                   create_summaries=create_summaries)
-
     opt_args = None
-    if config.TrainingParams.optimizer == Optimizer.MOMENTUM:
-        opt_args = config.TrainingParams.momentum_args
-    elif config.TrainingParams.optimizer == Optimizer.ADAGRAD:
-        opt_args = config.TrainingParams.adagrad_args
-    elif config.TrainingParams.optimizer == Optimizer.ADAM:
-        opt_args = config.TrainingParams.adam_args
+    if config.optimizer == Optimizer.MOMENTUM:
+        opt_args = config.momentum_args
+    elif config.optimizer == Optimizer.ADAGRAD:
+        opt_args = config.adagrad_args
+    elif config.optimizer == Optimizer.ADAM:
+        opt_args = config.adam_args
 
     trainer = trainer.Trainer(net=net, data_provider_train=training_data, data_provider_val=validation_data,
-                              out_path=data_paths.tf_out_path, train_config=config.TrainingParams,
+                              out_path=data_paths.tf_out_path, train_config=config,
                               restore_path=restore_path, caffemodel_path=caffemodel_path,
                               restore_mode=restore_mode, mode=train_mode, data_provider_test=test_data, fold_nr=fold_nr)
 

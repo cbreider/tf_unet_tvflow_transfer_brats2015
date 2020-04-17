@@ -14,7 +14,7 @@ import tensorflow as tf
 import logging
 import numpy as np
 import elasticdeform.tf as etf
-from src.utils.enum_params import Subtumral_Modes
+from src.utilities.enum_params import Subtumral_Modes
 
 
 def distort_imgs(scan, ground_truth, params=[[2, 3, 1], 25.0, 0.7]):
@@ -466,9 +466,8 @@ def get_dice_score(pred, y, eps=1e-5, axis=(1, 2), weights=None):
     :param pred: prediction tensor [batch_size, img_size1, img_size2, _nclasses] must be one hot encoded
     :param y: max value of input image as it could be
     :param eps: smoothing coeffient
-    :param weight: bool wether weight classes (not implemented)
+    :param weights: class weights (None to not weight classes differently)
     :param axis: axis to sum over
-    :param class_axis: axis of class assignments
     :returns: Dice score Tensor shape ():
     """
     pred = tf.cast(pred, tf.float32)
@@ -501,8 +500,8 @@ def get_dice_log_loss(logits, y, loss_type='jaccard', axis=(1, 2), eps=1e-5, wei
     :param eps: smoothing coeffient
     :param loss_type: `jaccard`` or ``sorensen``, default is ``jaccard``.
     :param axis: axis to sum over
-    :param weight: bool wether weight classes (not implemented)
-    :param class_axis: axis of class assignments
+    :param weights:  class weights ( None to not weight classes differently)
+    :param exclude_zero_label:  Do not consider the 0 label within calcutaion
     :returns: Dice score Tensor shape ():
     """
     if logits.get_shape().as_list()[3] > 1: # multiclass
@@ -539,7 +538,6 @@ def get_dice_loss(logits, y, loss_type='jaccard', axis=(1, 2), eps=1e-5, weights
     """
     calculates the (multiclass) dice score over a given batch of samples. In multiclass prediction (n_class > 1)
     the dice score is the average dice score over all classes
-
 
     :param logits: prediction tensor [batch_size, img_size1, img_size2, _nclasses] must be one hot encoded
     :param y: max value of input image as it could be

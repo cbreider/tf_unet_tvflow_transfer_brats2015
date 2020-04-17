@@ -1,6 +1,6 @@
 import tensorflow as tf
 import  numpy as np
-import src.utils.tf_utils as tfu
+import src.utilities.tf_utils as tfu
 import matplotlib.pyplot as plt
 from src.test_functions.np_tv_denoise_test import tv_denoise
 from PIL import Image

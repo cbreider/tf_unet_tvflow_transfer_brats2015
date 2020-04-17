@@ -55,7 +55,7 @@ skip_layer = ['conv_u0d-score']
 
 def load_pre_trained_caffe_variables(session, file_path):
     """
-    Loads the Varibales (weights and bias) from a given file (hdf5) to the model
+    Loads the Variables (weights and bias) from a given file (hdf5) to the model
     :param file_path: file path of the hdf5 file containing the caffe model
     :param session: tf session
     :return:
