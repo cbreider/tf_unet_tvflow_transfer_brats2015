@@ -54,12 +54,12 @@ if __name__ == "__main__":
                         type=int, default=1)
     parser.add_argument('--take_fold_nr', type=int, default=0,
                         help='use fold with nr x from five fold split. If also --create_new_split is given a new '
-                             'five fold is made')
+                             'x fold is made')
     parser.add_argument('--include_testing', action='store_true',
                         help='Run evaluation on test set after optimization is finished')
     parser.add_argument('--data_path', type=str, default=None,
                         help='Path to the Brats training dataset. Files have to be 2D images and ordered in the same way'
-                             '(HGG/LGG --> Patient --> modality--> *.png). Default ../dataset/2d/slices/png/raw/train')
+                             '(HGG/LGG --> Patient --> modality--> *.png). Default ../dataset')
     parser.add_argument('--training_data_portion', type=float, default=-1.0,
                         help='Use only a specific portion of all training samples')
 

@@ -41,7 +41,13 @@ Both scripts offer the following (optional) arguments:
 * --restore_mode [1/2/3]: Mode to restore tensorflow checkpoint. Only used if also restore_path is given. 1 for complete Session. 2 For complete Unet but not output layer(go from regression to classification/segmentation, e.g. switching from TV pre training to brats segmentation training) 3 for complete net (e.g. use other learning rate etc.). Default is 1
 * --caffemodel_path=[PATH.h5]: Load weights form pre trained caffemodel in hdf5 format. Used for importing pre trained weight from 2d cell segmentation of Uni Freiburg. But it is also possible to import other caffe models of Unet. To do so you may have to configure the layer names. Please have a look at src/tf_unet/caffe2tensorflow_mapping.py
 * --cuda_device [NR]: Use a specific Cuda device
-
+* --name [NAME]: Name to include in the output path
+* --take_fold_nr [NR]: Read split from x-fold file with File nr [NR] (*fold[NR].json). If combined with *--create_new_split* 
+a new x-fold split is created with x = *nr_of_folds* defined in *configuration.py*
+* --include_testing: Run Evaluation on the testing split after training
+* --data_path [PATH]: Path to the Brats training dataset. Files have to be 2D images and ordered in the same way'
+                             '(/2d/slices/png/raw/train/HGG data_path --> Patient --> modality--> *.png). Default ../dataset/
+* --training_data_portion: Use only a specific portion of all training samples 1.0 > *training_data_portion* > 0.0
 
 
 ## Testing
