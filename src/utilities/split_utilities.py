@@ -16,7 +16,7 @@ import logging
 import numpy as np
 from src.utilities.enum_params import TrainingModes
 from random import shuffle
-from configuration import DataParams
+from configuration import Configuration
 import re
 import collections
 import src.utilities.io_utils as ioutil
@@ -149,7 +149,7 @@ class TrainingDataset(object):
         self._paths = paths
         self._new_split = new_split
         self._mode = mode  # type: TrainingModes
-        self._data_config = data_config  # type: DataParams
+        self._data_config = data_config  # type: Configuration
         self._use_scale = self._data_config.use_scale_image_as_gt
         self._load_only_mid_scans = self._data_config.use_only_spatial_range
         self._split_ratio = self._data_config.split_train_val_ratio
@@ -329,22 +329,24 @@ class TrainingDataset(object):
 
                 modality = ""
                 i = 0
-                if self._paths.t1_identifier in file_path.lower():
-                    modality = self._paths.t1_identifier
-                    i = self._use_modalities.index(self._paths.t1_identifier)
-                if self._paths.t1c_identifier in file_path.lower():
+                if self._paths.t1c_identifier in file_path.lower() and self._paths.t1c_identifier in self._use_modalities:
                     modality = self._paths.t1c_identifier
                     i = self._use_modalities.index(self._paths.t1c_identifier)
-                if self._paths.t2_identifier in file_path.lower():
+                elif self._paths.t1_identifier in file_path.lower() and self._paths.t1_identifier in self._use_modalities:
+                    modality = self._paths.t1_identifier
+                    i = self._use_modalities.index(self._paths.t1_identifier)
+                elif self._paths.t2_identifier in file_path.lower() and self._paths.t2_identifier in self._use_modalities:
                     modality = self._paths.t2_identifier
                     i = self._use_modalities.index(self._paths.t2_identifier)
-                if self._paths.flair_identifier in file_path.lower():
+                elif self._paths.flair_identifier in file_path.lower() and self._paths.flair_identifier in self._use_modalities:
                     modality = self._paths.flair_identifier
                     i = self._use_modalities.index(self._paths.flair_identifier)
-                if self._paths.ground_truth_path_identifier[0] in file_path.lower() or \
+                elif self._paths.ground_truth_path_identifier[0] in file_path.lower() or \
                         self._paths.ground_truth_path_identifier[1] in file_path.lower():
                     modality = "gt"
                     i = len(self._use_modalities)
+                else:
+                    continue
 
                 if modality != "gt":
                     values_path = os.path.join(file_path_full, "values.json")
