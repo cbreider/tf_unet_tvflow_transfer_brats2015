@@ -240,8 +240,9 @@ class Configuration:
                 Configuration.nr_classes = Configuration.nr_classes_brats_complete
         elif train_mode == TrainingModes.TVFLOW_REGRESSION:
             Configuration.nr_classes = Configuration.nr_classes_tv_regression
-        elif train_mode == TrainingModes.BRATS_SEGMENTATION:
+        elif train_mode == TrainingModes.TVFLOW_SEGMENTATION:
             Configuration.nr_classes = Configuration.nr_classes_tv_segmentation
+
         elif train_mode == TrainingModes.AUTO_ENCODER or train_mode == TrainingModes.DENOISING_AUTOENCODER:
             Configuration.nr_classes = len(Configuration.use_modalities)
 
