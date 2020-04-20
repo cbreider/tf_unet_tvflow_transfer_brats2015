@@ -19,22 +19,20 @@ import numpy as np
 import logging
 import tensorflow as tf
 import src.utilities.tf_utils as tfu
-from src.utilities.enum_params import Activation_Func
 from collections import OrderedDict
 from src.tf_convnet.layers import (weight_variable, weight_variable_devonc, bias_variable,
                                    conv2d, deconv2d, max_pool, crop_and_concat)
 
 
 def create_2d_unet(x, nr_channels, n_class, n_layers=5, features_root=64, filter_size=3, pool_size=2,
-                   add_residual_layer=False, spatial_dropout= True, remove_skip_layers=False,
+                   add_residual_layer=False, spatial_dropout=True, remove_skip_layers=False,
                    keep_prob_conv1=None, keep_prob_conv2=None, keep_prob_pool=None, keep_prob_tconv=None,
                    keep_prob_concat=None, use_padding=False, bn=False,trainable_layers=None,
                    layers_to_restore=None, summaries=True):
     """
-    Creates a new convolutional unet for the given parametrization.
+    Creates a new convolutional U-Net for the given parametrization.
 
     :param x: input tensor, shape [?,nx,ny,channels]
-
     :param nr_channels: number of channels in the input image
     :param n_class: number of output labels
     :param n_layers: number of layers in the net, default 5
@@ -45,7 +43,6 @@ def create_2d_unet(x, nr_channels, n_class, n_layers=5, features_root=64, filter
     :param keep_prob_conv2: keep probability tensor for dropout after second convolution of each layer
     :param keep_prob_pool: keep probability tensor for dropout after pooling
     :param keep_prob_tconv: keep probability tensor for dropout after transpose convolutions
-    :param keep_prob_concat: keep probability tensor for dropout after skip and concating operation
     :param trainable_layers: Dictionary of layer to train or not. None to train complete network
     :param use_padding: True to use padding and preserve image sizes. in_size=out_size, default False
     :param bn: True to use batch normalization, default False
@@ -56,6 +53,10 @@ def create_2d_unet(x, nr_channels, n_class, n_layers=5, features_root=64, filter
     :param remove_skip_layers: Flag if summaries should be created, default True
     :param summaries: Flag if summaries should be created, default True
 
+    :returns output_map: logits output of the last 1x1 convolution
+    :returns last_feature_map: last feature map before final 1x1 convolution
+    :returns variables_to_restore: variables which should be later restored
+output_map, last_feature_map, variables_to_restore, trainable_variables, variables, int(in_size - size)
     """
 
     logging.info("Building U-Net with: "
@@ -92,6 +93,7 @@ def create_2d_unet(x, nr_channels, n_class, n_layers=5, features_root=64, filter
         # no padding
         padding = "VALID"
 
+    # size value to calculate offset between input and output size for U.Net without padding (valid convolution)
     in_size = 1000
     size = in_size
 
@@ -120,7 +122,7 @@ def create_2d_unet(x, nr_channels, n_class, n_layers=5, features_root=64, filter
                 # else use calculated number of features
                 w1 = weight_variable([filter_size, filter_size, features // 2, features], stddev, name="w1",
                                      trainable=l_trainable)
-
+            # weights for the second convolution of layer
             w2 = weight_variable([filter_size, filter_size, features, features], stddev, name="w2",
                                  trainable=l_trainable)
             b1 = bias_variable([features], name="b1", trainable=l_trainable)
@@ -160,6 +162,7 @@ def create_2d_unet(x, nr_channels, n_class, n_layers=5, features_root=64, filter
     # up layers
     for layer in range(n_layers - 2, -1, -1):
         l_name = "up_conv_{}".format(str(layer))
+        # check if layer is trainable
         l_trainable_conv = True if train_all else trainable_layers[l_name][1]
         l_trainable_upconv = True if train_all else trainable_layers[l_name][0]
         if not l_trainable_conv:
@@ -167,6 +170,7 @@ def create_2d_unet(x, nr_channels, n_class, n_layers=5, features_root=64, filter
         if not l_trainable_upconv:
             logging.info("Freezing layer {} up convolution".format(l_name))
 
+        # check if variables for layer should be restored
         restore_layer_conv = False if layers_to_restore is None else layers_to_restore[l_name][1]
         if restore_layer_conv:
             logging.info("Restoring conv layer {} from checkpoint".format(l_name))
