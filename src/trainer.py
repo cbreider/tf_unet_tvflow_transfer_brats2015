@@ -74,7 +74,7 @@ class Trainer(object):
         self._unfreeze_all_layers_epochs = self.config.unfreeze_all_layers_epochs
 
     def _renew_optimizer(self, vars):
-        self.optimizer_op = self.optimizer.minimize(self.net.cost, global_step=self.global_step, var_list=vars)
+        return self.optimizer.minimize(self.net.cost, global_step=self.global_step, var_list=vars)
 
     def _get_optimizer(self, global_step, vars=None):
         if vars is None:
@@ -92,7 +92,7 @@ class Trainer(object):
 
             self.optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate_node, momentum=self.momentum,
                                                         **self.config.momentum_args)
-            self.optimizer_op = self.optimizer.minimize(self.net.cost, global_step=global_step, var_list=vars)
+            optimizer_op = self.optimizer.minimize(self.net.cost, global_step=global_step, var_list=vars)
 
         elif self.optimizer_name == Optimizer.ADAM:
             self.learning_rate = self.config.adam_args.pop("learning_rate", 0.001)
@@ -104,7 +104,7 @@ class Trainer(object):
                                                                  decay_rate=self.decay_rate,
                                                                  staircase=True)
             self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate_node, **self.config.adam_args)
-            self.optimizer_op = self.optimizer.minimize(self.net.cost, global_step=global_step, var_list=vars)
+            optimizer_op = self.optimizer.minimize(self.net.cost, global_step=global_step, var_list=vars)
 
         elif self.optimizer_name == Optimizer.ADAGRAD:
             self.learning_rate = self.config.adagrad_args.pop("learning_rate", 0.001)
@@ -112,13 +112,12 @@ class Trainer(object):
 
             self.optimizer = tf.train.AdagradDAOptimizer(learning_rate=self.learning_rate_node,
                                                          **self.config.adagrad_args)
-            self.optimizer_op = self.optimizer.minimize(self.net.cost, global_step=global_step, var_list=vars)
-
+            optimizer_op = self.optimizer.minimize(self.net.cost, global_step=global_step, var_list=vars)
 
         else:
             raise ValueError()
 
-        return optimizer
+        return optimizer_op
 
     def _initialize(self):
 
