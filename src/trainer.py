@@ -73,6 +73,9 @@ class Trainer(object):
         self._create_summaries = create_summaries
         self._unfreeze_all_layers_epochs = self.config.unfreeze_all_layers_epochs
 
+    def _renew_optimizer(self, vars):
+        self.optimizer_op = self.optimizer.minimize(self.net.cost, global_step=self.global_step, var_list=vars)
+
     def _get_optimizer(self, global_step, vars=None):
         if vars is None:
             vars = tf.trainable_variables()
@@ -87,11 +90,9 @@ class Trainer(object):
                                                                  decay_rate=self.decay_rate,
                                                                  staircase=True)
 
-            optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate_node,
-                                                   momentum=self.momentum,
-                                                   **self.config.momentum_args).minimize(self.net.cost,
-                                                                                         global_step=global_step,
-                                                                                         var_list=vars)
+            self.optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate_node, momentum=self.momentum,
+                                                        **self.config.momentum_args)
+            self.optimizer_op = self.optimizer.minimize(self.net.cost, global_step=global_step, var_list=vars)
 
         elif self.optimizer_name == Optimizer.ADAM:
             self.learning_rate = self.config.adam_args.pop("learning_rate", 0.001)
@@ -102,20 +103,17 @@ class Trainer(object):
                                                                  decay_steps=self.decay_steps,
                                                                  decay_rate=self.decay_rate,
                                                                  staircase=True)
-            optimizer = tf.train.AdamOptimizer(
-                learning_rate=self.learning_rate_node,
-                **self.config.adam_args).minimize(self.net.cost,
-                                                  global_step=global_step, var_list=vars)
+            self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate_node, **self.config.adam_args)
+            self.optimizer_op = self.optimizer.minimize(self.net.cost, global_step=global_step, var_list=vars)
 
         elif self.optimizer_name == Optimizer.ADAGRAD:
             self.learning_rate = self.config.adagrad_args.pop("learning_rate", 0.001)
             self.learning_rate_node = tf.Variable(self.learning_rate, name="learning_rate")
 
-            optimizer = tf.train.AdagradDAOptimizer(
-                                                learning_rate=self.learning_rate_node,
-                                                **self.config.adagrad_args).minimize(self.net.cost,
-                                                                                     global_step=global_step,
-                                                                                     var_list=vars)
+            self.optimizer = tf.train.AdagradDAOptimizer(learning_rate=self.learning_rate_node,
+                                                         **self.config.adagrad_args)
+            self.optimizer_op = self.optimizer.minimize(self.net.cost, global_step=global_step, var_list=vars)
+
 
         else:
             raise ValueError()
@@ -131,7 +129,7 @@ class Trainer(object):
         if self._create_summaries and self._norm_grads:
             tf.summary.histogram('norm_grads', self.norm_gradients_node)
 
-        self.optimizer = self._get_optimizer(self.global_step, self.net.trainable_variables)
+        self.optimizer_op = self._get_optimizer(self.global_step, self.net.trainable_variables)
         tf.summary.scalar('learning_rate', self.learning_rate_node)
 
         self.summary_op = tf.summary.merge_all()
@@ -234,7 +232,7 @@ class Trainer(object):
                     # Run optimization op (backprop)
                     _, loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing, l1, l2, lr, gradients, pred,\
                         = sess.run(
-                        (self.optimizer, self.net.cost, self.net.cross_entropy, self.net.error, self.net.accuracy,
+                        (self.optimizer_op, self.net.cost, self.net.cross_entropy, self.net.error, self.net.accuracy,
                          self.net.iou_coe, self.net.dice, self.net.dice_complete, self.net.dice_core,
                          self.net.dice_enhancing, self.net.l1regularizers, self.net.l2regularizers,
                          self.learning_rate_node, self.net.gradients_node, self.net.predicter),
@@ -306,7 +304,7 @@ class Trainer(object):
                         if last_best_validation_scores[1] >= val_score:
                             if 0 < self._unfreeze_all_layers_epochs > epoch - last_best_validation_scores[0]:
                                 logging.info("Unfreezing all layers...")
-                                self.optimizer = self._get_optimizer(self.global_step, self.net.variables)
+                                self.optimizer_op = self._get_optimizer(self.net.variables)
                                 self._unfreeze_all_layers_epochs = -1
                                 last_best_validation_scores[0] = epoch
                             elif epoch - last_best_validation_scores[0] >= self._early_stopping_epochs:

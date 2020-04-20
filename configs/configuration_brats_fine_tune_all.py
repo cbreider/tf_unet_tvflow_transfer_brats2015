@@ -361,7 +361,7 @@ class Configuration:
     --------------------------------------------------------------------------------------------------------------------
     """
     num_epochs = 30
-""" number of training epochs. Note one epoch normaly represents a complete loop through the training data.
+    """ number of training epochs. Note one epoch normaly represents a complete loop through the training data.
     But in this case we deal with very diffent number of training sets. So the number of iterations per epoch will be
     kept fixed"""
 

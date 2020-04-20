@@ -257,7 +257,7 @@ class Configuration:
     num_layers = 5
     """Nr of encoder layers including bottom layer (5 for original U-net)"""
     if gettrace():
-        num_layers = 2
+        num_layers = 5
 
     feat_root = 64
     """number of feature maps/kernels in the first layer (original 64)"""
@@ -380,6 +380,9 @@ class Configuration:
 
     early_stopping_epochs = 3
     """stop training if validation loss has not decreased over the given epochs. Set None to not use early stopping"""
+
+    unfreeze_all_layers_epochs = 3 if trainable_layers else -1
+    """unfreeze al frozen layers has not decreased over the given epochs. Set -1 to not use """
 
     adam_args = dict(learning_rate=initial_learning_rate,
                      beta1=0.9,
