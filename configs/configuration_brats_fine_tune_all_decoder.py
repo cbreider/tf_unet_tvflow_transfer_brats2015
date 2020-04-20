@@ -332,7 +332,7 @@ class Configuration:
     spatial_dropuout = True
     """use spatial (channel dropout instead of single neuron dropout"""
 
-    dropout_rate_conv1 = 0.0
+    dropout_rate_conv1 = 0.15
     """dropout probability for the first convolution in each block.
     Note: it's unusual to use dropout in convolutional layers
     but they did it in the original tf_unet implementation, so at least the option will be provided here."""
