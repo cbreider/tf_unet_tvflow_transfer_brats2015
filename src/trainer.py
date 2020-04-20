@@ -201,7 +201,8 @@ class Trainer(object):
                 epoch = int(fl[1])
 
             pred_shape, init_loss = self.run_validtaion(sess, epoch, init_step, summary_writer_validation,
-                                                        log_tf_summary=True if epoch == 0 else False, mini_validation=False)
+                                                        log_tf_summary=True if epoch == 0 else False,
+                                                        mini_validation=False)
 
             avg_gradients = None
 
@@ -306,6 +307,8 @@ class Trainer(object):
                             elif last_best_validation_scores[1] < val_score:
                                 last_best_validation_scores[0] = epoch
                                 last_best_validation_scores[1] = val_score
+                        logging.info("Best Epoch {} with score {}".format(last_best_validation_scores[0],
+                                                                          last_best_validation_scores[1]))
 
                 logging.info("Optimization Finished!")
 
