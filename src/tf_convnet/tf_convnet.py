@@ -220,7 +220,9 @@ class ConvNetModel(object):
 
             # if value for l1 or l2 regularizer is given add them to the loss
             if self._l2_regularizer is not None:
-                self.l2regularizers = sum(self.variables[0])
+                self.l2regularizers = self._l2_regularizer * sum(
+                    [tf.nn.l2_loss(variable) for variable in self.variables])
+                loss += self.l2regularizers
             if self._l1_regularizer is not None:
                 self.l1regularizers = self._l1_regularizer * sum([
                     tf.reduce_sum(tf.abs(variable)) for variable in self.variables])
