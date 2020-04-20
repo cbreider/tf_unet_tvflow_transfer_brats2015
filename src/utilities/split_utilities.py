@@ -503,7 +503,7 @@ class TrainingDataset(object):
 
     def prune_patients(self, patients):
         if len(patients) > self._nr_training_sample > 0:
-            return patients[:int(float(len(patients)) * self._nr_training_sample)]
+            return patients[:self._nr_training_sample]
         else:
             logging.info("Ivalid Nr of training scans given... Just taking all scans")
             return patients
