@@ -29,6 +29,7 @@ class ConvNetModel(object):
         A unet implementation
 
         :param convnet_config: config params for convnet
+        :param mode: Training mode of the convnet
         :param create_summaries: Flag if summaries should be created
             """
         self._convnet_config = convnet_config  # type: Configuration
@@ -254,7 +255,10 @@ class ConvNetModel(object):
         if restore_mode == RestoreMode.COMPLETE_SESSION:
             logging.info('{} Resuming complete session: {}'.format(datetime.now(), model_path))
             saver = tf.train.Saver()
-        elif restore_mode == RestoreMode.COMPLETE_NET or restore_mode == RestoreMode.ONLY_BASE_NET:
+        elif restore_mode == RestoreMode.COMPLETE_NET:
+            logging.info('{} Restoring only Network: {}'.format(datetime.now(), model_path))
+            saver = tf.train.Saver(self.variables)
+        elif restore_mode == RestoreMode.ONLY_GIVEN_VARS:
             logging.info('{} Restoring only Network: {}'.format(datetime.now(), model_path))
             saver = tf.train.Saver(self.variables_to_restore)
         else:

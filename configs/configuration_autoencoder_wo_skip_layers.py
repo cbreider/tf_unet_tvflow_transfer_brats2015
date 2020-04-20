@@ -293,7 +293,7 @@ class Configuration:
     add_residual_layer = False
     """Add residual layer/skip layer at the end output = input + last_layer (only for tv regression). NOT useful"""
 
-    remove_skip_layers = False
+    remove_skip_layers = True
     """remove skip layer connections"""
 
     #trainable_layers = dict(

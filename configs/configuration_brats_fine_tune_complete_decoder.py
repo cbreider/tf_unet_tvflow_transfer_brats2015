@@ -44,7 +44,7 @@ class Configuration:
     ]
     """label values of BRATS2015"""
 
-    segmentation_mask = Subtumral_Modes.ALL
+    segmentation_mask = Subtumral_Modes.COMPLETE
     """ mask for segmentation training: Complete, core or enhancing.  
     Or ALL if all five classes should be separatly predicted"""
 
@@ -96,11 +96,11 @@ class Configuration:
     k_fold_nr_val_samples = 50
     """nr of validation samples taken from training set in k fold cross validation"""
 
-    split_train_val_ratio = [0.9, 0.1]
+    split_train_val_ratio = [0.6, 0.15, 0.25]
     """Ration of Nr iraining images to Val images (optional test)
     if new random split is created. Only used if not k fold
     argument is passed (k_fold cross validation is not used). Must sum up to 1
-    split_train_val_ratio = [0.6, 0.15, 0.25]"""
+    split_train_val_ratio = [0.75, 0.25]"""
 
     nr_training_scans = -1
     """use only a subset of training images. (-1 for all training data)"""
@@ -270,7 +270,7 @@ class Configuration:
     pool_size = 2
     """size of max pooling pool_size x pool_size"""
 
-    cost_function = Cost.MSE
+    cost_function = Cost.BATCH_DICE_SOFT
     """Cost function to use. Choose from class Cost(Enum)"""
 
     cost_weight = 0.7
@@ -296,13 +296,13 @@ class Configuration:
     remove_skip_layers = False
     """remove skip layer connections"""
 
-    #trainable_layers = dict(
-    #    down_conv_3=True,      down_conv_2=True,      down_conv_1=True,        down_conv_0=True,
-    #    down_conv_4=True,
-    #    # up_conv consists of transpose cond and two convolutions
-    #    up_conv_3=[True, True], up_conv_2=[True, True], up_conv_1=[True, True], up_conv_0=[True, True],
-    #    classifier=True)
-    trainable_layers = None
+    trainable_layers = dict(
+        down_conv_3=False,      down_conv_2=False,      down_conv_1=False,        down_conv_0=False,
+        down_conv_4=False,
+        # up_conv consists of transpose cond and two convolutions
+        up_conv_3=[True, True], up_conv_2=[True, True], up_conv_1=[True, True], up_conv_0=[True, True],
+        classifier=True)
+    # trainable_layers = None
     """freeze layers during training. Set None to train all layers"""
 
 
@@ -311,7 +311,7 @@ class Configuration:
         down_conv_4=True,
         # up_conv consists of transpose cond and two convolutions
         up_conv_3=[True, True], up_conv_2=[True, True], up_conv_1=[True, True], up_conv_0=[True, True],
-        classifier=True)
+        classifier=False)
     # trainable_layers = None
     """ freeze layers during training. Set None to train all layers"""
 
@@ -332,12 +332,12 @@ class Configuration:
     spatial_dropuout = True
     """use spatial (channel dropout instead of single neuron dropout"""
 
-    dropout_rate_conv1 = 0.0
+    dropout_rate_conv1 = 0.15
     """dropout probability for the first convolution in each block.
     Note: it's unusual to use dropout in convolutional layers
     but they did it in the original tf_unet implementation, so at least the option will be provided here."""
 
-    dropout_rate_conv2 = 0.0
+    dropout_rate_conv2 = 0.15
     """dropout probability for the second convolution in each block"""
 
     dropout_rate_pool = 0.0
@@ -357,12 +357,12 @@ class Configuration:
     Training parameters
     --------------------------------------------------------------------------------------------------------------------
     """
-    num_epochs = 50
+    num_epochs = 15
     """ number of training epochs. Note one epoch normaly represents a complete loop through the training data.
     But in this case we deal with very diffent number of training sets. So the number of iterations per epoch will be
     kept fixed"""
 
-    training_iters = 5000
+    training_iters = 1000
     """iterations per epoch"""
 
     display_step = 100
@@ -374,7 +374,7 @@ class Configuration:
     optimizer = Optimizer.ADAM
     """Optimizer to use. Choose from class Optimizer(Enum)"""
 
-    initial_learning_rate = 0.0001
+    initial_learning_rate = 0.00001
     """initial learning rate"""
 
     early_stopping_epochs = 3
@@ -389,8 +389,8 @@ class Configuration:
                      epsilon=1e-08,
                      use_locking=False,
                      name='Adam',
-                     decay_rate=0.1,
-                     decay_steps=125000)
+                     decay_rate=0.97,
+                     decay_steps=1000)
     """Hyperparameters for Adam optimzer"""
 
     momentum_args = dict(momentum=0.99,

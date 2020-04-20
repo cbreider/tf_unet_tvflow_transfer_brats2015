@@ -71,9 +71,9 @@ class Trainer(object):
         self.data_provider_test = data_provider_test
         self._fold_nr = fold_nr
         self._create_summaries = create_summaries
+        self._unfreeze_all_layers_epochs = self.config._unfreeze_all_layers_epochs
 
     def _get_optimizer(self, global_step):
-        tvars = tf.trainable_variables()
         if self.optimizer_name == Optimizer.MOMENTUM:
             self.learning_rate = self.config.momentum_args.pop("learning_rate", 0.2)
             self.decay_rate = self.config.momentum_args.pop("decay_rate", 0.95)
@@ -87,7 +87,6 @@ class Trainer(object):
 
             optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate_node, momentum=self.momentum,
                                                    **self.config.momentum_args).minimize(self.net.cost,
-                                                                                         var_list=tvars,
                                                                                          global_step=global_step)
 
         elif self.optimizer_name == Optimizer.ADAM:
@@ -102,17 +101,15 @@ class Trainer(object):
             optimizer = tf.train.AdamOptimizer(
                 learning_rate=self.learning_rate_node,
                 **self.config.adam_args).minimize(self.net.cost,
-                                                  var_list=tvars,
                                                   global_step=global_step)
 
         elif self.optimizer_name == Optimizer.ADAGRAD:
             self.learning_rate = self.config.adagrad_args.pop("learning_rate", 0.001)
             self.learning_rate_node = tf.Variable(self.learning_rate, name="learning_rate")
 
-            optimizer = tf.train.AdamOptimizer(
+            optimizer = tf.train.AdagradDAOptimizer(
                                                 learning_rate=self.learning_rate_node,
                                                 **self.config.adagrad_args).minimize(self.net.cost,
-                                                                                     var_list=tvars,
                                                                                      global_step=global_step)
 
         else:
@@ -194,7 +191,7 @@ class Trainer(object):
             init_step = 0
             epoch = 0
             s_train = 0
-            if os.path.isfile(step_file) and self._restore_mode != RestoreMode.ONLY_BASE_NET:
+            if os.path.isfile(step_file) and self._restore_mode != RestoreMode.ONLY_GIVEN_VARS:
                 f = open(step_file, "r")
                 fl = f.readlines()
                 init_step = int(fl[0])
@@ -299,14 +296,21 @@ class Trainer(object):
                         save_path = self.net.save(sess, save_path)
                         # save epoch and step
                         self.save_step_nr(step_file, step, epoch)
-                        if self._early_stopping_epochs:
-                            if (last_best_validation_scores[1] >= val_score and
-                                    epoch - last_best_validation_scores[0] >= self._early_stopping_epochs):
-                                logging.info("Stooping training because of validation convergence...")
-                                break
-                            elif last_best_validation_scores[1] < val_score:
+
+                        # check what to do if validation score did not increased
+                        if last_best_validation_scores[1] >= val_score:
+                            if 0 < self._unfreeze_all_layers_epochs > epoch - last_best_validation_scores[0]:
+                                logging.info("Unfreezing all layers...")
+                                for v in self.net.varibales:
+                                    v.trainable = True
+                                self._unfreeze_all_layers_epochs = -1
                                 last_best_validation_scores[0] = epoch
-                                last_best_validation_scores[1] = val_score
+                            elif epoch - last_best_validation_scores[0] >= self._early_stopping_epochs:
+                                logging.info("Stopping training because of validation convergence...")
+                                break
+                        else:
+                            last_best_validation_scores[0] = epoch
+                            last_best_validation_scores[1] = val_score
                         logging.info("Best Epoch {} with score {}".format(last_best_validation_scores[0],
                                                                           last_best_validation_scores[1]))
 

@@ -1,5 +1,5 @@
 """
-Master Thesis
+Master Thesis Learning Feature Preserving Smoothing as Prior for Image Segmentation
 and
 Lab Visualisation & Medical Image Analysis SS2019
 
@@ -60,8 +60,10 @@ if __name__ == "__main__":
     parser.add_argument('--data_path', type=str, default=None,
                         help='Path to the Brats training dataset. Files have to be 2D images and ordered in the same way'
                              '(HGG/LGG --> Patient --> modality--> *.png). Default ../dataset')
-    parser.add_argument('--training_data_portion', type=float, default=-1.0,
+    parser.add_argument('--nr_training_scans', type=int, default=-1,
                         help='Use only a specific portion of all training samples')
+    parser.add_argument('--reuse_out_folder', action='store_true',
+                        help='Reuses the output folder of a model if it is restored')
 
     args = parser.parse_args()
     create_new_training_split = False
@@ -74,6 +76,7 @@ if __name__ == "__main__":
     data_path = "default"
     fold_nr = args.take_fold_nr
     name = ""
+    reuse_out_folder = False
     if args.create_new_split:
         create_new_training_split = True
     if args.do_not_create_summaries:
@@ -94,17 +97,18 @@ if __name__ == "__main__":
         data_path = args.data_path
     if args.name:
         name = args.name
-    if args.training_data_portion and args.training_data_portion >= 0:
-        config.training_data_portion = args.training_data_portion
+    if args.nr_training_scans and args.nr_training_scans >= 0:
+        config.nr_training_scans = args.nr_training_scans
+    if restore_path and args.reuse_out_folder:
+        reuse_out_folder = args.reuse_out_folder
 
     # tf.enable_eager_execution()
     tf.reset_default_graph()
-
+    config.set_nr_classes(train_mode)
     data_paths = DataPaths(data_path=data_path, mode=train_mode.name,
                            tumor_mode=config.segmentation_mask.name, name=name)
     data_paths.load_data_paths(mkdirs=True,
-                               restore_dir=restore_path if (restore_mode == RestoreMode.COMPLETE_SESSION
-                                                            or restore_mode == RestoreMode.COMPLETE_NET) else None)
+                               restore_dir=restore_path if reuse_out_folder else None)
 
     log.init_logger(type="train", path=data_paths.tf_out_path)
 
@@ -112,7 +116,7 @@ if __name__ == "__main__":
                  " restore_mode: {}, caffemodel_path: {}, cuda_dev: {}, fold nr: {}, testing: {}, data path: {}, "
                  "train data portion: {}".format(
         train_mode, create_new_training_split, restore_path, restore_mode, caffemodel_path, args.cuda_device, fold_nr,
-        include_testing, data_path, config.training_data_portion))
+        include_testing, data_path, config.nr_training_scans))
 
     logging.info("Training mode: {}".format(train_mode))
 
@@ -148,7 +152,7 @@ if __name__ == "__main__":
                                                     train_mode=train_mode,
                                                     data_config=config)
             test_data.create()
-            logging.info("Loaded {} test smaples".format(test_data.size))
+            logging.info("Loaded {} test samples".format(test_data.size))
         except:
             logging.ERROR("Failed to load test dataset. Skipping testing!!!")
 

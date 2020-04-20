@@ -41,7 +41,6 @@ def tv_clustered_one_hot_to_rgb(one_hot):
     """
     converts the given one hot image to an rgb image given the colors
     :param one_hot: one hot tensor [nx, ny, nr_classes]
-    :param label_colors: rgb colors for each label [nr_classes, 3]
     :return: rgb images [nx, ny, 3]
     """
 
@@ -60,7 +59,7 @@ def one_hot_to_rgb(one_hot, scan):
     """
     converts the given one hot image to an rgb image given the colors
     :param one_hot: one hot tensor [nx, ny, nr_classes]
-    :param label_colors: rgb colors for each label [nr_classes, 3]
+    :param scan: raw scan used as background for the segmentation
     :return: rgb images [nx, ny, 3]
     """
     # Color for each Label (used for resut Visualization
@@ -113,6 +112,7 @@ def expand_to_shape(data, shape, border=0):
 
     :param data: the array to expand
     :param shape: the target shape
+    :param border: value for the border pixels
     """
     diff_nx = shape[1] - data.shape[1]
     diff_ny = shape[2] - data.shape[2]
@@ -188,8 +188,7 @@ def combine_img_prediction_tvclustering(data, tv, gt, pred):
     :param gt: the ground truth tensor
     :param tv: the tv smoothed tensor
     :param pred: the prediction tensor
-    :param mode: 0 for segmentation 1 for regression
-    :param label_colors: array of colors for each label. Only used if mode == 1
+
     :returns img: the concatenated rgb image
     """
 

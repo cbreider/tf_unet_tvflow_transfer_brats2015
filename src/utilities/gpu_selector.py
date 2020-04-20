@@ -17,7 +17,12 @@ cuda_device = ''
 
 
 def set_cuda_gpu(cuda_gpu):
+    """
+    Selects a CUDA device (GPU) with the given index. It does so by setting the GPU to the only visible CUDA device
+    for the OS
 
+    :param cuda_gpu: index of the CUDA device to select
+    """
     global cuda_device
     cuda_device = str(cuda_gpu)
     os.environ["CUDA_VISIBLE_DEVICES"] = cuda_device
@@ -28,15 +33,9 @@ def set_cuda_gpu(cuda_gpu):
     # print([x.name for x in local_device_protos])
 
 
-def is_gpu_availbale():
-
-    # HACK HACK HACK
-    return cuda_device != ''
-
-    # local_device_protos = device_lib.list_local_devices()
-    # return len(local_device_protos) > 1
-
-
 def reset():
+    """
+    Resets the CUDA visible devices OS parameter
+    """
 
     os.environ["CUDA_VISIBLE_DEVICES"] = ""

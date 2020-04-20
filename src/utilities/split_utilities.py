@@ -22,7 +22,7 @@ import collections
 import src.utilities.io_utils as ioutil
 import random
 import warnings
-from PIL import  Image
+from PIL import Image
 
 
 class TestFilePaths(object):
@@ -153,7 +153,7 @@ class TrainingDataset(object):
         self._use_scale = self._data_config.use_scale_image_as_gt
         self._load_only_mid_scans = self._data_config.use_only_spatial_range
         self._split_ratio = self._data_config.split_train_val_ratio
-        self._training_sample_portion = self._data_config.training_data_portion
+        self._nr_training_sample = self._data_config.nr_training_scans
         self._use_modalities = self._data_config.use_modalities
         self._load_tv_from_file = self._data_config.load_tv_from_file
         self.split_name = ""
@@ -169,7 +169,7 @@ class TrainingDataset(object):
         self.validation_paths = dict()
         self.train_paths = dict()
         self.test_paths = dict()
-        self.nr_of_folds = nr_of_folds
+        self.nr_of_folds = nr_of_folds - 1 
         self.k_fold_nr_val_samples = k_fold_nr_val_samples
         self._empyt_slice_ratio = int(1.0 / self._data_config.use_empty_slice_probability)
 
@@ -482,8 +482,8 @@ class TrainingDataset(object):
             folds.append({"training": train, "validation": val, "testing": test})
             self._safe_and_archive_split(folds[i], "{}_{}".format(self._five_fold_file, i), is_five_fold=True)
 
-        pathients_validation = folds[self._five_fold_idx - 1]["validation"]
-        patients_train = folds[self._five_fold_idx-1]["training"]
+        pathients_validation = folds[self._five_fold_idx]["validation"]
+        patients_train = folds[self._five_fold_idx]["training"]
 
         return patients_train, pathients_validation
 
@@ -502,9 +502,10 @@ class TrainingDataset(object):
         return split
 
     def prune_patients(self, patients):
-        if 1.0 > self._training_sample_portion > 0.0:
-            return patients[:int(float(len(patients)) * self._training_sample_portion)]
+        if len(patients) > self._nr_training_sample > 0:
+            return patients[:int(float(len(patients)) * self._nr_training_sample)]
         else:
+            logging.info("Ivalid Nr of training scans given... Just taking all scans")
             return patients
 
     def _safe_and_archive_split(self, split, file_name, is_five_fold=False):
@@ -547,6 +548,8 @@ class TrainingDataset(object):
 
         train = split["training"]
         validation = split["validation"]
+        if 1 <= self.k_fold_nr_val_samples < len(validation):
+            validation = validation[:self.k_fold_nr_val_samples]
 
         train = self.prune_patients(train)
 

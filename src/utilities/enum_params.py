@@ -14,7 +14,7 @@ from enum import Enum
 
 class ConvNetType(Enum):
     """
-    cost functions
+    CNN Type
     """
     U_NET_2D = 1       # Choose to use Cross Entropy Cost (Segmentation)
 
@@ -47,10 +47,10 @@ class Subtumral_Modes(Enum):
     """
     Oparation Modes for the Data generator
     """
-    COMPLETE = 1
-    CORE = 2
-    ENHANCING = 3
-    ALL = 4
+    COMPLETE = 1    # Complete Tumor mask:  Label 1 or 2 or 3 or 4
+    CORE = 2        # Core Tumor mask:      Label 1 or      3 or 4
+    ENHANCING = 3   # Enhancing Tumor mask: Label                4
+    ALL = 4         # All Classes: Train to predict all 5 classes (0-4) individually
 
 
 class TrainingModes(Enum):
@@ -88,7 +88,7 @@ class RestoreMode(Enum):
     training optimzer
     """
     COMPLETE_SESSION = 1    # complete session including hyper params
-    ONLY_BASE_NET = 2       # import varibales from tf checkpoint but safe them to new path including summary
+    ONLY_GIVEN_VARS = 2       # import only certain varibales from tf checkpoint
     COMPLETE_NET = 3        # continue using the same path to store as restore path
 
 
@@ -103,6 +103,9 @@ class TV_clustering_method(Enum):
 
 
 class Scores(Enum):
+    """
+    Types of Scores measured for CNN performance and other values logged into the summary
+    """
     LOSS = "Loss"
     CE = "CE"
     ERROR = "Err"
@@ -125,6 +128,9 @@ class Scores(Enum):
     VALSCORE = "ValScore"
 
 
+"""
+   Full names for score Enums
+"""
 ScoresLong = {
     Scores.LOSS: "Loss",
     Scores.CE: "Cross Entropy",

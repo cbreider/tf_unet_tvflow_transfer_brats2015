@@ -77,6 +77,9 @@ if __name__ == "__main__":
     # tf.enable_eager_execution()
     tf.reset_default_graph()
     out_path=model_path
+
+    config.set_nr_classes(TrainingModes.BRATS_SEGMENTATION)
+
     data_paths = DataPaths(data_path="default", mode="SEGMENTATION_TEST",
                            tumor_mode=config.segmentation_mask.name)
     data_paths.load_data_paths(mkdirs=False, restore_dir=model_path)

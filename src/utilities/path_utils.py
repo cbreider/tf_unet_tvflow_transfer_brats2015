@@ -65,8 +65,11 @@ class DataPaths(object):
         self.raw_test_dir = os.path.join(self.raw_dir, self.raw_test_dir)
 
         self.tf_out_path = os.path.join(self.project_dir, self.tf_out_path)
-        tf_out_path_tmp = "{0:%Y-%m-%d_%H:%M:%S}".format(datetime.now())
-        tf_out_path_tmp = "{}_{}_{}_{}".format(self.mode, self.tumor_mode, self.name, tf_out_path_tmp)
+        if self.name != "":
+            tf_out_path_tmp = self.name
+        else:
+            tf_out_path_tmp = "{0:%Y-%m-%d_%H:%M:%S}".format(datetime.now())
+            tf_out_path_tmp = "{}_{}_{}_{}".format(self.mode, self.tumor_mode, self.name, tf_out_path_tmp)
 
         self.tf_out_path = os.path.join(self.tf_out_path, tf_out_path_tmp)
 
@@ -82,6 +85,9 @@ class DataPaths(object):
             raise FileNotFoundError()
         if restore_dir is None and mkdirs:
             if not os.path.exists(self.tf_out_path):
+                os.makedirs(self.tf_out_path)
+            else:
+                self.tf_out_path = self.tf_out_path + "_{0:%Y-%m-%d_%H:%M:%S}".format(datetime.now())
                 os.makedirs(self.tf_out_path)
                 # save config file to out folder
         else:

@@ -93,17 +93,17 @@ class Configuration:
     nr_k_folds = 5
     """r of folds for k fold cross validation"""
 
-    k_fold_nr_val_samples = 10
+    k_fold_nr_val_samples = 50
     """nr of validation samples taken from training set in k fold cross validation"""
 
-    split_train_val_ratio = [0.6, 0.15, 0.25]
+    split_train_val_ratio = [0.1, 0.9]
     """Ration of Nr iraining images to Val images (optional test)
     if new random split is created. Only used if not k fold
     argument is passed (k_fold cross validation is not used). Must sum up to 1
     split_train_val_ratio = [0.75, 0.25]"""
 
-    training_data_portion = 1.0
-    """use only a subset of training images. values from >0.0 - 1.0 (1.0 for all training data)"""
+    nr_training_scans = 1.0
+    """use only a subset of training images. (-1 for all training data)"""
 
     load_tv_from_file = False
     """set True if pre computed tv images should be red from disc. If False tv is computed in data pipeline"""
@@ -125,6 +125,9 @@ class Configuration:
     Parameters for Total Variation smoothing adn clustering/binning
     --------------------------------------------------------------------------------------------------------------------
     """
+    norm_max_image_value_tv = None
+    """value to which images should be normed to during pre processing. If None original max vales are kept. 
+    must be given if training mode is TV Segmentation"""
 
     use_modalities_for_tv = [modalities[0], modalities[1], modalities[2], modalities[3]]
     """modalities used and combined for tv. None for preset (COMPLETE = flair+T2, CORE=T1c, ENHANCING=T1)"""
@@ -139,14 +142,14 @@ class Configuration:
     nr_clusters = 8 if clustering_method != TV_clustering_method.STATIC_CLUSTERS else static_cluster_centers
     """Nr of clusters used for TV Segmentation"""
 
-    tv_static_multi_scale = [0.125, 0.5, 0.75, 1.0, 1.125]
+    tv_static_multi_scale = None#[0.2, 0.4, 0.6, 0.8]
     """Train the network with multiple sclaes each with a seperate output map for the network"""
 
     tv_multi_scale_range = None #[0.125, 1.125]
     """To train the network with multiple TV scales set a range for the tv_weight. During training the tv weight will be
     selected uniformly from the range. Set to None to train only with a single scale set in the parameters below"""
 
-    tv_weight = 0.5
+    tv_weight = 0.8
     """tv weight for single scale"""
 
     tv_eps = 0.00001
@@ -198,9 +201,6 @@ class Configuration:
     norm_max_image_value = None
     """value to which images should be normed to during pre processing. If None original max vales are kept"""
 
-    norm_max_image_value_tv = None
-    """value to which images should be normed to during pre processing. If None original max vales are kept"""
-
     """
     --------------------------------------------------------------------------------------------------------------------
     Class Parameters
@@ -215,10 +215,11 @@ class Configuration:
     nr_classes_brats_complete = 1
     """nr of classes for brats training on only one mask"""
 
-    nr_classes_tv_regression = use_modalities_for_tv * len(tv_static_multi_scale) if tv_static_multi_scale else 1
+    nr_classes_tv_regression = len(use_modalities_for_tv) * (len(tv_static_multi_scale) if tv_static_multi_scale else 1)
     """Nr of classes for TV regression mode"""
 
-    nr_classes_tv_segmentation = (use_modalities_for_tv * len(tv_static_multi_scale) if tv_static_multi_scale else 1) * nr_clusters
+    nr_classes_tv_segmentation = (len(use_modalities_for_tv) * len(tv_static_multi_scale)
+                                  if tv_static_multi_scale else 1) * nr_clusters
     """Nr of classes for TV segmentation mode"""
 
     nr_classes = -1
@@ -232,19 +233,17 @@ class Configuration:
         :param train_mode: Training mode of the Network
         :type: TrainingMode
         """
-        global nr_classes, nr_classes_brats_complete, nr_of_classes_brats_all, nr_classes_tv_regression
-        global nr_classes_tv_segmentation, use_modalities
         if train_mode == TrainingModes.BRATS_SEGMENTATION:
-            if Subtumral_Modes == Subtumral_Modes.ALL:
-                nr_classes = nr_of_classes_brats_all
+            if Configuration.segmentation_mask == Subtumral_Modes.ALL:
+                Configuration.nr_classes = Configuration.nr_of_classes_brats_all
             else:
-                nr_classes = nr_classes_brats_complete
+                Configuration.nr_classes = Configuration.nr_classes_brats_complete
         elif train_mode == TrainingModes.TVFLOW_REGRESSION:
-            nr_classes = nr_classes_tv_regression
-        elif train_mode == TrainingModes.BRATS_SEGMENTATION:
-            nr_classes = nr_classes_tv_segmentation
+            Configuration.nr_classes = Configuration.nr_classes_tv_regression
+        elif train_mode == TrainingModes.TVFLOW_SEGMENTATION:
+            Configuration.nr_classes = Configuration.nr_classes_tv_segmentation
         elif train_mode == TrainingModes.AUTO_ENCODER or train_mode == TrainingModes.DENOISING_AUTOENCODER:
-            nr_classes = len(use_modalities)
+            Configuration.nr_classes = len(Configuration.use_modalities)
 
     """
     --------------------------------------------------------------------------------------------------------------------
@@ -271,7 +270,7 @@ class Configuration:
     pool_size = 2
     """size of max pooling pool_size x pool_size"""
 
-    cost_function = Cost.BATCH_DICE_SOFT
+    cost_function = Cost.MSE
     """Cost function to use. Choose from class Cost(Enum)"""
 
     cost_weight = 0.7
@@ -301,7 +300,7 @@ class Configuration:
         down_conv_3=True,      down_conv_2=True,      down_conv_1=True,        down_conv_0=True,
         down_conv_4=True,
         # up_conv consists of transpose cond and two convolutions
-        up_conv_3=[True, True], up_conv_2=[True, True], up_conv_1=[True, False], up_conv_0=[True, True],
+        up_conv_3=[True, True], up_conv_2=[True, True], up_conv_1=[True, True], up_conv_0=[True, True],
         classifier=True)
     # trainable_layers = None
     """freeze layers during training. Set None to train all layers"""
@@ -333,12 +332,12 @@ class Configuration:
     spatial_dropuout = True
     """use spatial (channel dropout instead of single neuron dropout"""
 
-    dropout_rate_conv1 = 0.15
+    dropout_rate_conv1 = 0.0
     """dropout probability for the first convolution in each block.
     Note: it's unusual to use dropout in convolutional layers
     but they did it in the original tf_unet implementation, so at least the option will be provided here."""
 
-    dropout_rate_conv2 = 0.15
+    dropout_rate_conv2 = 0.0
     """dropout probability for the second convolution in each block"""
 
     dropout_rate_pool = 0.0
@@ -363,7 +362,7 @@ class Configuration:
     But in this case we deal with very diffent number of training sets. So the number of iterations per epoch will be
     kept fixed"""
 
-    training_iters = 5000
+    training_iters = 1000
     """iterations per epoch"""
 
     display_step = 100
@@ -378,7 +377,7 @@ class Configuration:
     initial_learning_rate = 0.0001
     """initial learning rate"""
 
-    early_stopping_epochs = 10
+    early_stopping_epochs = 3
     """stop training if validation loss has not decreased over the given epochs. Set None to not use early stopping"""
 
     adam_args = dict(learning_rate=initial_learning_rate,
@@ -387,8 +386,8 @@ class Configuration:
                      epsilon=1e-08,
                      use_locking=False,
                      name='Adam',
-                     decay_rate=0.1,
-                     decay_steps=000)
+                     decay_rate=0.95,
+                     decay_steps=1000)
     """Hyperparameters for Adam optimzer"""
 
     momentum_args = dict(momentum=0.99,
@@ -406,7 +405,7 @@ class Configuration:
                         name='Adagrad')
     """Hyperparameters for Adagrd optimzer"""
 
-    store_val_images = False
+    store_val_images = True
     """store output images of validation"""
 
     store_val_feature_maps = False

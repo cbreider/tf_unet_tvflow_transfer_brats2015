@@ -1,3 +1,14 @@
+"""
+Master Thesis Learning Feature Preserving Smoothing as Prior for Image Segmentation
+and
+Lab Visualisation & Medical Image Analysis SS2019
+
+Institute of Computer Science II
+
+Author: Christian Breiderhoff
+2019-2020
+"""
+
 import src.utilities.io_utils as ioutils
 import numpy as np
 from _thread import start_new_thread, allocate_lock

@@ -142,7 +142,7 @@ class Configuration:
     nr_clusters = 8 if clustering_method != TV_clustering_method.STATIC_CLUSTERS else static_cluster_centers
     """Nr of clusters used for TV Segmentation"""
 
-    tv_static_multi_scale = [0.2, 0.4, 0.6, 0.8]
+    tv_static_multi_scale = None #[0.2, 0.4, 0.6, 0.8]
     """Train the network with multiple sclaes each with a seperate output map for the network"""
 
     tv_multi_scale_range = None #[0.125, 1.125]
@@ -270,7 +270,7 @@ class Configuration:
     pool_size = 2
     """size of max pooling pool_size x pool_size"""
 
-    cost_function = Cost.MSE
+    cost_function = Cost.BATCH_DICE_SOFT_CE
     """Cost function to use. Choose from class Cost(Enum)"""
 
     cost_weight = 0.7

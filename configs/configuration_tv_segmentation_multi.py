@@ -270,7 +270,7 @@ class Configuration:
     pool_size = 2
     """size of max pooling pool_size x pool_size"""
 
-    cost_function = Cost.MSE
+    cost_function = Cost.BATCH_DICE_SOFT
     """Cost function to use. Choose from class Cost(Enum)"""
 
     cost_weight = 0.7
