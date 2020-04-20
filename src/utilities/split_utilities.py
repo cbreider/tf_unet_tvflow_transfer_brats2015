@@ -165,11 +165,11 @@ class TrainingDataset(object):
         self._five_fold_folder = "five_folds"
         self._five_fold_file = "fold"
         self._is_five_fold = is_five_fold
-        self._five_fold_idx = five_fold_idx
+        self._five_fold_idx = five_fold_idx - 1
         self.validation_paths = dict()
         self.train_paths = dict()
         self.test_paths = dict()
-        self.nr_of_folds = nr_of_folds - 1 
+        self.nr_of_folds = nr_of_folds
         self.k_fold_nr_val_samples = k_fold_nr_val_samples
         self._empyt_slice_ratio = int(1.0 / self._data_config.use_empty_slice_probability)
 
