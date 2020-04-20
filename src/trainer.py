@@ -303,7 +303,7 @@ class Trainer(object):
 
                         # check what to do if validation score did not increased
                         if last_best_validation_scores[1] >= val_score:
-                            if 0 < self._unfreeze_all_layers_epochs > epoch - last_best_validation_scores[0]:
+                            if self._unfreeze_all_layers_epochs >= (epoch - last_best_validation_scores[0]):
                                 logging.info("Unfreezing all layers...")
                                 save_path = self.net.save(sess, save_path)
                                 self.global_step = tf.Variable(step, name="global_step")
@@ -318,7 +318,7 @@ class Trainer(object):
                                 self._unfreeze_all_layers_epochs = -1
                                 last_best_validation_scores[0] = epoch
                                 last_best_validation_scores[1] = val_score
-                            elif epoch - last_best_validation_scores[0] >= self._early_stopping_epochs:
+                            elif (epoch - last_best_validation_scores[0]) >= self._early_stopping_epochs:
                                 logging.info("Stopping training because of validation convergence...")
                                 break
                         else:
