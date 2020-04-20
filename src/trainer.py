@@ -309,12 +309,15 @@ class Trainer(object):
                                 self.global_step = tf.Variable(step, name="global_step")
                                 self.optimizer_op = self._get_optimizer(self.global_step, vars=self.net.variables, lr=lr)
                                 sess.run(tf.global_variables_initializer())
-                                ckpt = tf.train.get_checkpoint_state(self._restore_path)
+                                ckpt = tf.train.get_checkpoint_state(self.output_path)
                                 if ckpt and ckpt.model_checkpoint_path:
                                     self.net.restore(sess, ckpt.model_checkpoint_path,
                                                      restore_mode=RestoreMode.COMPLETE_NET)
+                                else:
+                                    logging.info("Failed to restore model")
                                 self._unfreeze_all_layers_epochs = -1
                                 last_best_validation_scores[0] = epoch
+                                last_best_validation_scores[1] = val_score
                             elif epoch - last_best_validation_scores[0] >= self._early_stopping_epochs:
                                 logging.info("Stopping training because of validation convergence...")
                                 break
