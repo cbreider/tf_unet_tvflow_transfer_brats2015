@@ -73,10 +73,7 @@ class Trainer(object):
         self._create_summaries = create_summaries
         self._unfreeze_all_layers_epochs = self.config.unfreeze_all_layers_epochs
 
-    def _renew_optimizer(self, vars):
-        return self.optimizer.minimize(self.net.cost, global_step=self.global_step, var_list=vars)
-
-    def _get_optimizer(self, global_step, vars=None):
+    def _get_optimizer(self, global_step, vars=None, lr=None):
         if vars is None:
             vars = tf.trainable_variables()
         if self.optimizer_name == Optimizer.MOMENTUM:
@@ -84,6 +81,8 @@ class Trainer(object):
             self.decay_rate = self.config.momentum_args.pop("decay_rate", 0.95)
             self.momentum = self.config.momentum_args.pop("momentum", 0.2)
             self.decay_steps = self.config.momentum_args.pop("decay_steps", 10000)
+            if lr:
+                self.learning_rate = lr
             self.learning_rate_node = tf.train.exponential_decay(learning_rate=self.learning_rate,
                                                                  global_step=global_step,
                                                                  decay_steps=self.decay_steps,
@@ -98,6 +97,8 @@ class Trainer(object):
             self.learning_rate = self.config.adam_args.pop("learning_rate", 0.001)
             self.decay_rate = self.config.adam_args.pop("decay_rate", 0.95)
             self.decay_steps = self.config.adam_args.pop("decay_steps", 10000)
+            if lr:
+                self.learning_rate = lr
             self.learning_rate_node = tf.train.exponential_decay(learning_rate=self.learning_rate,
                                                                  global_step=global_step,
                                                                  decay_steps=self.decay_steps,
@@ -108,8 +109,9 @@ class Trainer(object):
 
         elif self.optimizer_name == Optimizer.ADAGRAD:
             self.learning_rate = self.config.adagrad_args.pop("learning_rate", 0.001)
+            if lr:
+                self.learning_rate = lr
             self.learning_rate_node = tf.Variable(self.learning_rate, name="learning_rate")
-
             self.optimizer = tf.train.AdagradDAOptimizer(learning_rate=self.learning_rate_node,
                                                          **self.config.adagrad_args)
             optimizer_op = self.optimizer.minimize(self.net.cost, global_step=global_step, var_list=vars)
@@ -303,7 +305,14 @@ class Trainer(object):
                         if last_best_validation_scores[1] >= val_score:
                             if 0 < self._unfreeze_all_layers_epochs > epoch - last_best_validation_scores[0]:
                                 logging.info("Unfreezing all layers...")
-                                self.optimizer_op = self._get_optimizer(self.net.variables)
+                                save_path = self.net.save(sess, save_path)
+                                self.global_step = tf.Variable(step, name="global_step")
+                                self.optimizer_op = self._get_optimizer(self.global_step, vars=self.net.variables, lr=lr)
+                                sess.run(tf.global_variables_initializer())
+                                ckpt = tf.train.get_checkpoint_state(self._restore_path)
+                                if ckpt and ckpt.model_checkpoint_path:
+                                    self.net.restore(sess, ckpt.model_checkpoint_path,
+                                                     restore_mode=RestoreMode.COMPLETE_NET)
                                 self._unfreeze_all_layers_epochs = -1
                                 last_best_validation_scores[0] = epoch
                             elif epoch - last_best_validation_scores[0] >= self._early_stopping_epochs:
