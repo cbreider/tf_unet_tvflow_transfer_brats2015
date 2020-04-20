@@ -203,7 +203,7 @@ class Trainer(object):
 
             pred_shape, init_loss = self.run_validtaion(sess, epoch, init_step, summary_writer_validation,
                                                         log_tf_summary=True if epoch == 0 else False,
-                                                        mini_validation=True)
+                                                        mini_validation=False)
 
             avg_gradients = None
 
@@ -302,9 +302,10 @@ class Trainer(object):
                         self.save_step_nr(step_file, step, epoch)
 
                         # check what to do if validation score did not increased
-                        if True:
-                            if True:
+                        if last_best_validation_scores[1] >= val_score:
+                            if 0 < self._unfreeze_all_layers_epochs > epoch - last_best_validation_scores[0]:
                                 logging.info("Unfreezing all layers...")
+                                save_path = self.net.save(sess, save_path)
                                 self.global_step = tf.Variable(step, name="global_step")
                                 self.optimizer_op = self._get_optimizer(self.global_step, vars=self.net.variables, lr=lr)
                                 sess.run(tf.global_variables_initializer())
@@ -350,7 +351,7 @@ class Trainer(object):
         outF.write("{}".format(epoch))
         outF.close()
 
-    def run_validtaion(self, sess, epoch, step, summary_writer=None, mini_validation=True, log_tf_summary=True):
+    def run_validtaion(self, sess, epoch, step, summary_writer=None, mini_validation=False, log_tf_summary=True):
         logging.info("Running Validation for epoch {}...".format(epoch))
         epoch_out_path = os.path.join(self.output_path, "Epoch_{}".format(epoch))
 
