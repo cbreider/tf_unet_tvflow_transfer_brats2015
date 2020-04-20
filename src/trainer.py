@@ -71,7 +71,7 @@ class Trainer(object):
         self.data_provider_test = data_provider_test
         self._fold_nr = fold_nr
         self._create_summaries = create_summaries
-        self._unfreeze_all_layers_epochs = self.config._unfreeze_all_layers_epochs
+        self._unfreeze_all_layers_epochs = self.config.unfreeze_all_layers_epochs
 
     def _get_optimizer(self, global_step):
         if self.optimizer_name == Optimizer.MOMENTUM:
