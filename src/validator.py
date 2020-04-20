@@ -24,7 +24,7 @@ def run_test(sess, net, data_provider_test, mode, nr, out_path):
     pred_shape, validation_results = Validator(sess, net, data_provider_test,
                                                test_out_path, mode=mode, mini_validation=False,
                                                nr=nr, store_feature_maps=False,
-                                               store_predictions=False).run_validation()
+                                               store_predictions=False, write_per_patient_result=True).run_validation()
     l_string = "TEST RESULTS:"
     for k, v in validation_results.items():
         if v != -1.:
@@ -46,7 +46,7 @@ def run_test(sess, net, data_provider_test, mode, nr, out_path):
 class Validator(object):
 
     def __init__(self, tf_session, net, data_provider, out_path, mode, nr=1, mini_validation=False,
-                 store_feature_maps=True, store_predictions=True):
+                 store_feature_maps=True, store_predictions=True, write_per_patient_result=False):
 
         """
         Trains a convnet instance
@@ -71,6 +71,7 @@ class Validator(object):
         self._mode = mode # type: TrainingModes
         self.fmap_size = [8, 8]
         self._batch_size = 1
+        self.write_per_patient_result = write_per_patient_result
 
     def run_validation(self):
         mini_size = 5
@@ -165,6 +166,20 @@ class Validator(object):
                                       np.array(data[0]), np.array(data[1]), np.array(data[2]), np.array(data[3]),
                                       gt_is_one_hot=0 if self._conv_net.cost_function == Cost.MSE else 1)
         sbatch = np.mean(np.array(vals), axis=0)
+
+        if self.write_per_patient_result:
+            out_str = "DSC_complete;DSC_Core;DSC_enhancing\n"
+            for score in dices_per_volume:
+                out_str = "{}{};{};{}\n".format(out_str, score[1], score[2], score[3])
+
+            if not os.path.exists(self._output_path):
+                os.makedirs(self._output_path)
+
+            outF = open(os.path.join(self._output_path, "results_per_patient.csv"), "w")
+            outF.write(out_str)
+            outF.write("\n")
+            outF.close()
+
         d_per_patient = np.mean(np.array(dices_per_volume), axis=0)
 
         scores = collections.OrderedDict()
