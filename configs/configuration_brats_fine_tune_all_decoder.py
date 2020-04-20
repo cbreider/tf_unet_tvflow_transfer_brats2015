@@ -337,10 +337,10 @@ class Configuration:
     Note: it's unusual to use dropout in convolutional layers
     but they did it in the original tf_unet implementation, so at least the option will be provided here."""
 
-    dropout_rate_conv2 = 0.15
+    dropout_rate_conv2 = 0.0
     """dropout probability for the second convolution in each block"""
 
-    dropout_rate_pool = 0.15
+    dropout_rate_pool = 0.0
     """dropout_rate for the pooling and  layers"""
 
     dropout_rate_tconv = 0.0
