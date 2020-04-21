@@ -1,4 +1,4 @@
-#Learning Feature Preserving Smoothing as Prior for Image Segmentation (U-Net, Total Variation smoothing)
+# Learning Feature Preserving Smoothing as Prior for Image Segmentation (U-Net, Total Variation smoothing)
 
 Master Project & Lab Visualization & Medical Image Analysis SS2019
 Institute of Computer Science II
