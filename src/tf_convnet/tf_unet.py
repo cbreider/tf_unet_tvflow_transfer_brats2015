@@ -130,7 +130,7 @@ output_map, last_feature_map, variables_to_restore, trainable_variables, variabl
 
             conv1 = conv2d(in_node, w1, b1, keep_prob_conv1, padding=padding, bn=bn, spatial_dropout=spatial_dropout)
             tmp_h_conv = tf.nn.relu(conv1)
-            conv2 = conv2d(tmp_h_conv, w2, b2, keep_prob_conv1, padding=padding, bn=bn, spatial_dropout=spatial_dropout)
+            conv2 = conv2d(tmp_h_conv, w2, b2, keep_prob_conv2, padding=padding, bn=bn, spatial_dropout=spatial_dropout)
             dw_h_convs[layer] = tf.nn.relu(conv2)
 
             convs.append((conv1, conv2))
