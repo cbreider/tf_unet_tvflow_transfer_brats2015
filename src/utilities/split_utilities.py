@@ -206,6 +206,7 @@ class TrainingDataset(object):
             keep_out = []
             nt = 0
             t = 0
+            idx = 1
             if self._load_only_mid_scans and len(self._load_only_mid_scans) == 2:
                 keep_out.extend(["_{}.".format(i) for i in range(0, self._load_only_mid_scans[0])])
                 keep_out.extend(["_{}.".format(i) for i in range(self._load_only_mid_scans[1] + 1, 155 + 1)])
@@ -219,9 +220,10 @@ class TrainingDataset(object):
                     if mx > 0:
                         keep = True
                         t += 1
-                    elif mx == 0 and random.randint(1, self._empyt_slice_ratio) == self._empyt_slice_ratio:
+                    elif mx == 0 and idx % self._empyt_slice_ratio == 0:
                         nt += 1
                         keep = True
+                        idx += 1
                 if keep:
                     tmp[k] = paths[k]
             paths = tmp
@@ -543,7 +545,7 @@ class TrainingDataset(object):
 
         split = self._read_single_split_from_folder(fname)
 
-        with open(os.path.join(self._paths.tf_out_path,  "split.json"), 'w') as file:
+        with open(os.path.join(self._paths.tf_out_path,  fname), 'w') as file:
             file.write(json.dumps(split))
 
         train = split["training"]
