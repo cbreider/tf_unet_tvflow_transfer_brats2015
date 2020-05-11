@@ -220,10 +220,11 @@ class TrainingDataset(object):
                     if mx > 0:
                         keep = True
                         t += 1
-                    elif mx == 0 and idx % self._empyt_slice_ratio == 0:
-                        nt += 1
-                        keep = True
+                    elif mx == 0:
                         idx += 1
+                        if idx % self._empyt_slice_ratio == 0:
+                            nt += 1
+                            keep = True
                 if keep:
                     tmp[k] = paths[k]
             paths = tmp
