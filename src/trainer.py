@@ -317,8 +317,8 @@ class Trainer(object):
                                         self._unfreeze_all_layers_epochs = -1
                                         last_best_validation_scores[0] = epoch
                                         last_best_validation_scores[1] = val_score
-                            elif self._early_stopping_epochs and self._early_stopping_epochs >= 0:
-                                if (epoch - last_best_validation_scores[0]) >= self._early_stopping_epochs:
+                            elif self._early_stopping_epochs:
+                                if self._early_stopping_epochs >= 0 and ((epoch - last_best_validation_scores[0]) >= self._early_stopping_epochs):
                                     logging.info("Stopping training because of validation convergence...")
                                     break
                         else:

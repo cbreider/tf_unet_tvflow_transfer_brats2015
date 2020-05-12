@@ -121,7 +121,7 @@ class ConvNetModel(object):
                     self.y_slice = tf.cast(tf.argmax(self.y, axis=3), tf.float32)
                     # get number of correct predicted values
                     self.correct_pred = tf.equal(self.pred_slice, self.y_slice)
-                    if self._mode == TrainingModes.BRATS_SEGMENTATION and self._n_class == 5:
+                    if (self._mode == TrainingModes.BRATS_SEGMENTATION or self._mode == TrainingModes.TVFLOW_SEGMENTATION_TV_PSEUDO_PATIENT) and self._n_class == 5:
                         # only if we segment all 5 classes of brats calc three different scores
                         # (complete, core and enhancing)
                         # complete all classes greater 0 (whole tumor)

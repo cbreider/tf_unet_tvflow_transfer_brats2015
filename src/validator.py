@@ -115,7 +115,7 @@ class Validator(object):
             shape = prediction.shape
 
             if len(data[1]) == 155:
-                if self._mode == TrainingModes.BRATS_SEGMENTATION and np.shape(data[1])[3] > 1:
+                if (self._mode == TrainingModes.BRATS_SEGMENTATION or self._mode == TrainingModes.TVFLOW_SEGMENTATION_TV_PSEUDO_PATIENT) and np.shape(data[1])[3] > 1:
 
                     pred_slice = np.argmax(np.array(data[3]), axis=3).astype(float)
                     y_slice = np.argmax(np.array(data[1]), axis=3).astype(float)
@@ -199,7 +199,7 @@ class Validator(object):
         scores[Scores.DSCP_CORE] = d_per_patient[2]
         scores[Scores.DSCP_EN] = d_per_patient[3]
 
-        if self._mode == TrainingModes.BRATS_SEGMENTATION:
+        if self._mode == TrainingModes.BRATS_SEGMENTATION or self._mode == TrainingModes.TVFLOW_SEGMENTATION_TV_PSEUDO_PATIENT:
             scores[Scores.VALSCORE] = scores[Scores.DSCP]
         else:
             scores[Scores.VALSCORE] = - scores[Scores.LOSS]

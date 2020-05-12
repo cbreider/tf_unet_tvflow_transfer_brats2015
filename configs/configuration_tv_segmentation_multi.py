@@ -233,7 +233,7 @@ class Configuration:
         :param train_mode: Training mode of the Network
         :type: TrainingMode
         """
-        if train_mode == TrainingModes.BRATS_SEGMENTATION:
+        if train_mode == TrainingModes.BRATS_SEGMENTATION or train_mode == TrainingModes.TVFLOW_SEGMENTATION_TV_PSEUDO_PATIENT:
             if Configuration.segmentation_mask == Subtumral_Modes.ALL:
                 Configuration.nr_classes = Configuration.nr_of_classes_brats_all
             else:
