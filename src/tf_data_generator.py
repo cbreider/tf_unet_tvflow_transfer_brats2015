@@ -203,7 +203,7 @@ class TFImageDataGenerator:
             if self._mode == TrainingModes.TVFLOW_SEGMENTATION_TV_PSEUDO_PATIENT:
                 def get_tv_pat(in_pat):
                     tvs = []
-                    nr_tv_base = tv_base.get_shape().as_list()[2]
+                    nr_tv_base = in_pat.get_shape().as_list()[2]
                     # run tv smoothing for all modalities to use
                     for i in range(nr_tv_base):
                         tvs.append(tf_utils.get_tv_smoothed(img=tf.expand_dims(in_pat[:, :, i], axis=2),
