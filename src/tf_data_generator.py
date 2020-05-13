@@ -193,20 +193,23 @@ class TFImageDataGenerator:
                         raise ValueError()
                 else:
                     raise ValueError()
-            elif self._mode == TrainingModes.TVFLOW_SEGMENTATION_TV_PSEUDO_PATIENT:
+
+            # normalize the input images
+            in_img = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._use_modalities,
+                                                               new_max=self._data_norm_value,
+                                                               normalize_std=self._normalize_std,
+                                                               data_vals=values)
+
+            if self._mode == TrainingModes.TVFLOW_SEGMENTATION_TV_PSEUDO_PATIENT:
                 def get_tv_pat(in_pat):
-                    tv_base = tf_utils.normalize_and_zero_center_tensor(in_pat, modalities=self._use_modalities,
-                                                                        new_max=self._data_norm_value_tv,
-                                                                        normalize_std=True,
-                                                                        data_vals=values)
                     tvs = []
                     nr_tv_base = tv_base.get_shape().as_list()[2]
                     # run tv smoothing for all modalities to use
                     for i in range(nr_tv_base):
-                        tvs.append(tf_utils.get_tv_smoothed(img=tf.expand_dims(tv_base[:, :, i], axis=2),
+                        tvs.append(tf_utils.get_tv_smoothed(img=tf.expand_dims(in_pat[:, :, i], axis=2),
                                                             tau=self.tv_tau, weight=self.tv_weight, eps=self.tv_eps,
                                                             m_itr=self.tv_nr_itr))
-                        return tf.concat(tvs, axis=2)
+                    return tf.concat(tvs, axis=2)
                 # use tv patient only in 50% of the time
                 in_img = tf.cond(tf.greater(tf.random.uniform(shape=(), minval=0.0, maxval=1.0,
                                                               dtype=tf.float32), 0.5),
@@ -220,12 +223,6 @@ class TFImageDataGenerator:
             # do data augmentation
             if self._do_augmentation:
                 in_img, gt_img = tf_utils.distort_imgs(in_img, gt_img, params=self._disort_params)
-
-            # normalize the input images
-            in_img = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._use_modalities,
-                                                               new_max=self._data_norm_value,
-                                                               normalize_std=self._normalize_std,
-                                                               data_vals=values)
 
             # if Auto encoder training is chosen the output is just the input
             if self._mode == TrainingModes.AUTO_ENCODER or self._mode == TrainingModes.DENOISING_AUTOENCODER:

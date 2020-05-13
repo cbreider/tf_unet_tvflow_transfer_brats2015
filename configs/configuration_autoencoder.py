@@ -382,7 +382,7 @@ class Configuration:
     early_stopping_epochs = 3
     """stop training if validation loss has not decreased over the given epochs. Set None to not use early stopping"""
 
-    unfreeze_all_layers_epochs = 3 if trainable_layers else -1
+    unfreeze_all_layers_epochs = 3 if trainable_layers else None
     """unfreeze al frozen layers has not decreased over the given epochs. Set -1 to not use """
 
     adam_args = dict(learning_rate=initial_learning_rate,
