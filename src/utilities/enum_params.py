@@ -127,6 +127,18 @@ class Scores(Enum):
     DLTL = "DLTL"
     DTL = "DTL"
     VALSCORE = "ValScore"
+    PRECISION_CORE = "Prec Core"
+    PRECISION_COMP = "Prec Comp."
+    PRECISION_EN = "Prec Enhan."
+    SENSITIVITY_CORE = "Sens. Core"
+    SENSITIVITY_COMP = "Sens. Comp."
+    SENSITIVITY_EN = "Sens. Enhan."
+    SPECIFICITY_CORE = "Spec Core"
+    SPECIFICITY_COMP = "Spec Comp."
+    SPECIFICITY_EN = "Spec Enhan."
+    PRECISION = "Prec"
+    SENSITIVITY = "Sens"
+    SPECIFICITY = "Spec"
 
 
 """
@@ -153,4 +165,16 @@ ScoresLong = {
     Scores.DLTL: "DLTL",
     Scores.DTL : "DTL",
     Scores.VALSCORE: "Validation Score",
+    Scores.PRECISION_CORE: "Precision Core",
+    Scores.PRECISION_COMP: "Precision Complete",
+    Scores.PRECISION_EN: "Precision Enhancing",
+    Scores.SENSITIVITY_CORE: "Sensitivity Core",
+    Scores.SENSITIVITY_COMP: "Sensitivity Comp.",
+    Scores.SENSITIVITY_EN: "Sensitivity Enhancing",
+    Scores.SPECIFICITY_CORE: "Specificity Core",
+    Scores.SPECIFICITY_COMP: "Specificity Comp.",
+    Scores.SPECIFICITY_EN: "Specificity Enhancing",
+    Scores.PRECISION: "Precision",
+    Scores.SENSITIVITY: "Sensitivity",
+    Scores.SPECIFICITY: "Specificity",
 }

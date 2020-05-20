@@ -605,6 +605,14 @@ def get_cross_entropy(logits, y, n_class, weights=None):
 
 
 def get_iou_coe(pre, gt, axis=(1, 2), smooth=1e-5):
+    """
+    Comutes the intersection over Union Measure
+
+    :param pre: input 4d tensor of predictions
+    :param gt: tensor of ground truth values
+
+    :returns iou tensor op
+    """
     with tf.name_scope("IOU"):
         inse = tf.reduce_sum(tf.multiply(pre, gt), axis=axis)  # AND
         union = tf.reduce_sum(tf.cast(tf.add(pre, gt) >= 1., dtype=tf.float32), axis=axis)  # OR
@@ -622,7 +630,6 @@ def get_image_summary(img, idx=0):
 
     :returns
     """
-
     V = tf.slice(img, (0, 0, 0, idx), (1, -1, -1, 1))
     V -= tf.reduce_min(V)
     V /= tf.reduce_max(V)

@@ -37,6 +37,7 @@ class Trainer(object):
         :param net: the unet instance to train
         :param data_provider_train: callable returning training and verification data
         :param data_provider_val: callable returning training and verification data
+        :param data_provider_test: callable returning training and test data
         :param out_path: path to store summaries and checkpoints
         :param train_config: parameters for  training # type: TrainingParams
         :param restore_path: (optional) checkpoint path to restore a tf checkpoint
@@ -122,6 +123,11 @@ class Trainer(object):
         return optimizer_op
 
     def _initialize(self):
+        """
+        Lauches the training process
+
+        :returns init: tf global variable initializer
+        """
 
         self.global_step = tf.Variable(0, name="global_step")
         self.norm_gradients_node = tf.Variable(tf.constant(0.0, shape=[len(self.net.gradients_node)]),
@@ -296,7 +302,10 @@ class Trainer(object):
                         zero_counter = 0
                         avg_score_vals_epoch = []
                         pred_shape, val_score = self.run_validtaion(sess, epoch, step, summary_writer_validation)
-
+                        logging.info("Saving Session and Model ...")
+                        save_path = self.net.save(sess, save_path)
+                        # save epoch and step
+                        self.save_step_nr(step_file, step, epoch)
                         # check what to do if validation score did not increased
                         if last_best_validation_scores[1] >= val_score:
                             if self._unfreeze_all_layers_epochs:
@@ -324,22 +333,13 @@ class Trainer(object):
                         else:
                             last_best_validation_scores[0] = epoch
                             last_best_validation_scores[1] = val_score
-                            logging.info("Saving Session and Model ...")
-                            save_path = self.net.save(sess, save_path)
-                            # save epoch and step
-                            self.save_step_nr(step_file, step, epoch)
+
                         logging.info("Best Epoch {} with score {}".format(last_best_validation_scores[0],
                                                                           last_best_validation_scores[1]))
 
                 logging.info("Optimization Finished!")
 
                 if self.data_provider_test:
-                    ckpt = tf.train.get_checkpoint_state(self.output_path)
-                    if ckpt and ckpt.model_checkpoint_path:
-                        self.net.restore(sess, ckpt.model_checkpoint_path,
-                                         restore_mode=RestoreMode.COMPLETE_NET)
-                    else:
-                        logging.info("Failed to restore model")
                     vali.run_test(sess, net=self.net, data_provider_test=self.data_provider_test, mode=self.mode,
                                   nr=self._fold_nr, out_path=self.output_path)
 

@@ -77,6 +77,9 @@ class Validator(object):
         mini_size = 5
         vals = []
         dices_per_volume = []
+        precison_per_volume = []
+        sensitivity_per_volume = []
+        specificity_per_volume = []
         data = [[], [], [], [], []]  # x, y, tv, pred, feature maps
         shape = []
         itr = 0
@@ -84,6 +87,18 @@ class Validator(object):
         dice_core = -1.
         dice_enhancing = -1.
         dice_overall = -1.
+        precision_core = -1.
+        sensitivity_core = -1.
+        specificity_core = -1.
+        precision_complete = -1.
+        sensitivity_complete = -1.
+        specificity_complete = -1.
+        precision_enhancing = -1.
+        sensitivity_enhancing = -1.
+        specificity_enhancing = -1.
+        precision = -1.
+        sensitivity = -1.
+        specificity = -1.
         if not os.path.exists(self._output_path) and(self._store_predictions or self._store_fmaps):
             os.makedirs(self._output_path)
         self._tf_session.run(self._data_provider.init_op)
@@ -132,10 +147,22 @@ class Validator(object):
                     dice_core = dutil.get_hard_dice_score(pred=pred_core, gt=y_core, eps=1e-5, axis=(0,1,2))
                     dice_enhancing = dutil.get_hard_dice_score(pred=pred_enhancing, gt=y_enhancing, eps=1e-5, axis=(0,1,2))
                     dice_overall = (dice_complete + dice_core + dice_enhancing) / 3.0
+                    [precision_core, sensitivity_core, specificity_core] = dutil.get_confusion_metrices(pred_core, y_core)
+                    [precision_complete, sensitivity_complete,
+                     specificity_complete] = dutil.get_confusion_metrices(pred_complete, y_complete)
+                    [precision_enhancing, sensitivity_enhancing,
+                     specificity_enhancing] = dutil.get_confusion_metrices(pred_enhancing, y_enhancing)
                 elif self._conv_net.cost_function != Cost.MSE:
-                    dice_overall = dutil.get_hard_dice_score(np.array(data[1]), np.array(data[3]), axis=(0,1,2,3))
+                    dice_overall = dutil.get_hard_dice_score(np.array(data[3]), np.array(data[1]), axis=(0,1,2,3))
+                    [precision, sensitivity, specificity] = dutil.get_confusion_metrices(np.array(data[1]),
+                                                                                         np.array(data[3]))
 
                 dices_per_volume.append([dice_overall, dice_complete, dice_core, dice_enhancing])
+                precison_per_volume.append([precision, precision_complete, precision_core, precision_enhancing])
+                sensitivity_per_volume.append([sensitivity, sensitivity_complete, sensitivity_core,
+                                               sensitivity_enhancing])
+                specificity_per_volume.append([specificity, specificity_complete, specificity_core,
+                                               specificity_enhancing])
 
                 if self._store_predictions and self._nr % 5 == 0:
                     self.store_prediction("{}_{}".format(self._nr, itr), self._mode, self._output_path,
@@ -181,7 +208,10 @@ class Validator(object):
             outF.close()
 
         d_per_patient = np.mean(np.array(dices_per_volume), axis=0)
-
+        p_per_patient = np.mean(np.array(precison_per_volume), axis=0)
+        sen_per_patient = np.mean(np.array(sensitivity_per_volume), axis=0)
+        spec_per_patient = np.mean(np.array(specificity_per_volume), axis=0)
+        
         scores = collections.OrderedDict()
 
         scores[Scores.LOSS] = sbatch[0]
@@ -198,6 +228,19 @@ class Validator(object):
         scores[Scores.DSCP_COMP] = d_per_patient[1]
         scores[Scores.DSCP_CORE] = d_per_patient[2]
         scores[Scores.DSCP_EN] = d_per_patient[3]
+
+        scores[Scores.PRECISION] = p_per_patient[0]
+        scores[Scores.PRECISION_COMP] = p_per_patient[1]
+        scores[Scores.PRECISION_CORE] = p_per_patient[2]
+        scores[Scores.PRECISION_EN] = p_per_patient[3]
+        scores[Scores.SENSITIVITY] = sen_per_patient[0]
+        scores[Scores.SENSITIVITY_COMP] = sen_per_patient[1]
+        scores[Scores.SENSITIVITY_CORE] = sen_per_patient[2]
+        scores[Scores.SENSITIVITY_EN] = sen_per_patient[3]
+        scores[Scores.SPECIFICITY] = spec_per_patient[0]
+        scores[Scores.SPECIFICITY_COMP] = spec_per_patient[1]
+        scores[Scores.SPECIFICITY_CORE] = spec_per_patient[2]
+        scores[Scores.SPECIFICITY_EN] = spec_per_patient[3]
 
         if self._mode == TrainingModes.BRATS_SEGMENTATION or self._mode == TrainingModes.TVFLOW_SEGMENTATION_TV_PSEUDO_PATIENT:
             scores[Scores.VALSCORE] = scores[Scores.DSCP]

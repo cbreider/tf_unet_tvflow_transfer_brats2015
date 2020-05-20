@@ -241,6 +241,26 @@ def get_hard_dice_score(pred, gt, axis=(0, 1, 2, 3), eps=1e-5):
     dice = np.mean(dice)
     return dice
 
+def get_confusion_metrices(predictions, gt):
+    """
+    Computes precison, recall and specificity for a given prediction and gt
+
+    :param predictions: input tensor of predictions
+    :param gt: tensor of ground truth values
+
+    :returns list of [precision, sensitivity, specificity] op
+    """
+
+    tp = float(np.count_nonzero(predictions * gt))
+    tn = float(np.count_nonzero((predictions - 1.) * (gt - 1.)))
+    fp = float(np.count_nonzero(predictions * (gt - 1.)))
+    fn = float(np.count_nonzero((predictions - 1.) * gt))
+
+    precision = tp / (tp + fp)
+    sensitivity = tp / (tp + fn)
+    specificity = tn / (tn + fp)
+
+    return [precision, sensitivity, specificity]
 
 def image_histogram_equalization(image, number_bins=256):
     # from http://www.janeriksolem.net/2009/06/histogram-equalization-with-python-and.html
@@ -254,3 +274,4 @@ def image_histogram_equalization(image, number_bins=256):
     image_equalized = np.interp(image.flatten(), bins[:-1], cdf)
 
     return [image_equalized.reshape(image.shape), cdf]
+
