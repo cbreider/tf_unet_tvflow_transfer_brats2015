@@ -99,6 +99,7 @@ class Validator(object):
         precision = -1.
         sensitivity = -1.
         specificity = -1.
+        pat_ids = []
         if not os.path.exists(self._output_path) and(self._store_predictions or self._store_fmaps):
             os.makedirs(self._output_path)
         self._tf_session.run(self._data_provider.init_op)
@@ -107,7 +108,7 @@ class Validator(object):
         ioutil.progress(0, set_size if not self._mini else (mini_size * 155))
 
         for i in range(int(self._data_provider.size / self._batch_size)):
-            test_x, test_y, test_tv = self._tf_session.run(self._data_provider.next_batch)
+            test_x, test_y, test_tv, paths = self._tf_session.run(self._data_provider.next_batch)
             [loss, acc, err, prediction, dice, ce, iou, feature, d_complete, d_core, d_enhancing] = self._tf_session.run(
                 [self._conv_net.cost, self._conv_net.accuracy, self._conv_net.error,
                  self._conv_net.predicter, self._conv_net.dice, self._conv_net.cross_entropy, self._conv_net.iou_coe,
@@ -129,9 +130,9 @@ class Validator(object):
             data[4].append(feature)
             shape = prediction.shape
 
-            if len(data[1]) == 155:
+            if len(data[1]) == 70:
                 if (self._mode == TrainingModes.BRATS_SEGMENTATION or self._mode == TrainingModes.TVFLOW_SEGMENTATION_TV_PSEUDO_PATIENT) and np.shape(data[1])[3] > 1:
-
+                    pat_ids.append([str(f) for f in paths[0] if "mr_flair" in str(f).lower()][0].split(".")[-2].split("_")[0])
                     pred_slice = np.argmax(np.array(data[3]), axis=3).astype(float)
                     y_slice = np.argmax(np.array(data[1]), axis=3).astype(float)
                     pred_complete = np.greater(pred_slice, 0.).astype(float)
@@ -211,7 +212,7 @@ class Validator(object):
         p_per_patient = np.mean(np.array(precison_per_volume), axis=0)
         sen_per_patient = np.mean(np.array(sensitivity_per_volume), axis=0)
         spec_per_patient = np.mean(np.array(specificity_per_volume), axis=0)
-        
+
         scores = collections.OrderedDict()
 
         scores[Scores.LOSS] = sbatch[0]

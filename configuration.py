@@ -125,7 +125,7 @@ class Configuration:
     Parameters for Total Variation smoothing adn clustering/binning
     --------------------------------------------------------------------------------------------------------------------
     """
-    norm_max_image_value_tv = None
+    norm_max_image_value_tv = 10.0
     """value to which images should be normed to during pre processing. If None original max vales are kept. 
     must be given if training mode is TV Segmentation"""
 
@@ -218,8 +218,8 @@ class Configuration:
     nr_classes_tv_regression = len(use_modalities_for_tv) * (len(tv_static_multi_scale) if tv_static_multi_scale else 1)
     """Nr of classes for TV regression mode"""
 
-    nr_classes_tv_segmentation = (len(use_modalities_for_tv) * len(tv_static_multi_scale)
-                                  if tv_static_multi_scale else 1) * nr_clusters
+    nr_classes_tv_segmentation = (len(use_modalities_for_tv) * (len(tv_static_multi_scale)
+                                  if tv_static_multi_scale else 1)) * nr_clusters
     """Nr of classes for TV segmentation mode"""
 
     nr_classes = -1
@@ -257,7 +257,7 @@ class Configuration:
     num_layers = 5
     """Nr of encoder layers including bottom layer (5 for original U-net)"""
     if gettrace():
-        num_layers = 5
+        num_layers = 2
 
     feat_root = 64
     """number of feature maps/kernels in the first layer (original 64)"""
@@ -416,7 +416,7 @@ class Configuration:
     """store last feature maps  from cnn during validation ( only for middle scan)"""
     if gettrace():
         store_val_feature_maps = False
-        store_val_images = False
+        store_val_images = True
 
     norm_grads = False
     """norm gradients in summary"""

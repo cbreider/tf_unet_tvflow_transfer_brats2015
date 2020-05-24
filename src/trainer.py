@@ -230,7 +230,7 @@ class Trainer(object):
                         sess.run(self.data_provider_train.init_op)
                         s_train = 0
 
-                    batch_x, batch_y, batch_tv = sess.run(self.data_provider_train.next_batch)
+                    batch_x, batch_y, batch_tv, __ = sess.run(self.data_provider_train.next_batch)
 
                     if step == 0:
                         self.output_minibatch_stats(sess, step, batch_x, dutil.crop_to_shape(batch_y, pred_shape),

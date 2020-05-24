@@ -89,7 +89,11 @@ if __name__ == "__main__":
     if use_Brats_Testing:
         patient_paths = [os.path.join(data_paths.raw_test_dir, path) for path in os.listdir(data_paths.raw_test_dir)]
     else:
-        split_file = os.path.join(data_paths.split_path, "split.json")
+        if fold_nr > 0:
+            fl = "fold_".format(fold_nr-1)
+        else:
+            fl = "split.json"
+        split_file = os.path.join(data_paths.split_path, fl)
         if not os.path.exists(split_file):
             raise ValueError('{0:} file not found'.format(split_file))
         file = open(split_file, 'r')

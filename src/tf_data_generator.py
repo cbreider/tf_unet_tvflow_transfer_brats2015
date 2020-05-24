@@ -247,21 +247,15 @@ class TFImageDataGenerator:
 
             # generate one hot tensor for TV segmentation
             elif self._mode == TrainingModes.TVFLOW_SEGMENTATION:
-                if self._modalties_tv:
-                    gts = []
-                    for i in range(len(self._modalties_tv)):
-                        gts.append(tf.one_hot(tf.cast(gt_img[:, :, i], tf.int32), depth=self._nr_of_classes))
-                    gt_img = tf.concat(gts, axis=2)
-                else:
-                    gt_img = tf.reshape(gt_img, [tf.shape(gt_img)[0], tf.shape(gt_img)[1]])
-                    gt_img = tf.one_hot(tf.cast(gt_img, tf.int32), depth=self._nr_of_classes)
+                gt_img = tf.one_hot(tf.cast(gt_img, tf.int32), depth=self._nr_classes_clustering, axis=2)
+                gt_img = tf.reshape(gt_img, [tf.shape(gt_img)[0], tf.shape(gt_img)[1], -1])
 
             if self._set_img_size != self._in_img_size:
                 in_img = tf.image.resize_images(in_img, self._set_img_size, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
                 gt_img = tf.image.resize_images(gt_img, self._set_img_size, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
                 tv_img = tf.image.resize_images(tv_img, self._set_img_size, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
-        return in_img, gt_img, tv_img
+        return in_img, gt_img, tv_img, input_ob
 
 
 class TFTrainingImageDataGenerator(TFImageDataGenerator):

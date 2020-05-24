@@ -218,8 +218,8 @@ class Configuration:
     nr_classes_tv_regression = len(use_modalities_for_tv) * len(tv_static_multi_scale) if tv_static_multi_scale else 1
     """Nr of classes for TV regression mode"""
 
-    nr_classes_tv_segmentation = (len(use_modalities_for_tv) * len(tv_static_multi_scale)
-                                  if tv_static_multi_scale else 1) * nr_clusters
+    nr_classes_tv_segmentation = (len(use_modalities_for_tv) * (len(tv_static_multi_scale)
+                                  if tv_static_multi_scale else 1)) * nr_clusters
     """Nr of classes for TV segmentation mode"""
 
     nr_classes = -1
