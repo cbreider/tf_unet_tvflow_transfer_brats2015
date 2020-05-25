@@ -130,7 +130,7 @@ class Validator(object):
             data[4].append(feature)
             shape = prediction.shape
 
-            if len(data[1]) == 70:
+            if len(data[1]) == 155:
                 if (self._mode == TrainingModes.BRATS_SEGMENTATION or self._mode == TrainingModes.TVFLOW_SEGMENTATION_TV_PSEUDO_PATIENT) and np.shape(data[1])[3] > 1:
                     pat_ids.append([str(f) for f in paths[0] if "mr_flair" in str(f).lower()][0].split(".")[-2].split("_")[0])
                     pred_slice = np.argmax(np.array(data[3]), axis=3).astype(float)
@@ -196,9 +196,11 @@ class Validator(object):
         sbatch = np.mean(np.array(vals), axis=0)
 
         if self.write_per_patient_result:
-            out_str = "DSC_complete;DSC_Core;DSC_enhancing\n"
+            out_str = "DSC_complete;DSC_Core;DSC_enhancing;PatientID\n"
+            idx = 0
             for score in dices_per_volume:
-                out_str = "{}{};{};{}\n".format(out_str, score[1], score[2], score[3])
+                out_str = "{}{};{};{};{}\n".format(out_str, score[1], score[2], score[3], pat_ids[idx])
+                idx += 1
 
             if not os.path.exists(self._output_path):
                 os.makedirs(self._output_path)
