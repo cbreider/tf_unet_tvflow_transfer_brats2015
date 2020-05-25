@@ -9,19 +9,21 @@ created  2019-2020
 Python3 Tool to pre-train a CNN Model on Total Variation smoothed images (regression with MSE), to enhance segmentation performance.
 It is also possible to pre-train the CNN in an auto encoder fashion.
 
-Currently only 2D U-Net with Brats 2015 data set are implemented
+Currently only 2D U-Net with Brats 2015 data set are implemented. This projects uses the tf.Data API to perform all data preprocessing including TV smoothing on the fly (CPU)
 
-This Projects is still under development so check out for changes some time.
 ## Requirements
 tool
 Written in python 3.5
 
 Necessary packages
-  - numpy
-  - pypng
-  - SimpleITK
-  - tensorflow 1.12.0
-  - PIL
+  - TensorFlow          V1.12.0: Implementation Deep Learning and Data pipeline. TensorFlow 1.12 has to be used because of some incompatibilities of the \textit{tf.Data} class implementation of our code to newer Versions of TensorFlow
+  - Numpy               V1.16.4: Evaluation and array calculation
+  - Pillow              V6.0.0: Python Image Library (PIL) fork. Loading and storing images.
+  - elasticdeform.tf    V0.4.6: For elastic deformation within the \tf Data-Pipeline [https://github.com/gvtulder/elasticdeform/tree/master/docs/source]
+  - h5py                V2.9: For importing variables from Caffe models
+  - SimpleITK           V1.2.4: For loading an storing .mha-Files
+  - matplotlib          V3.0.3: For some test functions
+  - sklearn             V0.23: For some test functions
 
 ## Training
 
@@ -58,6 +60,7 @@ predicted scans as MHA (for BRATS2015 challenge) and as PNG files (optional). It
 * --cuda_device [NR]: Use a specific cuda device )(optional)
 * --save_pngs: save predictions also as PNG images
 * --take_fold_nr [NR]: use the test split from a given fold. *fold[NR],json*
+* --use_brats_test_set: Do inference on the BRATS test set  instead of test split of the training set.
 
 ## Provide Data
 The Brats dataset should be provided as follows:
@@ -73,6 +76,7 @@ The Brats dataset should be provided as follows:
   corresponding folder. the
  
 
+The data for the data pipeline has to be provided as PNG images (2D) slices. The script *convert_brats2015_to_png.py* will convert the BRATS data set from 3D mha files to 2D (axial) PNG slices.
 
  ## Options and Configuration
  
