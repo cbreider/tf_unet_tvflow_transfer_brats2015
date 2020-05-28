@@ -24,7 +24,7 @@ import src.utilities.logger as log
 from src.utilities.enum_params import TrainingModes, DataModes, Optimizer, RestoreMode
 
 
-def main(raw_args=None):
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode",
                         help="Mode of training session. 1=TV regression training, 2=TV clustering training, "
@@ -64,7 +64,7 @@ def main(raw_args=None):
     parser.add_argument('--reuse_out_folder', action='store_true',
                         help='Reuses the output folder of a model if it is restored')
 
-    args = parser.parse_args(raw_args)
+    args = parser.parse_args()
     create_new_training_split = False
     create_summaries = True
     restore_path = None
@@ -171,7 +171,3 @@ def main(raw_args=None):
                               restore_mode=restore_mode, mode=train_mode, data_provider_test=test_data, fold_nr=fold_nr)
 
     path = trainer.train()
-
-
-if __name__ == "__main__":
-    main()

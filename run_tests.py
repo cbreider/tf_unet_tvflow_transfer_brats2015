@@ -1,6 +1,5 @@
 import os
-from .train import main
-
+import subprocess
 
 for path in os.listdir("./"):
     if "BRATS_segmentation_all_labels" in path or "BRATS_segmentation_complete_mask" in path:
@@ -14,5 +13,5 @@ for path in os.listdir("./"):
                     if "seg_complete_rss_4_f2" in full_path4:
                         print(full_path4)
                         fold = full_path4.split("_")[-1][1]
-                        main(['--mode', 3, 'cuda_device', 0, '--fold_nr', fold, 'nr_training_scans', 1, '--restore_mode',
+                        subprocess.call(['python3', 'train.py', '--mode', 3, 'cuda_device', 0, '--fold_nr', fold, 'nr_training_scans', 1, '--restore_mode',
                               1, 'restore_path', full_path4, '--reuse_out_folder', '--include_testing'])
