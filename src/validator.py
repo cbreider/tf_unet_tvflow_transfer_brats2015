@@ -35,7 +35,7 @@ def run_test(sess, net, data_provider_test, mode, nr, out_path):
     if not os.path.exists(test_out_path):
         os.makedirs(test_out_path)
 
-    outF = open(os.path.join(test_out_path, "results_new.txt"), "w")
+    outF = open(os.path.join(test_out_path, "results.txt"), "w")
     for k, v in validation_results.items():
         if v != -1.:
             outF.write("{}: {:6f}".format(k, v))
@@ -206,7 +206,7 @@ class Validator(object):
             if not os.path.exists(self._output_path):
                 os.makedirs(self._output_path)
             
-            outF = open(os.path.join(self._output_path, "results_per_patient_new.csv"), "w")
+            outF = open(os.path.join(self._output_path, "results_per_patient.csv"), "w")
             outF.write(out_str)
             outF.write("\n")
             outF.close()
