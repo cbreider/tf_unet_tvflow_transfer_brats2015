@@ -2,6 +2,8 @@ import os
 import subprocess
 import  configuration as config
 from src.utilities.enum_params import Subtumral_Modes
+
+
 not_succ = []
 for path in os.listdir("./tf_model_output"):
     if "BRATS_segmentation_all_labels" in path or "BRATS_segmentation_complete_mask" in path:
