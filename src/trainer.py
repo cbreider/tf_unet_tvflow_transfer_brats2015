@@ -207,9 +207,7 @@ class Trainer(object):
                 init_step = int(fl[0])
                 epoch = int(fl[1])
 
-            pred_shape, init_loss = self.run_validtaion(sess, epoch, init_step, summary_writer_validation,
-                                                        log_tf_summary=True if epoch == 0 else False,
-                                                        mini_validation=True)
+            init_loss = 0.0
 
             avg_gradients = None
 

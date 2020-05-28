@@ -256,9 +256,9 @@ def get_confusion_metrices(predictions, gt):
     fp = float(np.count_nonzero(predictions * (gt - 1.)))
     fn = float(np.count_nonzero((predictions - 1.) * gt))
 
-    precision = tp / (tp + fp)
-    sensitivity = tp / (tp + fn)
-    specificity = tn / (tn + fp)
+    precision = (tp + 1e-10) / (tp + fp + 1e-10)
+    sensitivity = (tp + 1e-10) / (tp + fn + 1e-10)
+    specificity = (tn + 1e-10) / (tn + fp + 1e-10)
 
     return [precision, sensitivity, specificity]
 

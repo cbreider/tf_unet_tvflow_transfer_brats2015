@@ -1,7 +1,8 @@
 import os
 import subprocess
 
-for path in os.listdir("./"):
+not_succ = []
+for path in os.listdir("./tf_model_output"):
     if "BRATS_segmentation_all_labels" in path or "BRATS_segmentation_complete_mask" in path:
         full_path1 = os.path.join("/home/christian/Data_5/Projects/unet_brats2015/tf_model_output", path)
         for path2 in os.listdir(full_path1):
@@ -13,5 +14,11 @@ for path in os.listdir("./"):
                     if "seg_complete_rss_4_f2" in full_path4:
                         print(full_path4)
                         fold = full_path4.split("_")[-1][1]
-                        subprocess.call(['python3', 'train.py', '--mode', 3, 'cuda_device', 0, '--fold_nr', fold, 'nr_training_scans', 1, '--restore_mode',
-                              1, 'restore_path', full_path4, '--reuse_out_folder', '--include_testing'])
+                        subprocess.call(['python3', 'train.py', '--mode', "3", '--cuda_device', "0", '--take_fold_nr', str(fold), '--nr_training_scans', "1", '--restore_mode',
+                              "1", '--restore_path', str(full_path4), '--reuse_out_folder', '--include_testing'])
+                        if not os.path.exists(os.path.join(full_path4, "Test_{}/results_new.txt".format(fold))):
+                            not_succ.append(full_path4)
+
+
+print(not_succ)
+                           
