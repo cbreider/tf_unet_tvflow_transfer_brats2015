@@ -6,7 +6,7 @@ comp = {"s": [], "seg_all_rm": [], "seg_all_aens": [], "seg_all_dae": []}
 core = {"s": [], "seg_all_rm": [], "seg_all_aens": [], "seg_all_dae": []}
 enh = {"s": [], "seg_all_rm": [], "seg_all_aens": [], "seg_all_dae": []}
 for baseline in ["s", "seg_all_rm", "seg_all_aens", "seg_all_dae"]:
-    for nr_samples in [32]: #[2, 4, 8, 16, 24, 32]:
+    for nr_samples in [2, 4, 8, 16, 24, 32]:
         for i in range(1, 6):
             if baseline == "s" and nr_samples == 32 and i > 2:
                 continue

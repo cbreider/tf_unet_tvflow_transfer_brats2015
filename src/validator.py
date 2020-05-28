@@ -35,7 +35,7 @@ def run_test(sess, net, data_provider_test, mode, nr, out_path):
     if not os.path.exists(test_out_path):
         os.makedirs(test_out_path)
 
-    outF = open(os.path.join(test_out_path, "results.txt"), "w")
+    outF = open(os.path.join(test_out_path, "results_new.txt"), "w")
     for k, v in validation_results.items():
         if v != -1.:
             outF.write("{}: {:6f}".format(k, v))
@@ -131,8 +131,9 @@ class Validator(object):
             shape = prediction.shape
 
             if len(data[1]) == 155:
+                pat_ids.append(
+                    [str(f) for f in paths[0] if "mr_flair" in str(f).lower()][0].split(".")[-2].split("_")[0])
                 if (self._mode == TrainingModes.BRATS_SEGMENTATION or self._mode == TrainingModes.TVFLOW_SEGMENTATION_TV_PSEUDO_PATIENT) and np.shape(data[1])[3] > 1:
-                    pat_ids.append([str(f) for f in paths[0] if "mr_flair" in str(f).lower()][0].split(".")[-2].split("_")[0])
                     pred_slice = np.argmax(np.array(data[3]), axis=3).astype(float)
                     y_slice = np.argmax(np.array(data[1]), axis=3).astype(float)
                     pred_complete = np.greater(pred_slice, 0.).astype(float)
@@ -196,16 +197,16 @@ class Validator(object):
         sbatch = np.mean(np.array(vals), axis=0)
 
         if self.write_per_patient_result:
-            out_str = "DSC_complete;DSC_Core;DSC_enhancing;PatientID\n"
+            out_str = "DSC;DSC_complete;DSC_Core;DSC_enhancing;PatientID\n"
             idx = 0
             for score in dices_per_volume:
-                out_str = "{}{};{};{};{}\n".format(out_str, score[1], score[2], score[3], pat_ids[idx])
+                out_str = "{}{};{};{};{};{}\n".format(out_str, score[0], score[1], score[2], score[3], pat_ids[idx])
                 idx += 1
 
             if not os.path.exists(self._output_path):
                 os.makedirs(self._output_path)
-
-            outF = open(os.path.join(self._output_path, "results_per_patient.csv"), "w")
+            
+            outF = open(os.path.join(self._output_path, "results_per_patient_new.csv"), "w")
             outF.write(out_str)
             outF.write("\n")
             outF.close()

@@ -223,121 +223,6 @@ class Trainer(object):
             zero_counter = 0
 
             try:
-                for step in range(init_step, (self._n_epochs*self._training_iters)+1):
-                    s_train += 1
-                    # renitialze dataprovider if looped through a hole dataset
-                    if (s_train*self.config.batch_size_train+self.config.batch_size_train) > self.data_provider_train.size:
-                        sess.run(self.data_provider_train.init_op)
-                        s_train = 0
-
-                    batch_x, batch_y, batch_tv, __ = sess.run(self.data_provider_train.next_batch)
-
-                    if step == 0:
-                        self.output_minibatch_stats(sess, step, batch_x, dutil.crop_to_shape(batch_y, pred_shape),
-                                                    summary_writer=summary_writer_training)
-
-                    # Run optimization op (backprop)
-                    _, loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing, l1, l2, lr, gradients, pred,\
-                        = sess.run(
-                        (self.optimizer_op, self.net.cost, self.net.cross_entropy, self.net.error, self.net.accuracy,
-                         self.net.iou_coe, self.net.dice, self.net.dice_complete, self.net.dice_core,
-                         self.net.dice_enhancing, self.net.l1regularizers, self.net.l2regularizers,
-                         self.learning_rate_node, self.net.gradients_node, self.net.predicter),
-                        feed_dict={self.net.x: batch_x,
-                                   self.net.y: dutil.crop_to_shape(batch_y, pred_shape),
-                                   self.net.keep_prob_conv1: self._dropout_conv1,
-                                   self.net.keep_prob_conv2: self._dropout_conv2,
-                                   self.net.keep_prob_pool: self._dropout_pool,
-                                   self.net.keep_prob_tconv: self._dropout_tconv,
-                                   self.net.keep_prob_concat: self._dropout_concat})
-
-                    if np.max(batch_y) == 0.0:
-                        zero_counter += 1
-
-                    avg_score_vals_batch.append([loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing, l1, l2])
-                    avg_score_vals_epoch.append([loss, cs, err, acc, iou, dice, d_complete, d_core, d_enhancing])
-
-                    #x = random.randint(1, 50)
-                    #if x == 50:
-                    #    Validator.store_prediction("{}_{}".format(epoch, step), self.mode, self.output_path,
-                    #                               batch_x, batch_y, batch_tv, pred,
-                    #                               gt_is_one_hot=False if self.net.cost == Cost.MSE else True)
-
-                    if self.net.summaries and self._norm_grads:
-                        avg_gradients = _update_avg_gradients(avg_gradients, gradients, step)
-                        norm_gradients = [np.linalg.norm(gradient) for gradient in avg_gradients]
-                        self.norm_gradients_node.assign(norm_gradients).eval()
-
-                    if step % self._display_step == 0 and step != 0:
-                        if self._log_mini_batch_stats:
-                            self.output_minibatch_stats(sess, step, batch_x, dutil.crop_to_shape(batch_y, pred_shape))
-                        if self._create_summaries:
-                            self.run_summary(sess, summary_writer_training, step, batch_x,
-                                             dutil.crop_to_shape(batch_y, pred_shape))
-
-                        avg_score_vals_batch = np.mean(np.array(avg_score_vals_batch), axis=0)
-
-                        scores = collections.OrderedDict()
-
-                        scores[Scores.LOSS] = avg_score_vals_batch[0]
-                        scores[Scores.CE] = avg_score_vals_batch[1]
-                        scores[Scores.ERROR] = avg_score_vals_batch[2]
-                        scores[Scores.ACC] = avg_score_vals_batch[3]
-                        scores[Scores.IOU] = avg_score_vals_batch[4]
-                        scores[Scores.DSC] = avg_score_vals_batch[5]
-                        scores[Scores.DSC_COMP] = avg_score_vals_batch[6]
-                        scores[Scores.DSC_CORE] = avg_score_vals_batch[7]
-                        scores[Scores.DSC_EN] = avg_score_vals_batch[8]
-                        scores[Scores.L1] = avg_score_vals_batch[9]
-                        scores[Scores.L2] = avg_score_vals_batch[10]
-                        if self._create_summaries:
-                            self.write_tf_summary_scores(step, scores, summary_writer_training)
-                        self.write_log_string("Iteration {} Average:".format(step), scores)
-                        avg_score_vals_batch = []
-
-                    if step % self._training_iters == 0 and step != 0:
-                        epoch += 1
-                        self.output_training_epoch_stats(epoch, np.mean(np.array(avg_score_vals_epoch), axis=0), lr)
-                        logging.info("EPOCH {}: Nr. of empty batches: {}".format(epoch, zero_counter))
-                        zero_counter = 0
-                        avg_score_vals_epoch = []
-                        pred_shape, val_score = self.run_validtaion(sess, epoch, step, summary_writer_validation)
-                        logging.info("Saving Session and Model ...")
-                        save_path = self.net.save(sess, save_path)
-                        # save epoch and step
-                        self.save_step_nr(step_file, step, epoch)
-                        # check what to do if validation score did not increased
-                        if last_best_validation_scores[1] >= val_score:
-                            if self._unfreeze_all_layers_epochs:
-                                if self._unfreeze_all_layers_epochs and self._unfreeze_all_layers_epochs >= 0:
-                                    if (epoch - last_best_validation_scores[0]) >= self._unfreeze_all_layers_epochs:
-                                        logging.info("Unfreezing all layers...")
-                                        save_path = self.net.save(sess, save_path)
-                                        self.global_step = tf.Variable(step, name="global_step")
-                                        self.optimizer_op = self._get_optimizer(self.global_step, vars=self.net.variables,
-                                                                                lr=lr)
-                                        sess.run(tf.global_variables_initializer())
-                                        ckpt = tf.train.get_checkpoint_state(self.output_path)
-                                        if ckpt and ckpt.model_checkpoint_path:
-                                            self.net.restore(sess, ckpt.model_checkpoint_path,
-                                                             restore_mode=RestoreMode.COMPLETE_NET)
-                                        else:
-                                            logging.info("Failed to restore model")
-                                        self._unfreeze_all_layers_epochs = -1
-                                        last_best_validation_scores[0] = epoch
-                                        last_best_validation_scores[1] = val_score
-                            elif self._early_stopping_epochs:
-                                if self._early_stopping_epochs >= 0 and ((epoch - last_best_validation_scores[0]) >= self._early_stopping_epochs):
-                                    logging.info("Stopping training because of validation convergence...")
-                                    break
-                        else:
-                            last_best_validation_scores[0] = epoch
-                            last_best_validation_scores[1] = val_score
-
-                        logging.info("Best Epoch {} with score {}".format(last_best_validation_scores[0],
-                                                                          last_best_validation_scores[1]))
-
-                logging.info("Optimization Finished!")
 
                 if self.data_provider_test:
                     vali.run_test(sess, net=self.net, data_provider_test=self.data_provider_test, mode=self.mode,
@@ -351,7 +236,7 @@ class Trainer(object):
                 if save:
                     logging.info("Saving session model...")
                     save_path = self.net.save(sess, save_path)
-                    self.save_step_nr(step_file, step, epoch)
+                    self.save_step_nr(step_file, 1, epoch)
                 else:
                     logging.info("Quitting without saving...")
                 logging.info("Done! Bye Bye")
