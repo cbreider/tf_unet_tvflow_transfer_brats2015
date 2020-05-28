@@ -16,10 +16,10 @@ tool
 Written in python 3.5
 
 Necessary packages
-  - TensorFlow          V1.12.0: Implementation Deep Learning and Data pipeline. TensorFlow 1.12 has to be used because of some incompatibilities of the \textit{tf.Data} class implementation of our code to newer Versions of TensorFlow
+  - TensorFlow          V1.12.0: Implementation Deep Learning and Data pipeline. TensorFlow 1.12 has to be used because of some incompatibilities of the tf.Data class implementation of our code to newer Versions of TensorFlow
   - Numpy               V1.16.4: Evaluation and array calculation
   - Pillow              V6.0.0: Python Image Library (PIL) fork. Loading and storing images.
-  - elasticdeform.tf    V0.4.6: For elastic deformation within the \tf Data-Pipeline [https://github.com/gvtulder/elasticdeform/tree/master/docs/source]
+  - elasticdeform.tf    V0.4.6: For elastic deformation within the TensorFLow Data-Pipeline [https://github.com/gvtulder/elasticdeform/tree/master/docs/source]
   - h5py                V2.9: For importing variables from Caffe models
   - SimpleITK           V1.2.4: For loading an storing .mha-Files
   - matplotlib          V3.0.3: For some test functions
