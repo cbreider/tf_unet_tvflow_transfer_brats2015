@@ -21,7 +21,7 @@ Necessary packages
   * elasticdeform.tf    V0.4.6: For elastic deformation within the TensorFlow Data-Pipeline [https://github.com/gvtulder/elasticdeform/tree/master/docs/source]
   * h5py                V2.9: For importing variables from Caffe models
   * SimpleITK           V1.2.4: For loading an storing .mha-Files
-  * matplotlib          V3.0.3: To create evaluation plots from results (see *./src/evaluation/evaluation.py*) some test functions
+  * matplotlib          V3.0.3: To create evaluation plots from results (see *./src/evaluation/evaluation.py*) and some test functions
   * sklearn             V0.23: For some test functions
 
 ## Training
