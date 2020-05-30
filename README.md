@@ -69,13 +69,13 @@ The Brats dataset should be provided as follows:
   * All Data preprocessing, augmentation and smoothing are done on the fly with TF Datapipeline on the CPU. Please see 
   *src/tf_data_pipeline_wrapper.py* and *src/tf_data_generator.py*. Currently, it is only possible to load the data from 
   PNG images. Therefore the script *convert_brats2015_to_png.py* is provided to convert the BRATS2015 dataset from 3D MHA
-  scans to 2D axial PNG slices. Secondly mean, max, and variance of each scan are stored as *values.json* file in the corresponding folder. the
+  scans to 2D axial PNG slices. Secondly mean, max, and variance of each scan are stored as *values.json* file in the corresponding folder.
  
 
 The data for the data pipeline has to be provided as PNG images (2D) slices. The script *convert_brats2015_to_png.py* will convert the BRATS data set from 3D MHA files to 2D (axial) PNG slices within the shown data structure above.  It also creates an additional *values.json* file, in which the maximum, mean, and variance of each scan is stored. To successfully run the script, please provide the BraTS data set as follows:
 
-BraTs2015 test set: *./../dataset/BRATS2015_Testing/[Unpacked BraTS test data set starting with "HGG_LGG" folder
-BraTs2015 training set: *./../dataset/BRATS2015_Training/[Unpacked BraTS training data set starting with "HGG" and "LGG" folder
+* BraTs2015 test set: *./../dataset/BRATS2015_Testing/[Unpacked BraTS test data set starting with "HGG_LGG" folder
+* BraTs2015 training set: *./../dataset/BRATS2015_Training/[Unpacked BraTS training data set starting with "HGG" and "LGG" folder
 
 
  ## Options and Configuration
