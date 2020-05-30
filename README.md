@@ -6,14 +6,13 @@ Institute of Computer Science II
 Author: Christian Breiderhoff
 created  2019-2020
 
-Python3 Tool to pre-train a CNN Model on Total Variation smoothed images (regression with MSE), to enhance segmentation performance.
-It is also possible to pre-train the CNN in an autoencoder fashion.
+Python3 Tool to pre-train a CNN Model on Total Variation smoothed images (regression with MSE, clustered as segmentation), to enhance segmentation performance on few samples with fine-tuning.
+It is also possible to pre-train the CNN in an (denoising) autoencoder fashion.
 
-Currently, only 2D U-Net with BraTS2015 data set are implemented. This project uses the tf.Data API to perform all data preprocessing including TV smoothing on the fly (CPU)
+Currently, only 2D U-Net with BraTS2015 data set is implemented. This project uses the tf.Data API to perform all data preprocessing including TV smoothing on the fly (on CPU).
 
 ## Requirements
-tool
-Written in python 3.5
+The Project is completely written in python 3.5.
 
 Necessary packages
   * TensorFlow          V1.12.0: Implementation Deep Learning and Data pipeline. TensorFlow 1.12 has to be used because of some incompatibilities of the tf.Data class implementation of our code to newer Versions of TensorFlow
