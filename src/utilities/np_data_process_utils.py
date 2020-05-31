@@ -64,19 +64,24 @@ def one_hot_to_rgb(one_hot, scan):
     """
     # Color for each Label (used for resut Visualization
     seg_label_colors = np.array([
-        [0, 0, 0], # no tumor
-        [255, 0, 0], # necrosis
-        [255, 255, 0], # edmema
-        [0, 255, 0], # non enhancing
-        [0, 0, 255]]) #enhancing
+        [0, 0, 0],  # no tumor
+        [255, 0, 0],  # necrosis
+        [255, 255, 0],  # edmema
+        [0, 255, 0],  # non enhancing
+        [0, 0, 255]]  #enhancing
+    ).astype(float)
+    alpha = 0.5
 
-    rgb_img = copy.deepcopy(scan)
+    rgb_img = copy.deepcopy(scan).astype(float)
+    # multiclass
     if one_hot.shape[2] > 1:
         idx = np.argmax(one_hot, axis=2)
         for i in range(1, seg_label_colors.shape[0]):
-            rgb_img[idx == i] = seg_label_colors[i]
+            rgb_img[idx == i] = alpha * rgb_img[idx == i] + (1-alpha) * seg_label_colors[i]
+    # binary
     else:
-        rgb_img[one_hot.reshape((one_hot.shape[0], one_hot.shape[1])) == 1] = seg_label_colors[1]
+        one_hot = one_hot.reshape((one_hot.shape[0], one_hot.shape[1]))
+        rgb_img[one_hot== 1] = alpha * rgb_img[one_hot == 1] + (1-alpha) * seg_label_colors[1]
 
     return rgb_img.astype('uint8')
 
