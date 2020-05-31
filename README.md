@@ -11,6 +11,10 @@ It is also possible to pre-train the CNN in an (denoising) autoencoder fashion.
 
 Currently, only 2D U-Net with BraTS2015 data set is implemented. This project uses the tf.Data API to perform all data preprocessing including TV smoothing on the fly (on CPU).
 
+| Italic             |  Block letters |
+:-------------------------:|:-------------------------:
+![](https://imgur.com/a/s2a4AHv)  |  ![](sample_image/flair_6.png)
+
 ## Requirements
 The Project is completely written in python 3.5.
 
