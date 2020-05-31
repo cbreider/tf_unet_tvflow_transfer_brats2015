@@ -6,7 +6,8 @@ Institute of Computer Science II
 Author: Christian Breiderhoff
 created  2019-2020
 
-Python3 Tool to pre-train a CNN Model to predict Total Variation smoothed images (regression with MSE, clustered as segmentation) from raw scans, to enhance segmentation performance on few samples with fine-tuning.
+Python3 tool for unsupervised pre-training and fine-tuning of a CNN Model in TensorFlow.
+The model is pre-trained to predict Total Variation smoothed images (regression with MSE, clustered as segmentation) as "pseudo segmentations" from raw scans. By fine-tuning TV pre-trained models, we enhance the segmentation performance compared to a model trained from scratch with few samples.
 It is also possible to pre-train the CNN in an (denoising) autoencoder fashion.
 
 Currently, only 2D U-Net with BraTS2015 data set is implemented. This project uses the tf.Data API to perform all data preprocessing including TV smoothing on the fly (on CPU).
