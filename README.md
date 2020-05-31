@@ -6,14 +6,17 @@ Institute of Computer Science II
 Author: Christian Breiderhoff
 created  2019-2020
 
-Python3 Tool to pre-train a CNN Model on Total Variation smoothed images (regression with MSE, clustered as segmentation), to enhance segmentation performance on few samples with fine-tuning.
+Python3 Tool to pre-train a CNN Model to predict Total Variation smoothed images (regression with MSE, clustered as segmentation) from raw scans, to enhance segmentation performance on few samples with fine-tuning.
 It is also possible to pre-train the CNN in an (denoising) autoencoder fashion.
 
 Currently, only 2D U-Net with BraTS2015 data set is implemented. This project uses the tf.Data API to perform all data preprocessing including TV smoothing on the fly (on CPU).
 
-| Italic             |  Block letters |
-:-------------------------:|:-------------------------:
-![](https://imgur.com/a/s2a4AHv)  |  ![](sample_image/flair_6.png)
+Examples for TV smoothed MRI scans:
+
+|| Flair             |  T1 | T1c | T2
+:-------------------------:|:-------------------------:|:-------------------------:|:-------------------------:|:-------------------------:
+Raw MRI Scan|![](sample_images/flair_raw.png)|![](sample_images/t1_raw.png) |![](sample_images/t1c_raw.png) |![](sample_images/t2_raw.png)
+TV Smoothed |![](sample_images/flair_6.png)|![](sample_images/t1_6.png) |![](sample_images/t1c_6.png) |![](sample_images/t2_6.png)
 
 ## Requirements
 The Project is completely written in python 3.5.
