@@ -18,6 +18,14 @@ Examples for TV smoothed MRI scans:
 Raw MRI Scan|![](sample_images/flair_raw.png)|![](sample_images/t1_raw.png) |![](sample_images/t1c_raw.png) |![](sample_images/t2_raw.png)
 TV Smoothed |![](sample_images/flair_6.png)|![](sample_images/t1_6.png) |![](sample_images/t1c_6.png) |![](sample_images/t2_6.png)
 
+Examples for Brats2015 segmentations for fine-tuned TV U-Net and U-Net trained from scratch with only 2 and 4 training patients:
+
+
+|Nr. Training Patients | GT             |  Predection U-Net fine-tuned TV | Prediction U-Net scratch |
+:-------------------------:|:-------------------------:|:-------------------------:|:-------------------------:|
+2|![](sample_images/gt_2_1.png)|![](sample_images/tv_2_1.png) |![](sample_images/sc_2_1.png) 
+4 |![](sample_images/gt_4_1.png)|![](sample_images/tv_4_1.png) |![](sample_images/sc_4_1.png) 
+
 ## Requirements
 The Project is completely written in python 3.5.
 
