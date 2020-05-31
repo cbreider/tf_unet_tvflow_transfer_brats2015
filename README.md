@@ -42,7 +42,7 @@ Necessary packages
 ## Training
 
 
-The *script train.py* trains U-Net on Brats 2015 dataset either with Segmentation ground Truth or tv smoothed data. It should be pre-trained with tv flow Data. But can also be trained from scratch. Both scripts require the dataset in PNG format. MHA format is also possible but not recommended because it could not be loaded with the TensorFlow data pipeline.
+The *script train.py* trains U-Net on Brats 2015 dataset either with Segmentation ground Truth or tv smoothed data. It should be pre-trained with tv flow Data. But can also be trained from scratch. The script requires the dataset in PNG format. See section *Provide Data*.
 
 ### Arguments
 
