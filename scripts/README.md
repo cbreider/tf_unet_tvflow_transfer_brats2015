@@ -6,7 +6,7 @@ To run the experiments please:
     1.BraTS training: ./../dataset/BRATS2015_Training/
     2 Brats testing: ./../dataset/BRATS2015_Testing/HGG_LGG
     
- 2. Convert Brats data set from MHA to 2D axial PNG slinces by running the *script convert_brats2015_to_png.py* by from the project root folder.
+ 2. Convert Brats data set from MHA to 2D axial PNG slices by running the *script convert_brats2015_to_png.py* by from the project root folder.
  
  3. Pre-Train prior models (TV and autodencoder) by running the script *pre_train_base_lines.sh*
  
@@ -18,7 +18,7 @@ To run the experiments please:
     2. Run the script. It will automatically run a validation on the test split after training for each training procedure.
     3. Repeat i. and ii. for all pre-trained models
     
- 6. If you want you can use a specific model to precedict on the BRATS challenge set with *predict_brats_seg.py*. 
+ 6. If you want you can use a specific model to predict on the BRATS challenge set with *predict_brats_seg.py*. 
  The results are stored as MHA files, which can be uploaded to the BRATS competition. 
  The README in the root directory gives further details for this script.
  
