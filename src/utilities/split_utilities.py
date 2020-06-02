@@ -546,7 +546,7 @@ class TrainingDataset(object):
 
         split = self._read_single_split_from_folder(fname)
 
-        with open(os.path.join(self._paths.tf_out_path,  fname), 'w') as file:
+        with open(os.path.join(self._paths.tf_out_path,  fname.split("/")[-1]), 'w') as file:
             file.write(json.dumps(split))
 
         train = split["training"]

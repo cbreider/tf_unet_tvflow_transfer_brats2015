@@ -102,7 +102,7 @@ class Configuration:
     argument is passed (k_fold cross validation is not used). Must sum up to 1
     split_train_val_ratio = [0.75, 0.25]"""
 
-    nr_training_scans = 1
+    nr_training_scans = -1
     """use only a subset of training images. (-1 for all training data)"""
 
     load_tv_from_file = False
