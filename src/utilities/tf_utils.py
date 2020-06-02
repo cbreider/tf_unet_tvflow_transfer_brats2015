@@ -64,7 +64,7 @@ def distort_imgs(scan, ground_truth, params=[[2, 3, 1], 25.0, 0.7]):
         with tf.name_scope("random_brightness"):
             im = tf.image.random_brightness(tf.image.resize_images(combined_rot[:, :, :last_image_dim],
                                                                    size=[image_shape[0], image_shape[1]],
-                                                                   method=tf.image.ResizeMethod.NEAREST_NEIGHBOR), 0.05)
+                                                                   method=tf.image.ResizeMethod.NEAREST_NEIGHBOR), 0.2)
 
         #im = tf.image.resize_images(combined_rot[:, :, :last_image_dim], size=[image_shape[0], image_shape[1]])
         gt = tf.image.resize_images(combined_rot[:, :, last_image_dim:], size=[image_shape[0], image_shape[1]],

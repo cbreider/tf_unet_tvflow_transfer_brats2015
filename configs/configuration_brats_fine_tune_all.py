@@ -360,7 +360,7 @@ class Configuration:
     Training parameters
     --------------------------------------------------------------------------------------------------------------------
     """
-    num_epochs = 30
+    num_epochs = 100
     """ number of training epochs. Note one epoch normaly represents a complete loop through the training data.
     But in this case we deal with very diffent number of training sets. So the number of iterations per epoch will be
     kept fixed"""
@@ -380,7 +380,7 @@ class Configuration:
     initial_learning_rate = 0.00001
     """initial learning rate"""
 
-    early_stopping_epochs = 3
+    early_stopping_epochs = 5
     """stop training if validation loss has not decreased over the given epochs. Set None to not use early stopping"""
 
     unfreeze_all_layers_epochs = 3 if trainable_layers else None

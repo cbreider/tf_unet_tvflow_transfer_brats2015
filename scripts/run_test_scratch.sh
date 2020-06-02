@@ -27,3 +27,7 @@ python3 train.py --mode 3 --cuda_device 0 --nr_training_scans 0.15 --include_tes
 python3 train.py --mode 3 --cuda_device 0 --nr_training_scans 0.1 --include_testing
 
 python3 train.py --mode 3 --cuda_device 0 --nr_training_scans 0.05 --include_testing
+
+python3 train.py --mode 3 --cuda_device 0 --nr_training_scans 0.025 --include_testing
+
+python3 train.py --mode 3 --cuda_device 0 --nr_training_scans 0.0125 --include_testing

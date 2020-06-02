@@ -5,7 +5,9 @@
 #  conda activate masterp36
 
 
-cp configs/configuration_brats_fine_tune_all_decoder.py configuration.py
+cp configs/configuration_brats_fine_tune_all.py configuration.py
+
+# replace the restore_path with the model_path of your choice
 
 python3 train.py --mode 3 --cuda_device 0 --nr_training_scans 2 --include_testing --restore_mode 2 --restore_path=/home/christian/Data_5/Projects/unet_brats2015/tf_model_output/TVFLOW_REGRESSION_ALL_multi_scale_2020-04-17_20:14:16 --take_fold_nr 1 --name="seg_all_rm_2_f1"
 python3 train.py --mode 3 --cuda_device 0 --nr_training_scans 2 --include_testing --restore_mode 2 --restore_path=/home/christian/Data_5/Projects/unet_brats2015/tf_model_output/TVFLOW_REGRESSION_ALL_multi_scale_2020-04-17_20:14:16 --take_fold_nr 2 --name="seg_all_rm_2_f2"

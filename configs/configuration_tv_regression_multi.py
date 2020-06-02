@@ -379,7 +379,7 @@ class Configuration:
     initial_learning_rate = 0.0001
     """initial learning rate"""
 
-    early_stopping_epochs = 3
+    early_stopping_epochs = 5
     """stop training if validation loss has not decreased over the given epochs. Set None to not use early stopping"""
 
     unfreeze_all_layers_epochs = 3 if trainable_layers else None
