@@ -61,7 +61,7 @@ a new x-fold split is created with x = *nr_of_folds* defined in *configuration.p
 * --include_testing: Run Evaluation on the testing split after training.  (optional)
 * --data_path [PATH]: Path to the Brats training dataset. Files have to be 2D images and ordered in the same way *([path]/2d/slices/png/raw/train/HGG data_path --> Patient --> modality-> "sclice".png). Default ../dataset/ * (optional)
 * --nr_training_scans: Use only a specific number of all training samples (optional)
-*--reuse_out_folder: If *restore_path* is given reuse the folder to save model and continue tf summary
+* --reuse_out_folder: If *restore_path* is given reuse the folder to save model and continue tf summary
 
 ## Prediction and Testing 
 If you provide the *--include_testing*  argument for the *train.py* script, it will automatically perform an evaluation on the test split if it is given
