@@ -556,7 +556,7 @@ class TrainingDataset(object):
 
         train = self.prune_patients(train)
 
-        logging.info("Loaded {} HGG {} LGG train and {} HGG {} LGG validation scans".format(
+        logging.info("Loading {} HGG {} LGG train and {} HGG {} LGG validation scans...".format(
             len([i for i in train if "hgg" in i.lower()]),
             len([i for i in train if "lgg" in i.lower()]),
             len([i for i in validation if "hgg" in i.lower()]),
