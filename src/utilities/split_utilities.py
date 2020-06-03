@@ -230,6 +230,7 @@ class TrainingDataset(object):
                 if keep:
                     tmp[k] = paths[k]
                 ioutil.progress(counter, size)
+                counter += 1
 
             paths = tmp
 
@@ -285,7 +286,7 @@ class TrainingDataset(object):
             self.validation_paths = self._get_paths_dict_single(patients_val)
             patients_train = self.prune_patients(patients_train)
 
-            logging.info("Loaded {} HGG {} LGG train and {} HGG {} LGG validation scans".format(
+            logging.info("Loading {} HGG {} LGG train and {} HGG {} LGG validation scans...".format(
                 len([i for i in patients_train if "hgg" in i.lower()]),
                 len([i for i in patients_train if "lgg" in i.lower()]),
                 len([i for i in patients_val if "hgg" in i.lower()]),
