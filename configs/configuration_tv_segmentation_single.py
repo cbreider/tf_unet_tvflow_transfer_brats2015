@@ -105,9 +105,6 @@ class Configuration:
     nr_training_scans = -1
     """use only a subset of training images. (-1 for all training data)"""
 
-    load_tv_from_file = False
-    """set True if pre computed tv images should be red from disc. If False tv is computed in data pipeline"""
-
     use_scale_image_as_gt = False
     """choose if you want to use tv scale image instead of smoothed
     (only tv training and only if load_tv_from_file=True)"""
@@ -139,7 +136,7 @@ class Configuration:
                               0.75, 0.8, 0.85, 0.9, 0.95, 1.0]
     """Static clusters used if TV clusteirng mode is set to STATIC_CLUSTERS"""
 
-    nr_clusters = 8 if clustering_method != TV_clustering_method.STATIC_CLUSTERS else static_cluster_centers
+    nr_clusters = 20 if clustering_method != TV_clustering_method.STATIC_CLUSTERS else static_cluster_centers
     """Nr of clusters used for TV Segmentation"""
 
     tv_static_multi_scale = None #[0.2, 0.4, 0.6, 0.8]

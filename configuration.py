@@ -96,7 +96,7 @@ class Configuration:
     k_fold_nr_val_samples = 50
     """nr of validation samples taken from training set in k fold cross validation"""
 
-    split_train_val_ratio = [0.1, 0.9]
+    split_train_val_ratio = [0.02, 0.02, 0.96]
     """Ration of Nr iraining images to Val images (optional test)
     if new random split is created. Only used if not k fold
     argument is passed (k_fold cross validation is not used). Must sum up to 1
@@ -104,9 +104,6 @@ class Configuration:
 
     nr_training_scans = -1
     """use only a subset of training images. (-1 for all training data)"""
-
-    load_tv_from_file = False
-    """set True if pre computed tv images should be red from disc. If False tv is computed in data pipeline"""
 
     use_scale_image_as_gt = False
     """choose if you want to use tv scale image instead of smoothed
@@ -125,7 +122,7 @@ class Configuration:
     Parameters for Total Variation smoothing adn clustering/binning
     --------------------------------------------------------------------------------------------------------------------
     """
-    norm_max_image_value_tv = 10.0
+    norm_max_image_value_tv = None
     """value to which images should be normed to during pre processing. If None original max vales are kept. 
     must be given if training mode is TV Segmentation"""
 
@@ -139,7 +136,7 @@ class Configuration:
                               0.75, 0.8, 0.85, 0.9, 0.95, 1.0]
     """Static clusters used if TV clusteirng mode is set to STATIC_CLUSTERS"""
 
-    nr_clusters = 8 if clustering_method != TV_clustering_method.STATIC_CLUSTERS else static_cluster_centers
+    nr_clusters = 20 if clustering_method != TV_clustering_method.STATIC_CLUSTERS else static_cluster_centers
     """Nr of clusters used for TV Segmentation"""
 
     tv_static_multi_scale = None#[0.2, 0.4, 0.6, 0.8]
@@ -262,7 +259,7 @@ class Configuration:
     feat_root = 64
     """number of feature maps/kernels in the first layer (original 64)"""
     if gettrace():
-        feat_roots = 16
+        feat_roots = 4
 
     filter_size = 3
     """kernel size = filter_size x filter_size"""
@@ -270,7 +267,7 @@ class Configuration:
     pool_size = 2
     """size of max pooling pool_size x pool_size"""
 
-    cost_function = Cost.MSE
+    cost_function = Cost.BATCH_DICE_SOFT
     """Cost function to use. Choose from class Cost(Enum)"""
 
     cost_weight = 0.7

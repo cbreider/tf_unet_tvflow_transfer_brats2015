@@ -114,6 +114,8 @@ class ConvNetModel(object):
             else:
                 # segmentation model
                 if self._n_class > 1:
+                    if self._mode == TrainingModes.TVFLOW_SEGMENTATION:
+                        tf.cast(tf.nn.sigmoid(self.logits) > 0.5, tf.float32) # multi-label
                     # if number of classes is greate 1. softmax instead of sigmoid is used
                     self.predicter = tf.nn.softmax(self.logits, axis=3)
                     self.pred_slice = tf.cast(tf.argmax(self.predicter, axis=3), tf.float32)

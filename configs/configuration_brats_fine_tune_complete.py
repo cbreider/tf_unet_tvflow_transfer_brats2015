@@ -105,9 +105,6 @@ class Configuration:
     nr_training_scans = -1
     """use only a subset of training images. (-1 for all training data)"""
 
-    load_tv_from_file = False
-    """set True if pre computed tv images should be red from disc. If False tv is computed in data pipeline"""
-
     use_scale_image_as_gt = False
     """choose if you want to use tv scale image instead of smoothed
     (only tv training and only if load_tv_from_file=True)"""

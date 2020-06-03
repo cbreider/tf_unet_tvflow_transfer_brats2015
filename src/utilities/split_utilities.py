@@ -155,7 +155,7 @@ class TrainingDataset(object):
         self._split_ratio = self._data_config.split_train_val_ratio
         self._nr_training_sample = self._data_config.nr_training_scans
         self._use_modalities = self._data_config.use_modalities
-        self._load_tv_from_file = self._data_config.load_tv_from_file
+        self._load_tv_from_file = False
         self.split_name = ""
         self._split_file_extension = '.json'
         self._base_name = '_split'

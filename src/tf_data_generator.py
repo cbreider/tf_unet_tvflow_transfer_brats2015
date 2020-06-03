@@ -17,7 +17,7 @@ import src.utilities.tf_utils as tf_utils
 import logging
 from src.utilities.enum_params import TrainingModes, TV_clustering_method, Subtumral_Modes
 from configuration import Configuration
-
+import math
 
 class TFImageDataGenerator:
     """Wrapper class around the  TensorFlow dataset pipeline.
@@ -50,7 +50,7 @@ class TFImageDataGenerator:
         self._gt_data = None
         self.data = None
         self._ids = None
-        self._load_tv_from_file = self._data_config.load_tv_from_file
+        self._load_tv_from_file = False #self._data_config.load_tv_from_file
         self.clustering_method = self._data_config.clustering_method
         self._modalties_tv = self._data_config.use_modalities_for_tv
         self._disort_params = self._data_config.image_disort_params
@@ -110,89 +110,95 @@ class TFImageDataGenerator:
                 gt_img = tf_utils.load_png_image(gt_ob, nr_channels=self._nr_channels, img_size=self._in_img_size)
             # else for tv pre training the gt data will be generated
             elif self._mode == TrainingModes.TVFLOW_SEGMENTATION or self._mode == TrainingModes.TVFLOW_REGRESSION:
-                if self._load_tv_from_file:
-                    # TODO depreciated
-                    tv_img = tf_utils.load_png_image(gt_ob, nr_channels=self._nr_channels, img_size=self._in_img_size)
+                # normalize the input scnas bevore tv smoothing
+                norm_std = True if self._mode == TrainingModes.TVFLOW_REGRESSION else False
+                if self._modalties_tv:
+                    tv_base = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._modalties_tv,
+                                                                        new_max=self._data_norm_value_tv,
+                                                                        normalize_std=True,
+                                                                        data_vals=values)
+
                 else:
-                    # normalize the input scnas bevore tv smoothing
-                    if self._modalties_tv:
-                        tv_base = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._modalties_tv,
-                                                                            new_max=self._data_norm_value_tv,
+                    # test wise implementation of combining to modalities.
+                    # Seems to not work that well for pre training
+                    if self._segmentation_mask == Subtumral_Modes.COMPLETE:  # todo add case
+                        tv_base1 = tf.expand_dims(in_img[:, :, 0], axis=2)  # flair + t2
+                        tv_base2 = tf.expand_dims(in_img[:, :, 3], axis=2)
+                        tv_base1 = tf_utils.normalize_and_zero_center_slice(tv_base1, max=values[0, 0],
                                                                             normalize_std=True,
-                                                                            data_vals=values)
-
+                                                                            new_max=self._data_norm_value_tv,
+                                                                            mean=values[0, 1], var=values[0, 2])
+                        tv_base2 = tf_utils.normalize_and_zero_center_slice(tv_base2, max=values[3, 0],
+                                                                            normalize_std=True,
+                                                                            new_max=self._data_norm_value_tv,
+                                                                            mean=values[3, 1], var=values[3, 2])
+                        tv_base = (tv_base1 + tv_base2) / 2
                     else:
-                        # test wise implementation of combining to modalities.
-                        # Seems to not work that well for pre training
-                        if self._segmentation_mask == Subtumral_Modes.COMPLETE:  # todo add case
-                            tv_base1 = tf.expand_dims(in_img[:, :, 0], axis=2)  # flair + t2
-                            tv_base2 = tf.expand_dims(in_img[:, :, 3], axis=2)
-                            tv_base1 = tf_utils.normalize_and_zero_center_slice(tv_base1, max=values[0, 0],
-                                                                                normalize_std=True,
-                                                                                new_max=self._data_norm_value_tv,
-                                                                                mean=values[0, 1], var=values[0, 2])
-                            tv_base2 = tf_utils.normalize_and_zero_center_slice(tv_base2, max=values[3, 0],
-                                                                                normalize_std=True,
-                                                                                new_max=self._data_norm_value_tv,
-                                                                                mean=values[3, 1], var=values[3, 2])
-                            tv_base = (tv_base1 + tv_base2) / 2
-                        else:
-                            raise ValueError()
+                        raise ValueError()
 
-                    tvs = []
-                    nr_tv_base = tv_base.get_shape().as_list()[2]
-                    # run tv smoothing for all modalities to use
-                    for i in range(nr_tv_base):
-                        # if chosen: generate tv smoothed image with a randomly chosen scale
-                        if self._tv_multi_scale_range and len(self._tv_multi_scale_range) == 2:
-                            tv_weight = tf.random.uniform(minval=self._tv_multi_scale_range[0],
-                                                          maxval=self._tv_multi_scale_range[1], shape=())
-                            tvs.append(tf_utils.get_tv_smoothed(img=tf.expand_dims(tv_base[:, :, i], axis=2),
+                tvs = []
+                gts = []
+                nr_tv_base = tv_base.get_shape().as_list()[2]
+                # run tv smoothing for all modalities to use
+                for i in range(nr_tv_base):
+                    # if chosen: generate tv smoothed image with a randomly chosen scale
+                    if self._tv_multi_scale_range and len(self._tv_multi_scale_range) == 2:
+                        tv_weight = tf.random.uniform(minval=self._tv_multi_scale_range[0],
+                                                      maxval=self._tv_multi_scale_range[1], shape=())
+                        tv = tf_utils.get_tv_smoothed(img=tf.expand_dims(tv_base[:, :, i], axis=2),
+                                                            tau=self.tv_tau, weight=tv_weight,
+                                                            eps=self.tv_eps, m_itr=self.tv_nr_itr)
+                        tvs.append(tv)
+                    # if static multi sclae is chosen. generte a tv image for each scale and modality
+                    elif self._tv_static_multi_scale:
+                        for y in range(len(self._tv_static_multi_scale)):
+                            tv_weight = self._tv_static_multi_scale[y]
+                            tv = tf_utils.get_tv_smoothed(img=tf.expand_dims(tv_base[:, :, i], axis=2),
                                                                 tau=self.tv_tau, weight=tv_weight,
-                                                                eps=self.tv_eps, m_itr=self.tv_nr_itr))
-                        # if static multi sclae is chosen. generte a tv image for each scale and modality
-                        elif self._tv_static_multi_scale:
-                            for y in range(len(self._tv_static_multi_scale)):
-                                tv_weight = self._tv_static_multi_scale[y]
-                                tvs.append(tf_utils.get_tv_smoothed(img=tf.expand_dims(tv_base[:, :, i], axis=2),
-                                                                    tau=self.tv_tau, weight=tv_weight,
-                                                                    eps=self.tv_eps, m_itr=self.tv_nr_itr))
+                                                                eps=self.tv_eps, m_itr=self.tv_nr_itr)
+                            tvs.append(tv)
+                    else:
+                        # single scale tv
+                        tv_weight = self.tv_weight
+                        tv = tf_utils.get_tv_smoothed(img=tf.expand_dims(tv_base[:, :, i], axis=2),
+                                                            tau=self.tv_tau, weight=tv_weight, eps=self.tv_eps,
+                                                            m_itr=self.tv_nr_itr)
+                        tvs.append(tv)
+
+
+                    # if tv segmentation is chossen cluster tv image depending on the mehod chosen
+                    if self._mode == TrainingModes.TVFLOW_SEGMENTATION:
+                        if self._data_norm_value_tv:
+                            val_range = [-self._data_norm_value_tv, self._data_norm_value_tv]
                         else:
-                            # single scale tv
-                            tv_weight = self.tv_weight
-                            tvs.append(tf_utils.get_tv_smoothed(img=tf.expand_dims(tv_base[:, :, i], axis=2),
-                                                                tau=self.tv_tau, weight=tv_weight, eps=self.tv_eps,
-                                                                m_itr=self.tv_nr_itr))
-                    # merge all tv output maps
-                    tv_img = tf.concat(tvs, axis=2)
+                            no = tf.math.divide((values[i, 0] - values[i, 1]), tf.math.sqrt(values[i, 2]))
+                            val_range = [tf.reduce_min(tv), no]
+
+                        if self.clustering_method == TV_clustering_method.STATIC_BINNING:
+                            # bin tv image into eqaul fixed bins
+                           gts.append(tf_utils.get_fixed_bin_clustering(image=tv, n_bins=self._nr_classes_clustering,
+                                                                        val_range=val_range))
+                        elif self.clustering_method == TV_clustering_method.STATIC_CLUSTERS:
+                            # use pre given cluster centers
+                            gts.append(tf_utils.get_static_clustering(image=tv, cluster_centers=self.static_cluster_center))
+                        elif self.clustering_method == TV_clustering_method.K_MEANS:
+                            # use k-means to cluster image
+                            gt = tf_utils.get_kmeans(img=tv, clusters_n=self._nr_of_classes, iteration_n=self.km_nr_itr)
+                            gts.append(tf.expand_dims(gt, axis=2))
+                        elif self.clustering_method == TV_clustering_method.MEAN_SHIFT:
+                            # use mean shift and refitting the number of clusters. ATTENTION: very computational itensive
+                            gts.append(tf_utils.get_meanshift_clustering(image=tv, ms_itr=self.mean_shift_n_itr,
+                                                                       win_r=self.mean_shift_win_size,
+                                                                       n_clusters=self._nr_classes_clustering,
+                                                                       bin_seeding=self.mean_shift_bin_seeding))
+                # merge all tv output maps
+                tv_img = tf.concat(tvs, axis=2)
 
                 if self._mode == TrainingModes.TVFLOW_REGRESSION:
                     gt_img = tv_img
-
-                # if tv segmentation is chossen cluster tv image depending on the mehod chosen
                 elif self._mode == TrainingModes.TVFLOW_SEGMENTATION:
-                    if self.clustering_method == TV_clustering_method.STATIC_BINNING:
-                        # bin tv image into eqaul fixed bins
-                        gt_img = tf_utils.get_fixed_bin_clustering(image=tv_img, n_bins=self._nr_classes_clustering,
-                                                                   val_range=[-self._data_norm_value_tv,
-                                                                              self._data_norm_value_tv])
-                    elif self.clustering_method == TV_clustering_method.STATIC_CLUSTERS:
-                        # use pre given cluster centers
-                        gt_img = tf_utils.get_static_clustering(image=tv_img, cluster_centers=self.static_cluster_center)
-                    elif self.clustering_method == TV_clustering_method.K_MEANS:
-                        # use k-means to cluster image
-                        gt_img = tf_utils.get_kmeans(img=tv_img, clusters_n=self._nr_of_classes, iteration_n=self.km_nr_itr)
-                        gt_img = tf.expand_dims(gt_img, axis=2)
-                    elif self.clustering_method == TV_clustering_method.MEAN_SHIFT:
-                        # use mean shift and refitting the number of clusters. ATTENTION: very computational itensive
-                        gt_img = tf_utils.get_meanshift_clustering(image=tv_img, ms_itr=self.mean_shift_n_itr,
-                                                                   win_r=self.mean_shift_win_size,
-                                                                   n_clusters=self._nr_classes_clustering,
-                                                                   bin_seeding=self.mean_shift_bin_seeding)
-                    else:
-                        raise ValueError()
-                else:
-                    raise ValueError()
+                    gt_img = tf.concat(gts, axis=2)
+
 
             # normalize the input images
             in_img = tf_utils.normalize_and_zero_center_tensor(in_img, modalities=self._use_modalities,
@@ -235,7 +241,7 @@ class TFImageDataGenerator:
                     in_min = tf.reduce_min(in_img)
                     in_max = tf.reduce_max(in_img)
                     in_img += noise * mask
-                    tf.clip_by_value(in_img, in_min, in_max)
+                    #tf.clip_by_value(in_img, in_min, in_max)
 
             # genertae one hot tensor for Brats Segmentation
             if self._mode == TrainingModes.BRATS_SEGMENTATION or self._mode == TrainingModes.TVFLOW_SEGMENTATION_TV_PSEUDO_PATIENT:
@@ -247,7 +253,7 @@ class TFImageDataGenerator:
 
             # generate one hot tensor for TV segmentation
             elif self._mode == TrainingModes.TVFLOW_SEGMENTATION:
-                gt_img = tf.one_hot(tf.cast(gt_img, tf.int32), depth=self._nr_classes_clustering, axis=2)
+                gt_img = tf.one_hot(tf.cast(gt_img, tf.int32), depth=self._nr_classes_clustering, axis=3)
                 gt_img = tf.reshape(gt_img, [tf.shape(gt_img)[0], tf.shape(gt_img)[1], -1])
 
             if self._set_img_size != self._in_img_size:

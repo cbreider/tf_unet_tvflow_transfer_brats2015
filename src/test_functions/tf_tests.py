@@ -6,6 +6,15 @@ from src.test_functions.np_tv_denoise_test import tv_denoise
 from PIL import Image
 
 
+
+tf.InteractiveSession()
+
+A = tf.constant([[1., 2., 3.], [4., 5., 6.], [7., 8., 9.]])
+a_b = tf.histogram_fixed_width_bins(values=A, value_range=[0., 9.], nbins=3)
+b = tf.constant(2)
+bi = a_b.eval()
+x = (a_b + b).eval()
+
 ten = tf.ones([6, 5, 3, 3])
 drop_out =tf.nn.dropout(ten, keep_prob=2/3, noise_shape=[6, 5, 1, 1])
 
