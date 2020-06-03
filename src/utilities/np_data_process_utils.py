@@ -47,7 +47,7 @@ def tv_clustered_one_hot_to_rgb(one_hot):
     rgb_img = np.zeros((one_hot.shape[0], one_hot.shape[1], 3))
 
     idx = np.argmax(one_hot, axis=2)
-    n_clusters = np.max(idx) + 1
+    n_clusters = one_hot.shape[2]
     for i in range(n_clusters):
         g_val = int(0.0 + i * (255 / n_clusters))
         rgb_img[idx == i] = [g_val, g_val, g_val]
@@ -205,15 +205,23 @@ def combine_img_prediction_tvclustering(data, tv, gt, pred):
                            revert_zero_centering(data[:, :, :, 3])),
                           axis=2).reshape(-1, ny*ch, 1)
     data_rgb = to_rgb(data)
-    gt = gt.reshape(-1, gt.shape[2], gt.shape[3])
-    pred = pred.reshape(-1, pred.shape[2], pred.shape[3])
+
+    gts = []
+    preds = []
+    tvs = []
+    nr_cl = int(gt.shape[3] / 4)
+    for i in range(gt.shape[0]):
+        index = random.randint(0, 3)
+        tvs.append(tv[i, :, :, index])
+        gts.append(gt[i, :, :, index*nr_cl:(index+1)*nr_cl])
+        preds.append(pred[i, :, :, index*nr_cl:(index+1)*nr_cl])
+
+    gt = np.array(gts).reshape(-1, gt.shape[2], nr_cl)
+    pred = np.array(preds).reshape(-1, pred.shape[2], nr_cl)
+    tv = revert_zero_centering(np.array(tvs)).reshape(-1, tv.shape[2], 1)
+    tv_rgb = to_rgb(tv)
     gt_rgb = tv_clustered_one_hot_to_rgb(gt)
     pred_rgb = tv_clustered_one_hot_to_rgb(pred)
-
-    tv = revert_zero_centering(tv)
-    tv = tv.reshape(-1, tv.shape[2], 1)
-    tv_rgb = to_rgb(tv)
-
     img = np.concatenate((data_rgb,
                           tv_rgb,
                           gt_rgb,
