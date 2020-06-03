@@ -19,5 +19,7 @@ python3 train.py --mode 4 --cuda_device 0 --name="AE_Skip_Layers"
 cp configs/configuration_autoencoder_wo_skip_layers.py configuration.py
 python3 train.py --mode 4 --cuda_device 0 --name="AE_No_Skip_Layers"
 
+cp configs/configuration_segmentation_single.py configuration.py
+python3 train.py --mode 2 --cuda_device 0 --name="TV_SEG"
 
 
