@@ -207,6 +207,8 @@ class TrainingDataset(object):
             nt = 0
             t = 0
             idx = 1
+            counter = 0
+            size = len(paths)
             if self._load_only_mid_scans and len(self._load_only_mid_scans) == 2:
                 keep_out.extend(["_{}.".format(i) for i in range(0, self._load_only_mid_scans[0])])
                 keep_out.extend(["_{}.".format(i) for i in range(self._load_only_mid_scans[1] + 1, 155 + 1)])
@@ -227,6 +229,8 @@ class TrainingDataset(object):
                             keep = True
                 if keep:
                     tmp[k] = paths[k]
+                ioutil.progress(counter, size)
+
             paths = tmp
 
             logging.info("{} non tumor and {} tumor slices".format(nt, t))
