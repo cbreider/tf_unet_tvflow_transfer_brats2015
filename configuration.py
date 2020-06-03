@@ -96,7 +96,7 @@ class Configuration:
     k_fold_nr_val_samples = 50
     """nr of validation samples taken from training set in k fold cross validation"""
 
-    split_train_val_ratio = [0.02, 0.02, 0.96]
+    split_train_val_ratio = [0.8, 0.2] # [0.6, 0.1, 0.3]
     """Ration of Nr iraining images to Val images (optional test)
     if new random split is created. Only used if not k fold
     argument is passed (k_fold cross validation is not used). Must sum up to 1
