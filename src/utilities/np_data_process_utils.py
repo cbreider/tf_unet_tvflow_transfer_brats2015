@@ -210,15 +210,15 @@ def combine_img_prediction_tvclustering(data, tv, gt, pred):
     preds = []
     tvs = []
     nr_cl = int(gt.shape[3] / 4)
-    for i in range(gt.shape[0]):
-        index = random.randint(0, 3)
-        tvs.append(tv[i, :, :, index])
-        gts.append(gt[i, :, :, index*nr_cl:(index+1)*nr_cl])
-        preds.append(pred[i, :, :, index*nr_cl:(index+1)*nr_cl])
 
-    gt = np.array(gts).reshape(-1, gt.shape[2], nr_cl)
-    pred = np.array(preds).reshape(-1, pred.shape[2], nr_cl)
-    tv = revert_zero_centering(np.array(tvs)).reshape(-1, tv.shape[2], 1)
+    index = random.randint(0, 3)
+    tv = tv[:, :, :, index]
+    gt = gt[:, :, :, index*nr_cl:(index+1)*nr_cl]
+    pred = pred[:, :, :, index*nr_cl:(index+1)*nr_cl]
+
+    gt = np.array(gt).reshape(-1, gt.shape[2], nr_cl)
+    pred = np.array(pred).reshape(-1, pred.shape[2], nr_cl)
+    tv = revert_zero_centering(np.array(tv)).reshape(-1, tv.shape[2], 1)
     tv_rgb = to_rgb(tv)
     gt_rgb = tv_clustered_one_hot_to_rgb(gt)
     pred_rgb = tv_clustered_one_hot_to_rgb(pred)
