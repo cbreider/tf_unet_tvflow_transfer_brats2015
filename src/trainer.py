@@ -178,6 +178,9 @@ class Trainer(object):
                 ckpt = tf.train.get_checkpoint_state(self._restore_path)
                 if ckpt and ckpt.model_checkpoint_path:
                     self.net.restore(sess, ckpt.model_checkpoint_path, restore_mode=self._restore_mode)
+                else:
+                    logging.error("TF Checkpoint path does not exists")
+                    exit(1)
 
             if self._caffemodel_path:
                 load_pre_trained_caffe_variables(session=sess, file_path=self._caffemodel_path)
