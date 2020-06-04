@@ -106,7 +106,7 @@ class TFImageDataGenerator:
             in_img = tf.concat(slices, axis=2)  # merge them
 
             # if BRATS SEGMENTATION mode load ground truth data
-            if self._mode == TrainingModes.BRATS_SEGMENTATION or self._mode == TrainingModes.TVFLOW_SEGMENTATION_TV_PSEUDO_PATIENT:
+            if self._mode == TrainingModes.BRATS_SEGMENTATION or self._mode == TrainingModes.BRATS_SEGMENTATION_TV_PSEUDO_PATIENT:
                 gt_img = tf_utils.load_png_image(gt_ob, nr_channels=self._nr_channels, img_size=self._in_img_size)
             # else for tv pre training the gt data will be generated
             elif self._mode == TrainingModes.TVFLOW_SEGMENTATION or self._mode == TrainingModes.TVFLOW_REGRESSION:
@@ -206,7 +206,7 @@ class TFImageDataGenerator:
                                                                normalize_std=self._normalize_std,
                                                                data_vals=values)
 
-            if self._mode == TrainingModes.TVFLOW_SEGMENTATION_TV_PSEUDO_PATIENT:
+            if self._mode == TrainingModes.BRATS_SEGMENTATION_TV_PSEUDO_PATIENT:
                 def get_tv_pat(in_pat):
                     tvs = []
                     nr_tv_base = in_pat.get_shape().as_list()[2]
@@ -244,7 +244,7 @@ class TFImageDataGenerator:
                     #tf.clip_by_value(in_img, in_min, in_max)
 
             # genertae one hot tensor for Brats Segmentation
-            if self._mode == TrainingModes.BRATS_SEGMENTATION or self._mode == TrainingModes.TVFLOW_SEGMENTATION_TV_PSEUDO_PATIENT:
+            if self._mode == TrainingModes.BRATS_SEGMENTATION or self._mode == TrainingModes.BRATS_SEGMENTATION_TV_PSEUDO_PATIENT:
                 if self._segmentation_mask == Subtumral_Modes.ALL:
                     gt_img = tf.reshape(gt_img, [tf.shape(gt_img)[0], tf.shape(gt_img)[1]])
                     gt_img = tf.one_hot(tf.cast(gt_img, tf.int32), depth=self._nr_of_classes)
@@ -310,7 +310,7 @@ class TFValidationImageDataGenerator(TFImageDataGenerator):
         self._do_augmentation = self._data_config.do_image_augmentation_val
         self._crop_to_non_zero = self._data_config.crop_to_non_zero_val
 
-        if self._mode == TrainingModes.TVFLOW_SEGMENTATION_TV_PSEUDO_PATIENT:
+        if self._mode == TrainingModes.BRATS_SEGMENTATION_TV_PSEUDO_PATIENT:
             self._mode = TrainingModes.BRATS_SEGMENTATION
         logging.info("Validation buffer size {}, batch size {}".format(self._buffer_size, self._batch_size))
         # convert lists to TF tensor

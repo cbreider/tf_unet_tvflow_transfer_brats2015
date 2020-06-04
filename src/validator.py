@@ -133,7 +133,7 @@ class Validator(object):
             if len(data[1]) == 155:
                 pat_ids.append(
                     [str(f) for f in paths[0] if "mr_flair" in str(f).lower()][0].split(".")[-2].split("_")[0])
-                if (self._mode == TrainingModes.BRATS_SEGMENTATION or self._mode == TrainingModes.TVFLOW_SEGMENTATION_TV_PSEUDO_PATIENT) and np.shape(data[1])[3] > 1:
+                if (self._mode == TrainingModes.BRATS_SEGMENTATION or self._mode == TrainingModes.BRATS_SEGMENTATION_TV_PSEUDO_PATIENT) and np.shape(data[1])[3] > 1:
                     pred_slice = np.argmax(np.array(data[3]), axis=3).astype(float)
                     y_slice = np.argmax(np.array(data[1]), axis=3).astype(float)
                     pred_complete = np.greater(pred_slice, 0.).astype(float)
@@ -246,7 +246,7 @@ class Validator(object):
         scores[Scores.SPECIFICITY_CORE] = spec_per_patient[2]
         scores[Scores.SPECIFICITY_EN] = spec_per_patient[3]
 
-        if self._mode == TrainingModes.BRATS_SEGMENTATION or self._mode == TrainingModes.TVFLOW_SEGMENTATION_TV_PSEUDO_PATIENT:
+        if self._mode == TrainingModes.BRATS_SEGMENTATION or self._mode == TrainingModes.BRATS_SEGMENTATION_TV_PSEUDO_PATIENT:
             scores[Scores.VALSCORE] = scores[Scores.DSCP]
         else:
             scores[Scores.VALSCORE] = - scores[Scores.LOSS]
