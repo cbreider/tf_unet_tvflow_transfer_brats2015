@@ -51,14 +51,16 @@ class Validator(object):
         """
         Trains a convnet instance
 
+        :param tf_session: initialized tensorflow session
         :param net: the unet instance to train
-        :param data_provider_train: callable returning training and verification data
-        :param data_provider_val: callable returning training and verification data
+        :param data_provider: callable returning verification data
+        :param mode: mode of training (BraTS segmentation, tv regression etc.)
         :param out_path: path to store summaries and checkpoints
-        :param train_config: parameters for  training # type: TrainingParams
-        :param restore_path: (optional) checkpoint path to restore a tf checkpoint
-        :param caffemodel_path: (optional) path to a unet caffemodel if you want to restore one
-        :param restore_mode: (optional) mode how to restore a tf checkpoint
+        :param mini_validation: bool indicator if only use a small subset of overall validation data.
+        :param store_feature_maps: store feature map of last layer for each prediction as png
+        :param store_predictions: store predictions as png
+        :param write_per_patient_result: write dice score per patient to csv file
+        :param nr: Nr of the epcoh
         """
         self._tf_session = tf_session
         self._conv_net = net
@@ -173,11 +175,14 @@ class Validator(object):
 
                 # safe one feature_map
                 if self._store_fmaps:
-                    fmap = dutil.revert_zero_centering(np.squeeze(np.array(data[4][75]), axis=0))
+                    fmap = np.squeeze(np.array(data[4][75]), axis=0)
                     map_s = [fmap.shape[0], fmap.shape[1]]
                     im = fmap.reshape(map_s[0], map_s[0], self.fmap_size[0], self.fmap_size[1]
                                       ).transpose(2, 0, 3, 1
                                                   ).reshape(self.fmap_size[0] * map_s[0], self.fmap_size[1] * map_s[1])
+                    im -= im.min()
+                    im /= im.max()
+                    im *= 255.0
                     # histogram normalization
                     # im = util.image_histogram_equalization(im)[0]
                     ioutil.save_image(im, os.path.join(self._output_path, "{}_{}_fmap.jpg".format(self._nr, itr)))

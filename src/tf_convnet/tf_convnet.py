@@ -258,10 +258,10 @@ class ConvNetModel(object):
             logging.info('{} Resuming complete session: {}'.format(datetime.now(), model_path))
             saver = tf.train.Saver()
         elif restore_mode == RestoreMode.COMPLETE_NET:
-            logging.info('{} Restoring only Network: {}'.format(datetime.now(), model_path))
+            logging.info('{} Restoring all variables for for Network: {}'.format(datetime.now(), model_path))
             saver = tf.train.Saver(self.variables)
         elif restore_mode == RestoreMode.ONLY_GIVEN_VARS:
-            logging.info('{} Restoring only Network: {}'.format(datetime.now(), model_path))
+            logging.info('{} Restoring given layers for Network: {}'.format(datetime.now(), model_path))
             saver = tf.train.Saver(self.variables_to_restore)
         else:
             raise ValueError()

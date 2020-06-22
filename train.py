@@ -82,8 +82,6 @@ if __name__ == "__main__":
         create_summaries = False
     if args.restore_path is not None:
         restore_path = args.restore_path
-    else:
-        config.restore_layers = None
     if args.restore_mode:
         restore_mode = RestoreMode(args.restore_mode)
     if args.caffemodel_path is not None:
@@ -155,6 +153,8 @@ if __name__ == "__main__":
         except:
             logging.ERROR("Failed to load test dataset. Skipping testing!!!")
 
+    if restore_mode != RestoreMode.ONLY_GIVEN_VARS:
+        config.restore_layers = None
     net = tf_convnet.ConvNetModel(convnet_config=config, mode=train_mode,
                                   create_summaries=create_summaries)
     opt_args = None
